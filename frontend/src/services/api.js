@@ -33,30 +33,97 @@ apiClient.interceptors.response.use(
 
 // API接口
 export const typeApi = {
-  getTypes: (params = {}) => {
-    return apiClient.get('/types', { params })
+  // 获取所有类型数据
+  async getTypes(page = 1, limit = 10, search = '') {
+    const response = await apiClient.get(`/types`, { params: { page, limit, search } });
+    return response;
   },
-  getTypeById: (id) => {
-    return apiClient.get(`/types/${id}`)
+  
+  // 同步Type IDs
+  async syncTypeIds() {
+    const response = await apiClient.get(`/types/sync-ids`);
+    return response;
   },
-  syncTypeIds: () => {
-    return apiClient.get('/types/sync-ids')
+  
+  // 同步Type详情
+  async syncTypeDetails() {
+    const response = await apiClient.get(`/types/sync-details`);
+    return response;
   },
-  syncTypeDetails: () => {
-    return apiClient.get('/types/sync-details')
+  
+  // 获取单个类型数据
+  async getTypeById(id) {
+    const response = await apiClient.get(`/types/${id}`);
+    return response;
   },
-  createType: (typeData) => {
-    return apiClient.post('/types', typeData)
+  
+  // 创建新类型
+  async createType(data) {
+    const response = await apiClient.post(`/types`, data);
+    return response;
   },
-  updateType: (id, typeData) => {
-    return apiClient.put(`/types/${id}`, typeData)
+  
+  // 更新类型
+  async updateType(id, data) {
+    const response = await apiClient.put(`/types/${id}`, data);
+    return response;
   },
-  updateStatus: (id, status) => {
-    return apiClient.put(`/types/${id}/update-status`, { status })
+  
+  // 更新状态
+  async updateStatus(id, status) {
+    const response = await apiClient.put(`/types/${id}/update-status`, { status });
+    return response;
   },
-  deleteType: (id) => {
-    return apiClient.delete(`/types/${id}`)
+  
+  // 删除类型
+  async deleteType(id) {
+    const response = await apiClient.delete(`/types/${id}`);
+    return response;
   }
-}
+};
+
+export const regionApi = {
+  // 获取所有区域数据
+  async getRegions(page = 1, limit = 10, search = '') {
+    const response = await apiClient.get(`/regions`, { params: { page, limit, search } });
+    return response;
+  },
+  
+  // 同步Region IDs
+  async syncRegionIds() {
+    const response = await apiClient.get(`/regions/sync-ids`);
+    return response;
+  },
+  
+  // 同步Region详情
+  async syncRegionDetails() {
+    const response = await apiClient.get(`/regions/sync-details`);
+    return response;
+  },
+  
+  // 获取单个区域数据
+  async getRegionById(id) {
+    const response = await apiClient.get(`/regions/${id}`);
+    return response;
+  },
+  
+  // 创建新区域
+  async createRegion(data) {
+    const response = await apiClient.post(`/regions`, data);
+    return response;
+  },
+  
+  // 更新区域
+  async updateRegion(id, data) {
+    const response = await apiClient.put(`/regions/${id}`, data);
+    return response;
+  },
+  
+  // 删除区域
+  async deleteRegion(id) {
+    const response = await apiClient.delete(`/regions/${id}`);
+    return response;
+  }
+};
 
 export default apiClient

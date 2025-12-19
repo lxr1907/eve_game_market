@@ -1,16 +1,16 @@
 <template>
-  <div class="type-list">
+  <div class="region-list">
     <el-container>
       <el-header>
-        <h1>Type列表</h1>
+        <h1>Region列表</h1>
         <el-menu :default-active="activeIndex" mode="horizontal" @select="handleSelect">
           <el-menu-item index="1">
             <el-icon><House /></el-icon>
             首页
           </el-menu-item>
           <el-menu-item index="2">
-            <el-icon><Collection /></el-icon>
-            Type列表
+            <el-icon><MapLocation /></el-icon>
+            Region列表
           </el-menu-item>
         </el-menu>
       </el-header>
@@ -18,14 +18,14 @@
         <el-card shadow="hover">
           <template #header>
             <div class="card-header">
-              <span>Type数据列表</span>
-              <el-button type="primary" @click="syncTypeIds" style="margin-right: 10px;">
+              <span>Region数据列表</span>
+              <el-button type="primary" @click="syncRegionIds" style="margin-right: 10px;">
                 <el-icon><RefreshRight /></el-icon>
-                同步Type IDs
+                同步Region IDs
               </el-button>
-              <el-button type="success" @click="syncTypeDetails">
+              <el-button type="success" @click="syncRegionDetails">
                 <el-icon><RefreshRight /></el-icon>
-                同步Type详情
+                同步Region详情
               </el-button>
             </div>
           </template>
@@ -34,7 +34,7 @@
           <div class="search-bar">
             <el-input
               v-model="searchQuery"
-              placeholder="搜索Type名称"
+              placeholder="搜索Region名称"
               clearable
               style="width: 300px; margin-right: 10px"
               @keyup.enter="handleSearch"
@@ -48,41 +48,26 @@
           <!-- 数据表格 -->
           <el-table
             v-loading="loading"
-            :data="types"
+            :data="regions"
             style="width: 100%"
             stripe
             @row-click="handleRowClick"
           >
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="name" label="名称" min-width="200" />
-            <el-table-column prop="group_id" label="组ID" width="100" />
-            <el-table-column prop="category_id" label="分类ID" width="120" />
-            <el-table-column prop="mass" label="质量" width="100" />
-            <el-table-column prop="volume" label="体积" width="100" />
-            <el-table-column prop="published" label="发布状态" width="120">
-              <template #default="scope">
-                <el-tag :type="scope.row.published ? 'success' : 'info'">
-                  {{ scope.row.published ? '已发布' : '未发布' }}
-                </el-tag>
-              </template>
-            </el-table-column>
+            <el-table-column prop="description" label="描述" min-width="300" show-overflow-tooltip />
+            <el-table-column prop="region_id" label="区域ID" width="100" />
+            <el-table-column prop="created_at" label="创建时间" width="180" />
+            <el-table-column prop="updated_at" label="更新时间" width="180" />
             <el-table-column label="操作" width="180" fixed="right">
               <template #default="scope">
                 <el-button
                   type="primary"
                   text
                   size="small"
-                  @click.stop="viewType(scope.row.id)"
+                  @click.stop="viewRegion(scope.row.id)"
                 >
                   查看
-                </el-button>
-                <el-button
-                  type="success"
-                  text
-                  size="small"
-                  @click.stop="updateTask(scope.row)"
-                >
-                  更新任务
                 </el-button>
               </template>
             </el-table-column>
@@ -109,15 +94,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { House, Collection, RefreshRight, Search } from '@element-plus/icons-vue'
-import { typeApi } from '../services/api'
+import { ElMessage } from 'element-plus'
+import { House, MapLocation, RefreshRight, Search } from '@element-plus/icons-vue'
+import { regionApi } from '../services/api'
 
 const router = useRouter()
 const activeIndex = ref('2')
 
 // 数据
-const types = ref([])
+const regions = ref([])
 const loading = ref(false)
 const total = ref(0)
 
@@ -129,49 +114,43 @@ const pageSize = ref(10)
 const searchQuery = ref('')
 
 // 加载数据
-const loadTypes = async () => {
+const loadRegions = async () => {
   loading.value = true
   try {
-    const response = await typeApi.getTypes(
-      currentPage.value,
-      pageSize.value,
-      searchQuery.value
-    )
-    types.value = response.types
+    const response = await regionApi.getRegions(currentPage.value, pageSize.value, searchQuery.value)
+    regions.value = response.regions
     total.value = response.pagination.total
   } catch (error) {
-    ElMessage.error('加载Type数据失败')
-    console.error('Error loading types:', error)
+    ElMessage.error('加载Region数据失败')
+    console.error('Error loading regions:', error)
   } finally {
     loading.value = false
   }
 }
 
-// 同步Type IDs
-const syncTypeIds = async () => {
+// 同步Region IDs
+const syncRegionIds = async () => {
   loading.value = true
   try {
-    await typeApi.syncTypeIds()
-    ElMessage.success('Type IDs同步任务已开始，将在后台执行')
-    // 不立即重新加载数据，因为同步在后台进行
+    await regionApi.syncRegionIds()
+    ElMessage.success('Region IDs同步任务已开始，将在后台执行')
   } catch (error) {
-    ElMessage.error('Type IDs同步任务启动失败')
-    console.error('Error starting sync type IDs:', error)
+    ElMessage.error('Region IDs同步任务启动失败')
+    console.error('Error starting sync region IDs:', error)
   } finally {
     loading.value = false
   }
 }
 
-// 同步Type详情
-const syncTypeDetails = async () => {
+// 同步Region详情
+const syncRegionDetails = async () => {
   loading.value = true
   try {
-    await typeApi.syncTypeDetails()
-    ElMessage.success('Type详情同步任务已开始，将在后台执行')
-    // 不立即重新加载数据，因为同步在后台进行
+    await regionApi.syncRegionDetails()
+    ElMessage.success('Region详情同步任务已开始，将在后台执行')
   } catch (error) {
-    ElMessage.error('Type详情同步任务启动失败')
-    console.error('Error starting sync type details:', error)
+    ElMessage.error('Region详情同步任务启动失败')
+    console.error('Error starting sync region details:', error)
   } finally {
     loading.value = false
   }
@@ -180,56 +159,29 @@ const syncTypeDetails = async () => {
 // 搜索
 const handleSearch = () => {
   currentPage.value = 1
-  loadTypes()
+  loadRegions()
 }
 
 // 分页处理
 const handleSizeChange = (size) => {
   pageSize.value = size
   currentPage.value = 1
-  loadTypes()
+  loadRegions()
 }
 
 const handleCurrentChange = (page) => {
   currentPage.value = page
-  loadTypes()
+  loadRegions()
 }
 
 // 查看详情
-const viewType = (id) => {
-  router.push(`/types/${id}`)
-}
-
-// 更新任务状态
-const updateTask = async (row) => {
-  try {
-    // 弹出确认对话框
-    await ElMessageBox.confirm('确定要更新这个任务吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    // 调用API更新状态
-    await typeApi.updateStatus(row.id, 'in_progress')
-    
-    ElMessage.success('任务更新成功')
-    
-    // 重新加载数据
-    loadTypes()
-  } catch (error) {
-    if (error === 'cancel') {
-      // 用户取消了操作
-      return
-    }
-    ElMessage.error('任务更新失败')
-    console.error('Error updating task:', error)
-  }
+const viewRegion = (id) => {
+  router.push(`/regions/${id}`)
 }
 
 // 行点击事件
 const handleRowClick = (row) => {
-  viewType(row.id)
+  viewRegion(row.id)
 }
 
 // 菜单选择
@@ -237,18 +189,18 @@ const handleSelect = (key) => {
   if (key === '1') {
     router.push('/')
   } else if (key === '2') {
-    router.push('/types')
+    router.push('/regions')
   }
 }
 
 // 初始加载
 onMounted(() => {
-  loadTypes()
+  loadRegions()
 })
 </script>
 
 <style scoped>
-.type-list {
+.region-list {
   min-height: 100vh;
   background-color: #f5f7fa;
 }

@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import TypeListView from '../views/TypeListView.vue'
 import TypeDetailView from '../views/TypeDetailView.vue'
+import RegionListView from '../views/RegionListView.vue'
+import RegionDetailView from '../views/RegionDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -20,6 +22,16 @@ const router = createRouter({
       path: '/types/:id',
       name: 'type-detail',
       component: TypeDetailView
+    },
+    {
+      path: '/regions',
+      name: 'regions',
+      component: RegionListView
+    },
+    {
+      path: '/regions/:id',
+      name: 'region-detail',
+      component: RegionDetailView
     }
   ]
 })

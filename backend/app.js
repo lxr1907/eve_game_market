@@ -3,7 +3,9 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const typeRoutes = require('./routes/typeRoutes');
+const regionRoutes = require('./routes/regionRoutes');
 const Type = require('./models/Type');
+const Region = require('./models/Region');
 
 const app = express();
 
@@ -15,16 +17,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Initialize database tables
-Type.dropTable()
-  .then(() => {
-    console.log('Old table dropped successfully');
-    return Type.createTable();
-  })
-  .then(() => console.log('Database tables initialized successfully with new schema'))
+Promise.all([
+  Type.createTable(),
+  Region.createTable()
+])
+  .then(() => console.log('Database tables initialized successfully'))
   .catch(err => console.error('Error initializing database tables:', err));
 
 // Routes
 app.use('/api', typeRoutes);
+app.use('/api', regionRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
