@@ -228,11 +228,156 @@ class LoyaltyController {
     }
   }
 
+  // 清理并重新计算LP收益
+  static async cleanAndRecalculateProfit(req, res) {
+    try {
+      const { corporationId } = req.body;
+      
+      if (!corporationId) {
+        return res.status(400).json({ message: 'corporationId is required' });
+      }
+
+      // 直接返回成功给前端，任务在后台执行
+      res.status(202).json({
+        message: `Cleaning and recalculating LP profit for corporation ${corporationId} has started in background`,
+        status: 'started'
+      });
+
+      // 在后台异步执行清理和重新计算
+      // 使用箭头函数保持this上下文
+      (async () => {
+        try {
+          console.log(`Starting cleaning and recalculating LP profit for corporation ${corporationId} in background...`);
+          
+          // 清空表数据
+          await LoyaltyTypeLpIsk.truncate();
+          console.log('Successfully truncated loyalty_type_lp_isk table');
+          
+          // 重新计算利润 - 直接调用静态方法
+          await LoyaltyController.calculateProfitInternal(corporationId);
+          console.log('Profit recalculation completed');
+        } catch (error) {
+          console.error(`Error in background cleaning and recalculating: ${error.message}`);
+        }
+      })();
+    } catch (error) {
+      console.error('Error starting cleaning and recalculating:', error.message);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  // 内部方法：执行LP收益计算
+  static async calculateProfitInternal(corporationId) {
+    const regionId = 10000002; // 固定为特定区域
+    
+    // 获取该公司的所有loyalty_offers
+    const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId);
+    const offers = allOffers.offers;
+    
+    console.log(`Fetched ${offers.length} loyalty offers from database`);
+    
+    // 遍历处理每个offer（仅处理没有required_items的offer）
+    let processedOffers = 0;
+    let savedOffers = 0;
+    let syncedOffers = 0;
+    let skippedOffers = 0;
+    
+    for (const offer of offers) {
+      try {
+        // 检查是否有required_items，如果有则跳过
+        if (offer.required_items && offer.required_items.length > 0) {
+          console.log(`Skipping offer for type ${offer.type_id} - it has required_items`);
+          skippedOffers++;
+          continue;
+        }
+        // 检查是否已有该regionId和typeId的buy订单数据
+        const existingOrderCount = await Order.countByRegionAndType(regionId, offer.type_id, 'buy');
+        
+        if (existingOrderCount === 0) {
+          // 如果没有订单数据，先同步
+          console.log(`No buy orders found for type ${offer.type_id} in region ${regionId}, synchronizing...`);
+          
+          // 先删除该区域和类型的现有订单数据（如果有）
+          await Order.deleteByRegionAndType(regionId, offer.type_id);
+          
+          // 定义处理订单数据的回调函数
+          const processOrders = async (orders, page) => {
+            console.log(`Processing page ${page} with ${orders.length} orders`);
+            
+            // 为每个订单添加region_id和type_id
+            const ordersWithRegionAndType = orders.map(order => ({
+              ...order,
+              region_id: regionId,
+              type_id: offer.type_id
+            }));
+            
+            // 批量插入或更新数据库
+            await Order.insertOrUpdate(ordersWithRegionAndType);
+          };
+
+          // 获取买入订单
+          await eveApiService.getAllMarketOrdersByRegionAndType(
+            regionId, 
+            offer.type_id, 
+            'buy', 
+            processOrders
+          );
+          
+          syncedOffers++;
+          console.log(`Order synchronization completed for type ${offer.type_id} in region ${regionId}`);
+        }
+        
+        // 查询该type_id在特定区域的最高价买单
+        const buyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1);
+        
+        if (buyOrders.length > 0) {
+          const highestBuyPrice = buyOrders[0].price;
+          
+          // 计算总收益和每LP收益
+          const totalRevenue = highestBuyPrice * offer.quantity;
+          const totalProfit = totalRevenue - offer.isk_cost;
+          const profitPerLp = offer.lp_cost > 0 ? totalProfit / offer.lp_cost : 0;
+          
+          // 准备数据
+          const lpIskData = {
+            type_id: offer.type_id,
+            corporation_id: corporationId,
+            region_id: regionId,
+            lp_cost: offer.lp_cost,
+            isk_cost: offer.isk_cost,
+            sell_price: highestBuyPrice,
+            quantity: offer.quantity,
+            total_profit: totalProfit,
+            profit_per_lp: profitPerLp
+          };
+          
+          // 插入或更新数据库
+          const saved = await LoyaltyTypeLpIsk.insertOrUpdate(lpIskData);
+          if (saved) {
+            savedOffers++;
+          }
+        }
+        
+        processedOffers++;
+        
+        // 每处理100个offers暂停1秒，避免API调用过于频繁
+        if (processedOffers % 100 === 0) {
+          console.log(`Processed ${processedOffers}/${offers.length} offers...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        console.error(`Error processing offer ${offer.offer_id}: ${error.message}`);
+      }
+    }
+    
+    console.log(`LP profit calculation completed for corporation ${corporationId}`);
+    console.log(`Statistics: Processed ${processedOffers}/${offers.length} offers, Saved ${savedOffers} records, Synced ${syncedOffers} order sets, Skipped ${skippedOffers} offers with required_items`);
+  }
+
   // 计算LP收益
   static async calculateProfit(req, res) {
     try {
       const { corporationId } = req.body;
-      const regionId = 10000002; // 固定为特定区域
       
       if (!corporationId) {
         return res.status(400).json({ message: 'corporationId is required' });
@@ -248,114 +393,14 @@ class LoyaltyController {
       (async () => {
         try {
           console.log(`Starting LP profit calculation for corporation ${corporationId} in background...`);
-          
-          // 获取该公司的所有loyalty_offers
-          const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId);
-          const offers = allOffers.offers;
-          
-          console.log(`Fetched ${offers.length} loyalty offers from database`);
-          
-          // 过滤掉有required_items的offer
-          const filteredOffers = offers.filter(offer => 
-            !offer.required_items || offer.required_items.length === 0
-          );
-          
-          console.log(`Filtered to ${filteredOffers.length} offers without required items`);
-          
-          // 遍历处理每个offer
-          let processedOffers = 0;
-          let savedOffers = 0;
-          let syncedOffers = 0;
-          
-          for (const offer of filteredOffers) {
-            try {
-              // 检查是否已有该regionId和typeId的buy订单数据
-              const existingOrderCount = await Order.countByRegionAndType(regionId, offer.type_id, 'buy');
-              
-              if (existingOrderCount === 0) {
-                // 如果没有订单数据，先同步
-                console.log(`No buy orders found for type ${offer.type_id} in region ${regionId}, synchronizing...`);
-                
-                // 先删除该区域和类型的现有订单数据（如果有）
-                await Order.deleteByRegionAndType(regionId, offer.type_id);
-                
-                // 定义处理订单数据的回调函数
-                const processOrders = async (orders, page) => {
-                  console.log(`Processing page ${page} with ${orders.length} orders`);
-                  
-                  // 为每个订单添加region_id和type_id
-                  const ordersWithRegionAndType = orders.map(order => ({
-                    ...order,
-                    region_id: regionId,
-                    type_id: offer.type_id
-                  }));
-                  
-                  // 批量插入或更新数据库
-                  await Order.insertOrUpdate(ordersWithRegionAndType);
-                };
-
-                // 获取买入订单
-                await eveApiService.getAllMarketOrdersByRegionAndType(
-                  regionId, 
-                  offer.type_id, 
-                  'buy', 
-                  processOrders
-                );
-                
-                syncedOffers++;
-                console.log(`Order synchronization completed for type ${offer.type_id} in region ${regionId}`);
-              }
-              
-              // 查询该type_id在特定区域的最高价买单
-              const buyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1);
-              
-              if (buyOrders.length > 0) {
-                const highestBuyPrice = buyOrders[0].price;
-                
-                // 计算总收益和每LP收益
-                const totalRevenue = highestBuyPrice * offer.quantity;
-                const totalProfit = totalRevenue - offer.isk_cost;
-                const profitPerLp = offer.lp_cost > 0 ? totalProfit / offer.lp_cost : 0;
-                
-                // 准备数据
-                const profitData = {
-                  type_id: offer.type_id,
-                  corporation_id: offer.corporation_id,
-                  region_id: regionId,
-                  lp_cost: offer.lp_cost,
-                  isk_cost: offer.isk_cost,
-                  sell_price: highestBuyPrice,
-                  quantity: offer.quantity,
-                  total_profit: totalProfit,
-                  profit_per_lp: profitPerLp
-                };
-                
-                // 保存到数据库
-                const saved = await LoyaltyTypeLpIsk.insertOrUpdate(profitData);
-                if (saved) {
-                  savedOffers++;
-                }
-              }
-              
-              processedOffers++;
-              
-              if (processedOffers % 10 === 0) {
-                console.log(`Progress: ${processedOffers}/${filteredOffers.length} offers processed`);
-              }
-            } catch (dbError) {
-              console.error(`Error processing offer ${offer.offer_id}:`, dbError.message);
-            }
-          }
-          
-          console.log(`LP profit calculation completed for corporation ${corporationId}`);
-          console.log(`Results: ${savedOffers} saved, ${syncedOffers} offers synchronized, ${filteredOffers.length - processedOffers} failed`);
+          // 直接调用静态方法
+          await LoyaltyController.calculateProfitInternal(corporationId);
         } catch (error) {
-          console.error(`Error in background calculating LP profit for corporation ${corporationId}:`, error.message);
-          console.error('Error stack:', error.stack);
+          console.error(`Error in background calculation: ${error.message}`);
         }
       })();
     } catch (error) {
-      console.error('Error starting LP profit calculation:', error.message);
+      console.error('Error starting calculation:', error.message);
       res.status(500).json({ message: 'Internal server error' });
     }
   }

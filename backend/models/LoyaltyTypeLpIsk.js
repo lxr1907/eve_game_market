@@ -95,6 +95,18 @@ class LoyaltyTypeLpIsk {
     }
   }
 
+  // 清空表数据
+  static async truncate() {
+    const query = `TRUNCATE TABLE loyalty_type_lp_isk`;
+    try {
+      await pool.execute(query);
+      return true;
+    } catch (error) {
+      console.error('Error truncating loyalty_type_lp_isk table:', error);
+      return false;
+    }
+  }
+
   // 获取分页收益数据，包含type名称
   static async getProfitDataWithTypeNames(page = 1, limit = 10, filters = {}) {
     const offset = (page - 1) * limit;

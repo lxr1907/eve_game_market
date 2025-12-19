@@ -199,9 +199,15 @@ export const loyaltyApi = {
     return response;
   },
   
-  // 计算LP收益
+  // 计算LP收益（旧接口，保留但不建议使用）
   async calculateProfit(corporationId) {
     const response = await apiClient.post(`/loyalty/offers/calculate-profit`, { corporationId });
+    return response;
+  },
+  
+  // 清理并重新计算LP收益（新接口）
+  async cleanAndRecalculateProfit(corporationId) {
+    const response = await apiClient.post(`/loyalty/offers/clean-recalculate-profit`, { corporationId });
     return response;
   },
 

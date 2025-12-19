@@ -152,7 +152,7 @@ async function syncLoyaltyOffers() {
   }
 }
 
-// 计算LP收益
+// 清理并计算所有LP收益
 async function calculateProfit() {
   if (!selectedCorporationId.value) {
     ElMessage.warning('请先选择公司')
@@ -161,7 +161,7 @@ async function calculateProfit() {
 
   try {
     await ElMessageBox.confirm(
-      `确定要计算公司 ${selectedCorporationId.value} 的所有LP收益吗？这可能需要一些时间。`,
+      `确定要清理并重新计算公司 ${selectedCorporationId.value} 的所有LP收益吗？这可能需要一些时间。`,
       '计算确认',
       {
         confirmButtonText: '确定',
@@ -171,7 +171,7 @@ async function calculateProfit() {
     )
 
     loading.value = true
-    const response = await loyaltyApi.calculateProfit(selectedCorporationId.value)
+    const response = await loyaltyApi.cleanAndRecalculateProfit(selectedCorporationId.value)
     ElMessage.success(response.message)
     
     // 计算完成后刷新数据
@@ -180,8 +180,8 @@ async function calculateProfit() {
     }, 2000) // 延迟2秒，给后台一些处理时间
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('计算LP收益失败:', error)
-      ElMessage.error('计算LP收益失败')
+      console.error('清理并计算LP收益失败:', error)
+      ElMessage.error('清理并计算LP收益失败')
     }
   } finally {
     loading.value = false
