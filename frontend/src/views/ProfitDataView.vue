@@ -46,15 +46,21 @@
             stripe
           >
             <el-table-column prop="type_id" label="物品类型ID" width="120" />
-            <el-table-column prop="type_name" label="物品名称" min-width="150" />
+            <el-table-column label="物品名称" min-width="250">
+              <template #default="scope">
+                <div class="item-name-container">
+                  <span>{{ scope.row.type_name }}</span>
+                  <el-tag type="info" size="small" style="margin-left: 10px">每LP: {{ formatNumber(scope.row.profit_per_lp) }}</el-tag>
+                </div>
+              </template>
+            </el-table-column>
             <el-table-column prop="corporation_id" label="公司ID" width="120" />
             <el-table-column prop="region_id" label="区域ID" width="120" />
-            <el-table-column prop="lp_cost" label="LP成本" width="100" />
-            <el-table-column prop="isk_cost" label="ISK成本" width="120" />
-            <el-table-column prop="sell_price" label="售价" width="120" />
-            <el-table-column prop="quantity" label="数量" width="80" />
-            <el-table-column prop="total_profit" label="总收益" width="120" />
-            <el-table-column prop="profit_per_lp" label="每LP收益" width="120" />
+            <el-table-column prop="lp_cost" label="LP成本" width="100" :formatter="formatNumber" />
+            <el-table-column prop="isk_cost" label="ISK成本" width="120" :formatter="formatNumber" />
+            <el-table-column prop="sell_price" label="售价" width="120" :formatter="formatNumber" />
+            <el-table-column prop="quantity" label="数量" width="80" :formatter="formatNumber" />
+            <el-table-column prop="total_profit" label="总收益" width="120" :formatter="formatNumber" />
             <el-table-column prop="updated_at" label="更新时间" width="180" :formatter="formatDate" />
           </el-table>
           
@@ -111,6 +117,18 @@ const formatDate = (row, column, cellValue) => {
   if (!cellValue) return ''
   const date = new Date(cellValue)
   return date.toLocaleString()
+}
+
+// 格式化数字，只保留整数部分
+const formatNumber = (row, column, cellValue) => {
+  // 处理直接调用的情况（如在物品名称列中）
+  if (column === undefined && cellValue === undefined) {
+    // 直接调用：formatNumber(value)
+    return Math.floor(row)
+  }
+  // 处理表格列格式化的情况：formatNumber(row, column, cellValue)
+  if (cellValue === null || cellValue === undefined) return ''
+  return Math.floor(cellValue)
 }
 
 // 获取收益数据
