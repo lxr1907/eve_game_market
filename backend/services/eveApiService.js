@@ -97,6 +97,47 @@ class EveApiService {
     }
   }
 
+  // 获取特定公司的忠诚度商店商品
+  async getLoyaltyStoreOffers(corporationId, retries = 3) {
+    // 节流控制：确保每1秒只请求1次
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.throttleInterval) {
+      const waitTime = this.throttleInterval - timeSinceLastRequest;
+      console.log(`Throttling request for corporation ${corporationId} loyalty offers, waiting ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastRequestTime = Date.now();
+
+    try {
+      console.log(`Sending request for loyalty store offers: /loyalty/stores/${corporationId}/offers/?datasource=serenity`);
+      const response = await this.client.get(`/loyalty/stores/${corporationId}/offers/`, {
+        params: {
+          datasource: 'serenity'
+        },
+        timeout: 10000 // 设置10秒超时
+      });
+      
+      console.log(`Received ${response.data.length} loyalty store offers for corporation ${corporationId}`);
+      return response.data;
+    } catch (error) {
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        // 如果是超时或连接重置错误，进行重试
+        console.log(`Timeout fetching loyalty store offers for corporation ${corporationId}, retrying (${retries} left)...`);
+        // 指数退避策略，每次重试等待时间增加
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getLoyaltyStoreOffers(corporationId, retries - 1);
+      } else {
+        console.error(`Error fetching loyalty store offers for corporation ${corporationId}: ${error.message}`);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+        throw error;
+      }
+    }
+  }
+
   async getAllTypes(page = 1) {
     try {
       const typeIds = await this.getTypeIds(page);

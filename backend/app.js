@@ -5,10 +5,12 @@ const morgan = require('morgan');
 const typeRoutes = require('./routes/typeRoutes');
 const regionRoutes = require('./routes/regionRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const loyaltyRoutes = require('./routes/loyaltyRoutes');
 const Type = require('./models/Type');
 const Region = require('./models/Region');
 const RegionType = require('./models/RegionType');
 const Order = require('./models/Order');
+const LoyaltyOffer = require('./models/LoyaltyOffer');
 
 const app = express();
 
@@ -24,7 +26,8 @@ Promise.all([
   Type.createTable(),
   Region.createTable(),
   RegionType.createTable(),
-  Order.createTable()
+  Order.createTable(),
+  LoyaltyOffer.createTable()
 ])
   .then(() => console.log('Database tables initialized successfully'))
   .catch(err => console.error('Error initializing database tables:', err));
@@ -33,6 +36,7 @@ Promise.all([
 app.use('/api', typeRoutes);
 app.use('/api', regionRoutes);
 app.use('/api', orderRoutes);
+app.use('/api', loyaltyRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

@@ -1,0 +1,193 @@
+<template>
+  <div class="loyalty-offers">
+    <el-main>
+        <el-card shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <span>忠诚度商店商品</span>
+              <div class="sync-controls">
+                <el-select
+                  v-model="selectedCorporationId"
+                  placeholder="选择公司"
+                  style="width: 200px; margin-right: 10px"
+                >
+                  <el-option
+                    v-for="corp in corporations"
+                    :key="corp.id"
+                    :label="corp.name"
+                    :value="corp.id"
+                  />
+                </el-select>
+                <el-button type="primary" @click="syncLoyaltyOffers">
+                  <el-icon><RefreshRight /></el-icon>
+                  同步数据
+                </el-button>
+              </div>
+            </div>
+          </template>
+          
+          <!-- 数据表格 -->
+          <el-table
+            v-loading="loading"
+            :data="loyaltyOffers"
+            style="width: 100%"
+            stripe
+          >
+            <el-table-column prop="id" label="商品ID" width="100" />
+            <el-table-column prop="corporation_id" label="公司ID" width="120" />
+            <el-table-column prop="type_id" label="物品类型ID" width="120" />
+            <el-table-column prop="quantity" label="数量" width="100" />
+            <el-table-column prop="lp_cost" label="LP成本" width="100" />
+            <el-table-column prop="isk_cost" label="ISK成本" width="120" />
+            <el-table-column prop="ak_cost" label="AK成本" width="100" />
+            <el-table-column label="所需物品" min-width="200">
+              <template #default="scope">
+                <el-tag v-if="!scope.row.required_items || scope.row.required_items.length === 0" type="info">
+                  无
+                </el-tag>
+                <div v-else>
+                  <div v-for="(item, index) in scope.row.required_items" :key="index" class="required-item">
+                    <el-tag type="success" size="small">
+                      类型: {{ item.type_id }}, 数量: {{ item.quantity }}
+                    </el-tag>
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
+          </el-table>
+          
+          <!-- 分页 -->
+          <div class="pagination">
+            <el-pagination
+              v-model:current-page="currentPage"
+              v-model:page-size="pageSize"
+              :page-sizes="[10, 20, 50, 100]"
+              layout="total, sizes, prev, pager, next, jumper"
+              :total="total"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+            />
+          </div>
+        </el-card>
+    </el-main>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { RefreshRight } from '@element-plus/icons-vue'
+import { loyaltyApi } from '../services/api'
+
+// 数据
+const loyaltyOffers = ref([])
+const loading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+
+// 公司选择器
+const selectedCorporationId = ref(1000180) // 默认公司ID
+const corporations = ref([
+  { id: 1000180, name: '合众国护卫军' },
+  // 可以根据需要添加更多公司
+])
+
+// 获取忠诚度商店商品
+async function fetchLoyaltyOffers() {
+  loading.value = true
+  try {
+    const data = await loyaltyApi.getLoyaltyOffers(
+      currentPage.value,
+      pageSize.value,
+      selectedCorporationId.value
+    )
+    loyaltyOffers.value = data.data
+    total.value = data.pagination.totalItems
+  } catch (error) {
+    console.error('获取忠诚度商店商品失败:', error)
+    ElMessage.error('获取忠诚度商店商品失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 同步忠诚度商店商品
+async function syncLoyaltyOffers() {
+  if (!selectedCorporationId.value) {
+    ElMessage.warning('请先选择公司')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要同步公司 ${selectedCorporationId.value} 的忠诚度商店商品吗？`,
+      '同步确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    loading.value = true
+    const response = await loyaltyApi.syncLoyaltyOffers(selectedCorporationId.value)
+    ElMessage.success(response.message)
+    
+    // 同步完成后刷新数据
+    setTimeout(() => {
+      fetchLoyaltyOffers()
+    }, 2000) // 延迟2秒，给后台一些处理时间
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('同步忠诚度商店商品失败:', error)
+      ElMessage.error('同步忠诚度商店商品失败')
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+// 分页处理
+function handleSizeChange(size) {
+  pageSize.value = size
+  currentPage.value = 1
+  fetchLoyaltyOffers()
+}
+
+function handleCurrentChange(page) {
+  currentPage.value = page
+  fetchLoyaltyOffers()
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+  fetchLoyaltyOffers()
+})
+</script>
+
+<style scoped>
+.loyalty-offers {
+  padding: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sync-controls {
+  display: flex;
+  align-items: center;
+}
+
+.pagination {
+  margin-top: 20px;
+  text-align: right;
+}
+
+.required-item {
+  margin-bottom: 5px;
+}
+</style>

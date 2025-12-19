@@ -158,4 +158,46 @@ export const orderApi = {
   }
 };
 
+export const loyaltyApi = {
+  // 同步忠诚度商店商品
+  async syncLoyaltyOffers(corporationId) {
+    const response = await apiClient.post(`/loyalty/offers/sync`, { corporationId });
+    return response;
+  },
+  
+  // 获取所有忠诚度商店商品
+  async getLoyaltyOffers(page = 1, limit = 10, corporationId = null) {
+    const params = { page, limit };
+    if (corporationId) {
+      params.corporationId = corporationId;
+    }
+    const response = await apiClient.get(`/loyalty/offers`, { params });
+    return response;
+  },
+  
+  // 获取单个忠诚度商店商品
+  async getLoyaltyOfferById(id) {
+    const response = await apiClient.get(`/loyalty/offers/${id}`);
+    return response;
+  },
+  
+  // 创建忠诚度商店商品
+  async createLoyaltyOffer(data) {
+    const response = await apiClient.post(`/loyalty/offers`, data);
+    return response;
+  },
+  
+  // 更新忠诚度商店商品
+  async updateLoyaltyOffer(id, data) {
+    const response = await apiClient.put(`/loyalty/offers/${id}`, data);
+    return response;
+  },
+  
+  // 删除忠诚度商店商品
+  async deleteLoyaltyOffer(id) {
+    const response = await apiClient.delete(`/loyalty/offers/${id}`);
+    return response;
+  }
+};
+
 export default apiClient
