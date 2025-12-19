@@ -39,9 +39,11 @@ export const typeApi = {
   getTypeById: (id) => {
     return apiClient.get(`/types/${id}`)
   },
-  syncTypes: () => {
-    // 移除page参数
-    return apiClient.get('/types/sync')
+  syncTypeIds: () => {
+    return apiClient.get('/types/sync-ids')
+  },
+  syncTypeDetails: () => {
+    return apiClient.get('/types/sync-details')
   },
   createType: (typeData) => {
     return apiClient.post('/types', typeData)

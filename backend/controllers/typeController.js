@@ -14,20 +14,19 @@ let syncTaskStatus = {
 };
 
 class TypeController {
-  static async syncTypes(req, res) {
+  // 同步Type IDs
+  static async syncTypeIds(req, res) {
     // 直接返回成功给前端
     res.status(202).json({
-      message: '数据同步任务已开始，将在后台执行',
+      message: 'Type IDs同步任务已开始，将在后台执行',
       status: 'started'
     });
 
-    // 在后台异步执行数据同步
+    // 在后台异步执行Type IDs同步
     (async () => {
       try {
-        console.log('Starting types synchronization in background...');
+        console.log('Starting type IDs synchronization in background...');
         
-        // 第一步：先获取所有类型ID并插入数据库
-        console.log('Step 1: Fetching all type IDs from EVE API...');
         let totalTypeIds = 0;
         let insertedIds = 0;
         
@@ -48,10 +47,27 @@ class TypeController {
           console.log(`Progress: ${insertedIds}/${totalTypeIds} type IDs inserted`);
         }, true); // 第三个参数true表示只返回ID
         
-        console.log(`Step 1 completed: ${insertedIds} type IDs inserted into database`);
-        
-        // 第二步：分页查询数据库中的ID，请求详情并更新
-        console.log('Step 2: Updating type details...');
+        console.log(`${insertedIds} type IDs inserted into database`);
+        console.log('Type IDs synchronization completed successfully.');
+      } catch (error) {
+        console.error('Error in background syncing type IDs:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+    })();
+  }
+
+  // 同步Type详情
+  static async syncTypeDetails(req, res) {
+    // 直接返回成功给前端
+    res.status(202).json({
+      message: 'Type详情同步任务已开始，将在后台执行',
+      status: 'started'
+    });
+
+    // 在后台异步执行Type详情同步
+    (async () => {
+      try {
+        console.log('Starting type details synchronization in background...');
         
         const pageSize = 100; // 每次查询的数量
         let currentPage = 1;
@@ -60,15 +76,15 @@ class TypeController {
         
         while (hasMore) {
           try {
-            // 分页查询数据库中的类型ID
-            const types = await Type.findAll(currentPage, pageSize, '');
+            // 分页查询数据库中的类型ID，只查询name为空的记录
+            const types = await Type.findAllWithEmptyName(currentPage, pageSize);
             
             if (types.length === 0) {
               hasMore = false;
               break;
             }
             
-            console.log(`Processing page ${currentPage} with ${types.length} type IDs`);
+            console.log(`Processing page ${currentPage} with ${types.length} type IDs (name is empty)`);
             
             // 对每个ID请求详细信息
             for (const type of types) {
@@ -100,6 +116,9 @@ class TypeController {
                     console.log(`Progress: ${updatedTypes} types updated with details`);
                   }
                 }
+                
+                // 设置同步间隔为200ms
+                await new Promise(resolve => setTimeout(resolve, 200));
               } catch (apiError) {
                 console.error(`Error fetching details for type ID ${typeId}:`, apiError.message);
               }
@@ -112,10 +131,10 @@ class TypeController {
           }
         }
         
-        console.log(`Step 2 completed: ${updatedTypes} types updated with details`);
-        console.log('Data synchronization completed successfully.');
+        console.log(`${updatedTypes} types updated with details`);
+        console.log('Type details synchronization completed successfully.');
       } catch (error) {
-        console.error('Error in background syncing:', error.message);
+        console.error('Error in background syncing type details:', error.message);
         console.error('Error stack:', error.stack);
       }
     })();

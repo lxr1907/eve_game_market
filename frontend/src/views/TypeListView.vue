@@ -19,9 +19,13 @@
           <template #header>
             <div class="card-header">
               <span>Type数据列表</span>
-              <el-button type="primary" @click="syncTypes">
+              <el-button type="primary" @click="syncTypeIds" style="margin-right: 10px;">
                 <el-icon><RefreshRight /></el-icon>
-                同步数据
+                同步Type IDs
+              </el-button>
+              <el-button type="success" @click="syncTypeDetails">
+                <el-icon><RefreshRight /></el-icon>
+                同步Type详情
               </el-button>
             </div>
           </template>
@@ -143,17 +147,31 @@ const loadTypes = async () => {
   }
 }
 
-// 同步数据
-const syncTypes = async () => {
+// 同步Type IDs
+const syncTypeIds = async () => {
   loading.value = true
   try {
-    await typeApi.syncTypes()
-    ElMessage.success('数据同步任务已开始，将在后台执行')
+    await typeApi.syncTypeIds()
+    ElMessage.success('Type IDs同步任务已开始，将在后台执行')
     // 不立即重新加载数据，因为同步在后台进行
-    // 如果需要，可以添加定期检查或进度查询
   } catch (error) {
-    ElMessage.error('数据同步任务启动失败')
-    console.error('Error starting sync types:', error)
+    ElMessage.error('Type IDs同步任务启动失败')
+    console.error('Error starting sync type IDs:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 同步Type详情
+const syncTypeDetails = async () => {
+  loading.value = true
+  try {
+    await typeApi.syncTypeDetails()
+    ElMessage.success('Type详情同步任务已开始，将在后台执行')
+    // 不立即重新加载数据，因为同步在后台进行
+  } catch (error) {
+    ElMessage.error('Type详情同步任务启动失败')
+    console.error('Error starting sync type details:', error)
   } finally {
     loading.value = false
   }

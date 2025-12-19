@@ -102,6 +102,24 @@ class Type {
     return rows;
   }
 
+  // 分页查询name为空的类型记录
+  static async findAllWithEmptyName(page = 1, limit = 10) {
+    // 确保所有参数都是整数类型
+    const pageInt = parseInt(page) || 1;
+    const limitInt = parseInt(limit) || 10;
+    const offsetInt = parseInt((pageInt - 1) * limitInt) || 0;
+    
+    const query = `SELECT * FROM types WHERE name IS NULL OR name = '' ORDER BY id LIMIT ${limitInt} OFFSET ${offsetInt}`;
+    
+    try {
+      const [types] = await pool.query(query);
+      return types;
+    } catch (error) {
+      console.error('Error fetching types with empty name:', error);
+      throw error;
+    }
+  }
+
   static async count(search = '') {
     // 构建查询字符串，使用字符串拼接代替参数绑定
     let query = 'SELECT COUNT(*) AS total FROM types';
