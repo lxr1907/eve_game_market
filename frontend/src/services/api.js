@@ -138,4 +138,24 @@ export const regionApi = {
   }
 };
 
+export const orderApi = {
+  // 同步订单数据
+  async syncOrders(regionId, typeId) {
+    const response = await apiClient.post(`/orders/${regionId}/${typeId}/sync`);
+    return response;
+  },
+  
+  // 获取订单数据
+  async getOrders(params = {}) {
+    const response = await apiClient.get(`/orders`, { params });
+    return response;
+  },
+  
+  // 根据区域获取可用类型
+  async getAvailableTypesByRegion(regionId, params = {}) {
+    const response = await apiClient.get(`/regions/${regionId}/types`, { params });
+    return response;
+  }
+};
+
 export default apiClient

@@ -79,6 +79,18 @@ class Type {
     return rows[0];
   }
 
+  static async findByIds(ids) {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+    
+    // 使用IN语句批量查询
+    const placeholders = ids.map(() => '?').join(',');
+    const query = `SELECT * FROM types WHERE id IN (${placeholders})`;
+    const [rows] = await pool.execute(query, ids);
+    return rows;
+  }
+
   static async findAll(page = 1, limit = 10, search = '') {
     // 构建查询字符串，使用字符串拼接代替参数绑定
     let query = 'SELECT * FROM types';

@@ -4,9 +4,11 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const typeRoutes = require('./routes/typeRoutes');
 const regionRoutes = require('./routes/regionRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 const Type = require('./models/Type');
 const Region = require('./models/Region');
 const RegionType = require('./models/RegionType');
+const Order = require('./models/Order');
 
 const app = express();
 
@@ -21,7 +23,8 @@ app.use(express.urlencoded({ extended: true }));
 Promise.all([
   Type.createTable(),
   Region.createTable(),
-  RegionType.createTable()
+  RegionType.createTable(),
+  Order.createTable()
 ])
   .then(() => console.log('Database tables initialized successfully'))
   .catch(err => console.error('Error initializing database tables:', err));
@@ -29,6 +32,7 @@ Promise.all([
 // Routes
 app.use('/api', typeRoutes);
 app.use('/api', regionRoutes);
+app.use('/api', orderRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

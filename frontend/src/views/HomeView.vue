@@ -1,23 +1,6 @@
 <template>
   <div class="home">
-    <el-container>
-      <el-header>
-        <el-menu :default-active="activeIndex" mode="horizontal" @select="handleSelect" style="width: 100%">
-          <el-menu-item index="1">
-            <el-icon><House /></el-icon>
-            首页
-          </el-menu-item>
-          <el-menu-item index="2">
-            <el-icon><Collection /></el-icon>
-            Type列表
-          </el-menu-item>
-          <el-menu-item index="3">
-            <el-icon><MapLocation /></el-icon>
-            Region列表
-          </el-menu-item>
-        </el-menu>
-      </el-header>
-      <el-main>
+    <el-main>
         <el-card shadow="hover">
           <template #header>
             <div class="card-header">
@@ -55,44 +38,18 @@
             </div>
           </div>
         </el-card>
-      </el-main>
-    </el-container>
+    </el-main>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { House, Collection, MapLocation, List, View, RefreshRight } from '@element-plus/icons-vue'
-
-const router = useRouter()
-const activeIndex = ref('1')
-
-const handleSelect = (key, keyPath) => {
-  console.log(key, keyPath)
-  if (key === '2') {
-    router.push('/types')
-  } else if (key === '3') {
-    router.push('/regions')
-  } else if (key === '1') {
-    router.push('/')
-  }
-}
+import { List, View, RefreshRight } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>
 .home {
   min-height: 100vh;
   background-color: #f5f7fa;
-}
-
-.el-header {
-  background-color: #409eff;
-  color: white;
-  padding: 0 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .el-header h1 {

@@ -403,6 +403,112 @@ class EveApiService {
       throw error;
     }
   }
+
+  async getMarketOrdersByRegionAndType(regionId, typeId, orderType = 'all', page = 1, retries = 3) {
+    // 节流控制：确保每1秒只请求1次
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.throttleInterval) {
+      const waitTime = this.throttleInterval - timeSinceLastRequest;
+      console.log(`Throttling request for market orders: regionId=${regionId}, typeId=${typeId}, waiting ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastRequestTime = Date.now();
+
+    try {
+      const params = {
+        page: page,
+        datasource: 'serenity',
+        type_id: typeId
+      };
+
+      // 根据订单类型添加筛选参数
+      if (orderType === 'buy') {
+        params.buy = '1';
+      } else if (orderType === 'sell') {
+        params.buy = '0';
+      }
+
+      console.log(`Sending request for market orders: /markets/${regionId}/orders/?page=${page}&type_id=${typeId}&datasource=serenity`);
+      const response = await this.client.get(`/markets/${regionId}/orders/`, {
+        params: params,
+        timeout: 5000 // 设置5秒超时
+      });
+      
+      console.log(`Received ${response.data.length} orders for region ID ${regionId}, type ID ${typeId}, page ${page}`);
+      // Transform order data to map 'range' to 'order_range'
+      return response.data.map(order => ({
+        order_id: order.order_id,
+        region_id: parseInt(regionId),
+        type_id: parseInt(typeId),
+        is_buy_order: order.is_buy_order,
+        price: parseFloat(order.price),
+        volume_remaining: order.volume_remain,
+        volume_total: order.volume_total,
+        minimum_volume: order.min_volume,
+        order_range: order.range,
+        location_id: order.location_id,
+        duration: order.duration,
+        issued: order.issued
+      }));
+    } catch (error) {
+      // 检查是否是页码超出范围的错误
+      if (error.response?.status === 500 && error.response?.data?.error?.includes('Requested page does not exist')) {
+        console.log(`Page ${page} does not exist for orders: regionId=${regionId}, typeId=${typeId}, stopping pagination`);
+        return []; // 返回空数组表示没有更多数据
+      }
+      
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        // 如果是超时或连接重置错误，进行重试
+        console.log(`Timeout fetching market orders for region ID ${regionId}, type ID ${typeId}, page ${page}, retrying (${retries} left)...`);
+        // 指数退避策略，每次重试等待时间增加
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getMarketOrdersByRegionAndType(regionId, typeId, orderType, page, retries - 1);
+      } else {
+        console.error(`Error fetching market orders for region ID ${regionId}, type ID ${typeId}, page ${page}: ${error.message}`);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+        throw error;
+      }
+    }
+  }
+
+  async getAllMarketOrdersByRegionAndType(regionId, typeId, orderType = 'all', callback) {
+    try {
+      let page = 1;
+      let hasMoreData = true;
+      let allOrders = [];
+      
+      console.log(`Starting to fetch all market orders for region ${regionId}, type ${typeId}, orderType ${orderType}`);
+      
+      while (hasMoreData) {
+        const orders = await this.getMarketOrdersByRegionAndType(regionId, typeId, orderType, page);
+        
+        if (orders.length === 0) {
+          hasMoreData = false;
+          break;
+        }
+        
+        allOrders = allOrders.concat(orders);
+        
+        // 调用回调函数处理当前页的数据
+        if (callback && typeof callback === 'function') {
+          await callback(orders, page);
+        }
+        
+        page++;
+      }
+      
+      console.log(`Finished fetching all market orders for region ${regionId}, type ${typeId}`);
+      return allOrders;
+    } catch (error) {
+      console.error(`Error in fetching all market orders for region ${regionId}, type ${typeId}:`, error.message);
+      console.error('Error stack:', error.stack);
+      throw error;
+    }
+  }
 }
 
 module.exports = new EveApiService();
