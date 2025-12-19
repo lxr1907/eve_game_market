@@ -17,25 +17,21 @@ class RegionController {
       try {
         console.log('Starting region IDs synchronization in background...');
         
-        let totalRegionIds = 0;
+        // 根据API文档，region数据只需要获取一次，不需要分页
+        const regionIds = await eveApiService.getRegionIds(1);
+        console.log(`Fetched ${regionIds.length} region IDs from API`);
+        
         let insertedIds = 0;
         
-        await eveApiService.getAllRegionsRecursively(1, async (regionIds, page) => {
-          console.log(`Fetched ${regionIds.length} region IDs from page ${page}`);
-          totalRegionIds += regionIds.length;
-          
-          // 只插入ID，其他字段可以为空
-          for (const regionId of regionIds) {
-            try {
-              await Region.insertOrUpdate({ id: regionId });
-              insertedIds++;
-            } catch (dbError) {
-              console.error(`Error inserting region ID ${regionId} to database:`, dbError.message);
-            }
+        // 只插入ID，其他字段可以为空
+        for (const regionId of regionIds) {
+          try {
+            await Region.insertOrUpdate({ id: regionId });
+            insertedIds++;
+          } catch (dbError) {
+            console.error(`Error inserting region ID ${regionId} to database:`, dbError.message);
           }
-          
-          console.log(`Progress: ${insertedIds}/${totalRegionIds} region IDs inserted`);
-        }, true); // 第三个参数true表示只返回ID
+        }
         
         console.log(`${insertedIds} region IDs inserted into database`);
         console.log('Region IDs synchronization completed successfully.');

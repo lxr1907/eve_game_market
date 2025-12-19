@@ -1,7 +1,10 @@
 const pool = require('../config/database');
 
 class LoyaltyTypeLpIsk {
+
   static async dropTable() {
+    const query = `DROP TABLE IF EXISTS loyalty_type_lp_isk`;
+    await pool.execute(query);
   }
 
   static async createTable() {
@@ -20,7 +23,7 @@ class LoyaltyTypeLpIsk {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE KEY unique_type_corp_region (type_id, corporation_id, region_id)
-      )
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query);
   }

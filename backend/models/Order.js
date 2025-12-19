@@ -1,6 +1,7 @@
 const pool = require('../config/database');
 
 class Order {
+
   static async dropTable() {
     const query = `DROP TABLE IF EXISTS orders`;
     await pool.execute(query);
@@ -17,13 +18,13 @@ class Order {
         volume_remaining INT,
         volume_total INT,
         minimum_volume INT,
-        order_range VARCHAR(20),
+        order_range VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
         location_id BIGINT,
         duration INT,
         is_active BOOLEAN,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query);
   }

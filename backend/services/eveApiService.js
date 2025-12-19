@@ -17,6 +17,9 @@ class EveApiService {
 
   async getTypeIds(page = 1, retries = 3) {
     try {
+      // 构建完整URL以便调试
+      const fullUrl = `${process.env.EVE_API_BASE_URL}/${process.env.EVE_API_VERSION}/universe/types/?page=${page}&datasource=serenity`;
+      console.log(`Sending request to full URL: ${fullUrl}`);
       console.log(`Sending request to /universe/types/?page=${page}&datasource=serenity`);
       const response = await this.client.get(`/universe/types/`, {
         params: {

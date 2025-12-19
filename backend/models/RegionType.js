@@ -6,6 +6,11 @@ class RegionType {
     await pool.execute(query);
   }
 
+  static async dropTable() {
+    const query = `DROP TABLE IF EXISTS region_types`;
+    await pool.execute(query);
+  }
+
   static async createTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS region_types (
@@ -14,7 +19,7 @@ class RegionType {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (region_id, type_id)
-      )
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query);
   }
