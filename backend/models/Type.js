@@ -131,6 +131,51 @@ class Type {
       throw error;
     }
   }
+  
+  // 分页查询loyalty_offers表中存在的、且name为空的类型记录
+  static async findAllWithEmptyNameFromLoyaltyOffers(page = 1, limit = 10) {
+    // 确保所有参数都是整数类型
+    const pageInt = parseInt(page) || 1;
+    const limitInt = parseInt(limit) || 10;
+    const offsetInt = parseInt((pageInt - 1) * limitInt) || 0;
+    
+    // 使用JOIN查询获取loyalty_offers表中存在的、且name为空的type记录
+    const query = `
+      SELECT t.* 
+      FROM types t 
+      JOIN loyalty_offers lo ON t.id = lo.type_id 
+      WHERE (t.name IS NULL OR t.name = '') 
+      GROUP BY t.id 
+      ORDER BY t.id 
+      LIMIT ${limitInt} OFFSET ${offsetInt}
+    `;
+    
+    try {
+      const [types] = await pool.query(query);
+      return types;
+    } catch (error) {
+      console.error('Error fetching loyalty offer types with empty name:', error);
+      throw error;
+    }
+  }
+  
+  // 获取loyalty_offers表中存在的、且name为空的type记录总数
+  static async countWithEmptyNameFromLoyaltyOffers() {
+    const query = `
+      SELECT COUNT(DISTINCT t.id) as count 
+      FROM types t 
+      JOIN loyalty_offers lo ON t.id = lo.type_id 
+      WHERE (t.name IS NULL OR t.name = '')
+    `;
+    
+    try {
+      const [result] = await pool.query(query);
+      return result[0].count;
+    } catch (error) {
+      console.error('Error counting loyalty offer types with empty name:', error);
+      return 0;
+    }
+  }
 
   static async count(search = '') {
     // 构建查询字符串，使用字符串拼接代替参数绑定

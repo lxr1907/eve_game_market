@@ -6,6 +6,7 @@ const router = express.Router();
 router.get('/loyalty/offers', LoyaltyController.getLoyaltyOffers);
 router.post('/loyalty/offers/sync', LoyaltyController.syncLoyaltyOffers);
 router.post('/loyalty/offers/calculate-profit', LoyaltyController.calculateProfit);
+router.get('/loyalty/profit-data', LoyaltyController.getProfitData);
 router.get('/loyalty/offers/:id', LoyaltyController.getLoyaltyOfferById);
 router.post('/loyalty/offers', LoyaltyController.createLoyaltyOffer);
 router.put('/loyalty/offers/:id', LoyaltyController.updateLoyaltyOffer);

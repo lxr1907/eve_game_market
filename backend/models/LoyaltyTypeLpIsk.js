@@ -94,6 +94,74 @@ class LoyaltyTypeLpIsk {
       return [];
     }
   }
+
+  // 获取分页收益数据，包含type名称
+  static async getProfitDataWithTypeNames(page = 1, limit = 10, filters = {}) {
+    const offset = (page - 1) * limit;
+    const { corporationId, regionId } = filters;
+    
+    // 构建查询条件
+    let whereClause = '';
+    let params = [];
+    let paramIndex = 1;
+    
+    if (corporationId) {
+      whereClause += `WHERE corporation_id = ? `;
+      params.push(corporationId);
+      paramIndex++;
+    }
+    
+    if (regionId) {
+      whereClause += whereClause ? 'AND ' : 'WHERE ';
+      whereClause += `region_id = ? `;
+      params.push(regionId);
+      paramIndex++;
+    }
+    
+    // 构建主查询
+    const query = `
+      SELECT l.*, t.name as type_name
+      FROM loyalty_type_lp_isk l
+      LEFT JOIN types t ON l.type_id = t.id
+      ${whereClause}
+      ORDER BY l.profit_per_lp DESC
+      LIMIT ? OFFSET ?
+    `;
+    
+    // 添加分页参数
+    params.push(limit, offset);
+    
+    // 构建总数查询
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM loyalty_type_lp_isk l
+      ${whereClause}
+    `;
+    
+    try {
+      // 执行查询
+      const [rows] = await pool.execute(query, params);
+      // 执行总数查询
+      const [countResult] = await pool.execute(countQuery, params.slice(0, -2));
+      
+      return {
+        data: rows,
+        total: countResult[0].total,
+        page,
+        limit,
+        totalPages: Math.ceil(countResult[0].total / limit)
+      };
+    } catch (error) {
+      console.error('Error getting profit data with type names:', error);
+      return {
+        data: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0
+      };
+    }
+  }
 }
 
 module.exports = LoyaltyTypeLpIsk;

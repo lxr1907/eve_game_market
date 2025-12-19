@@ -70,9 +70,80 @@ class TypeController {
         console.log('Starting type details synchronization in background...');
         
         const pageSize = 100; // 每次查询的数量
-        let currentPage = 1;
-        let hasMore = true;
         let updatedTypes = 0;
+        
+        // 首先同步loyalty_offers表中存在的、且name为空的type记录
+        console.log('First synchronizing type details that exist in loyalty_offers table...');
+        
+        let hasMoreLoyaltyTypes = true;
+        let currentLoyaltyPage = 1;
+        
+        while (hasMoreLoyaltyTypes) {
+          try {
+            // 分页查询loyalty_offers表中存在的、且name为空的type记录
+            const loyaltyTypes = await Type.findAllWithEmptyNameFromLoyaltyOffers(currentLoyaltyPage, pageSize);
+            
+            if (loyaltyTypes.length === 0) {
+              hasMoreLoyaltyTypes = false;
+              break;
+            }
+            
+            const loyaltyTypesCount = await Type.countWithEmptyNameFromLoyaltyOffers();
+            console.log(`Processing loyalty type page ${currentLoyaltyPage} with ${loyaltyTypes.length} type IDs (name is empty)`);
+            console.log(`Total loyalty type IDs to process: ${loyaltyTypesCount}`);
+            
+            // 对每个ID请求详细信息
+            for (const type of loyaltyTypes) {
+              const typeId = type.id;
+              
+              try {
+                // 请求类型详情
+                const typeDetails = await eveApiService.getTypeDetails(typeId);
+                
+                if (typeDetails !== null) {
+                  // 使用详情更新数据库
+                  await Type.insertOrUpdate({
+                    id: typeDetails.type_id,
+                    name: typeDetails.name || '',
+                    description: typeDetails.description || '',
+                    group_id: typeDetails.group_id,
+                    category_id: typeDetails.category_id,
+                    mass: typeDetails.mass,
+                    volume: typeDetails.volume,
+                    capacity: typeDetails.capacity,
+                    portion_size: typeDetails.portion_size,
+                    published: typeDetails.published
+                  });
+                  
+                  updatedTypes++;
+                  
+                  // 每处理100个类型打印一次进度
+                  if (updatedTypes % 100 === 0) {
+                    console.log(`Progress: ${updatedTypes} types updated with details`);
+                  }
+                }
+                
+                // 设置同步间隔为200ms
+                await new Promise(resolve => setTimeout(resolve, 200));
+              } catch (apiError) {
+                console.error(`Error fetching details for type ID ${typeId}:`, apiError.message);
+              }
+            }
+            
+            currentLoyaltyPage++;
+          } catch (dbError) {
+            console.error(`Error querying loyalty types from database on page ${currentLoyaltyPage}:`, dbError.message);
+            hasMoreLoyaltyTypes = false;
+          }
+        }
+        
+        console.log(`Loyalty type details synchronization completed. ${updatedTypes} types updated.`);
+        
+        // 然后同步其他name为空的type记录
+        console.log('Now synchronizing remaining type details with empty names...');
+        
+        let hasMore = true;
+        let currentPage = 1;
         
         while (hasMore) {
           try {
@@ -131,7 +202,7 @@ class TypeController {
           }
         }
         
-        console.log(`${updatedTypes} types updated with details`);
+        console.log(`${updatedTypes} types updated with details in total`);
         console.log('Type details synchronization completed successfully.');
       } catch (error) {
         console.error('Error in background syncing type details:', error.message);

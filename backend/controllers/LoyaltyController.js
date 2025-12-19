@@ -195,6 +195,32 @@ class LoyaltyController {
     }
   }
 
+  // 获取分页收益数据
+  static async getProfitData(req, res) {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const corporationId = req.query.corporationId ? parseInt(req.query.corporationId) : null;
+      const regionId = req.query.regionId ? parseInt(req.query.regionId) : null;
+      
+      // 调用模型方法获取分页数据
+      const result = await LoyaltyTypeLpIsk.getProfitDataWithTypeNames(page, limit, { corporationId, regionId });
+      
+      res.status(200).json({
+        data: result.data,
+        pagination: {
+          currentPage: result.page,
+          pageSize: result.limit,
+          totalItems: result.total,
+          totalPages: result.totalPages
+        }
+      });
+    } catch (error) {
+      console.error('Error getting profit data:', error.message);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
   // 计算LP收益
   static async calculateProfit(req, res) {
     try {
@@ -232,9 +258,47 @@ class LoyaltyController {
           // 遍历处理每个offer
           let processedOffers = 0;
           let savedOffers = 0;
+          let syncedOffers = 0;
           
           for (const offer of filteredOffers) {
             try {
+              // 检查是否已有该regionId和typeId的buy订单数据
+              const existingOrderCount = await Order.countByRegionAndType(regionId, offer.type_id, 'buy');
+              
+              if (existingOrderCount === 0) {
+                // 如果没有订单数据，先同步
+                console.log(`No buy orders found for type ${offer.type_id} in region ${regionId}, synchronizing...`);
+                
+                // 先删除该区域和类型的现有订单数据（如果有）
+                await Order.deleteByRegionAndType(regionId, offer.type_id);
+                
+                // 定义处理订单数据的回调函数
+                const processOrders = async (orders, page) => {
+                  console.log(`Processing page ${page} with ${orders.length} orders`);
+                  
+                  // 为每个订单添加region_id和type_id
+                  const ordersWithRegionAndType = orders.map(order => ({
+                    ...order,
+                    region_id: regionId,
+                    type_id: offer.type_id
+                  }));
+                  
+                  // 批量插入或更新数据库
+                  await Order.insertOrUpdate(ordersWithRegionAndType);
+                };
+
+                // 获取买入订单
+                await eveApiService.getAllMarketOrdersByRegionAndType(
+                  regionId, 
+                  offer.type_id, 
+                  'buy', 
+                  processOrders
+                );
+                
+                syncedOffers++;
+                console.log(`Order synchronization completed for type ${offer.type_id} in region ${regionId}`);
+              }
+              
               // 查询该type_id在特定区域的最高价买单
               const buyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1);
               
@@ -277,7 +341,7 @@ class LoyaltyController {
           }
           
           console.log(`LP profit calculation completed for corporation ${corporationId}`);
-          console.log(`Results: ${savedOffers} saved, ${filteredOffers.length - processedOffers} failed`);
+          console.log(`Results: ${savedOffers} saved, ${syncedOffers} offers synchronized, ${filteredOffers.length - processedOffers} failed`);
         } catch (error) {
           console.error(`Error in background calculating LP profit for corporation ${corporationId}:`, error.message);
           console.error('Error stack:', error.stack);

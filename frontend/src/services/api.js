@@ -203,6 +203,19 @@ export const loyaltyApi = {
   async calculateProfit(corporationId) {
     const response = await apiClient.post(`/loyalty/offers/calculate-profit`, { corporationId });
     return response;
+  },
+
+  // 获取收益数据
+  async getProfitData(page = 1, limit = 10, filters = {}) {
+    const response = await apiClient.get(`/loyalty/profit-data`, { 
+      params: { 
+        page, 
+        limit, 
+        corporationId: filters.corporationId, 
+        regionId: filters.regionId 
+      } 
+    });
+    return response;
   }
 };
 
