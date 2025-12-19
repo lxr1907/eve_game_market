@@ -132,6 +132,25 @@ class Type {
     }
   }
   
+  // 获取所有loyalty_offers表中存在的、且name为空的type记录的ID列表
+  static async findAllIdsWithEmptyNameFromLoyaltyOffers() {
+    const query = `
+      SELECT DISTINCT t.id 
+      FROM types t 
+      JOIN loyalty_offers lo ON t.id = lo.type_id 
+      WHERE (t.name IS NULL OR t.name = '') 
+      ORDER BY t.id
+    `;
+    
+    try {
+      const [results] = await pool.query(query);
+      return results.map(row => row.id);
+    } catch (error) {
+      console.error('Error fetching loyalty offer type IDs with empty name:', error);
+      throw error;
+    }
+  }
+  
   // 分页查询loyalty_offers表中存在的、且name为空的类型记录
   static async findAllWithEmptyNameFromLoyaltyOffers(page = 1, limit = 10) {
     // 确保所有参数都是整数类型

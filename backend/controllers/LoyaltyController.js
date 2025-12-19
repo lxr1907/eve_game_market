@@ -57,6 +57,13 @@ class LoyaltyController {
                 updatedOffers++;
               }
               
+              // 插入或更新required_items
+              await LoyaltyOffer.insertRequiredItems(
+                offer.offer_id,
+                corporationId,
+                offer.required_items
+              );
+              
               processedOffers++;
               
               if (processedOffers % 10 === 0) {
