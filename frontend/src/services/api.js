@@ -34,9 +34,7 @@ apiClient.interceptors.response.use(
 // API接口
 export const typeApi = {
   getTypes: (params = {}) => {
-    // 移除page参数，一次拉取所有数据
-    const { page, ...restParams } = params;
-    return apiClient.get('/types', { params: restParams })
+    return apiClient.get('/types', { params })
   },
   getTypeById: (id) => {
     return apiClient.get(`/types/${id}`)
@@ -50,6 +48,9 @@ export const typeApi = {
   },
   updateType: (id, typeData) => {
     return apiClient.put(`/types/${id}`, typeData)
+  },
+  updateStatus: (id, status) => {
+    return apiClient.put(`/types/${id}/update-status`, { status })
   },
   deleteType: (id) => {
     return apiClient.delete(`/types/${id}`)

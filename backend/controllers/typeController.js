@@ -2,6 +2,17 @@ const Type = require('../models/Type');
 const eveApiService = require('../services/eveApiService');
 const pool = require('../config/database');
 
+// 任务状态跟踪
+let syncTaskStatus = {
+  running: false,
+  progress: 0,
+  page: 1,
+  totalPages: 0,
+  processedTypes: 0,
+  totalTypes: 0,
+  lastUpdated: new Date().toISOString()
+};
+
 class TypeController {
   static async syncTypes(req, res) {
     // 直接返回成功给前端
@@ -13,50 +24,69 @@ class TypeController {
     // 在后台异步执行数据同步
     (async () => {
       try {
-        let totalSynced = 0;
+        console.log('Starting types synchronization in background...');
         
         // 获取所有类型数据（分页）
         await eveApiService.getAllTypesRecursively(1, async (types, page) => {
           console.log(`Processing ${types.length} types from page ${page}`);
           
-          let pageSynced = 0;
-          for (const type of types) {
-            if (type !== null) { // 只有当type不为null时才插入或更新
-              await Type.insertOrUpdate({
-                id: type.type_id,
-                name: type.name?.zh || type.name?.en || 'Unknown',
-                description: type.description?.zh || type.description?.en || '',
-                group_id: type.group_id,
-                category_id: type.category_id,
-                mass: type.mass,
-                volume: type.volume,
-                capacity: type.capacity,
-                portion_size: type.portion_size,
-                published: type.published
-              });
-              pageSynced++;
-            }
-          }
+          let processedCount = 0;
+          let errorCount = 0;
           
-          totalSynced += pageSynced;
-          console.log(`Synced ${pageSynced} out of ${types.length} types from page ${page}. Total: ${totalSynced}`);
+          for (const type of types) {
+              if (type !== null) { // 只有当type不为null时才插入或更新
+                console.log(`Processing type ID: ${type.type_id}, Name: ${type.name}`);
+                try {
+                  const result = await Type.insertOrUpdate({
+                    id: type.type_id,
+                    name: type.name || 'Unknown',
+                    description: type.description || '',
+                    group_id: type.group_id,
+                    category_id: type.category_id,
+                    mass: type.mass,
+                    volume: type.volume,
+                    capacity: type.capacity,
+                    portion_size: type.portion_size,
+                    published: type.published
+                  });
+                  processedCount++;
+                  console.log(`Saved type ID ${type.type_id} to database, result: ${result}`);
+                } catch (dbError) {
+                  console.error(`Error saving type ID ${type.type_id} to database:`, dbError.message);
+                  console.error('Database error stack:', dbError.stack);
+                  errorCount++;
+                }
+              } else {
+                console.log('Skipping null type data');
+                errorCount++;
+              }
+            }
+          
+          console.log(`Processed ${types.length} types from page ${page}: ${processedCount} saved, ${errorCount} errors`);
         });
         
-        console.log(`Data sync completed successfully. Total types synced: ${totalSynced}`);
+        console.log('Data synchronization completed.');
       } catch (error) {
-        console.error('Error in background syncing:', error);
+        console.error('Error in background syncing:', error.message);
+        console.error('Error stack:', error.stack);
       }
     })();
   }
 
   static async getTypes(req, res) {
     try {
-      const { search = '' } = req.query;
-      // 不传递分页参数，一次拉取所有数据
-      const types = await Type.findAll(1, null, search);
+      const { page = 1, limit = 10, search = '' } = req.query;
+      const types = await Type.findAll(parseInt(page), parseInt(limit), search);
+      const total = await Type.count(search);
 
       res.status(200).json({
-        types
+        types,
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / parseInt(limit))
+        }
       });
     } catch (error) {
       console.error('Error getting types:', error);
@@ -112,6 +142,29 @@ class TypeController {
     } catch (error) {
       console.error(`Error deleting type with ID ${id}:`, error);
       res.status(500).json({ message: 'Failed to delete type', error: error.message });
+    }
+  }
+
+  static async updateStatus(req, res) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      // Validate status value
+      if (!['pending', 'in_progress', 'completed'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status value' });
+      }
+      
+      const result = await Type.update(id, { status });
+      
+      if (!result.success) {
+        return res.status(404).json({ message: 'Type not found' });
+      }
+      
+      res.status(200).json({ message: 'Type updated successfully', status });
+    } catch (error) {
+      console.error(`Error updating type status for ID ${req.params.id}:`, error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   }
 }

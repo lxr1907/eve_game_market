@@ -15,8 +15,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Initialize database tables
-Type.createTable()
-  .then(() => console.log('Database tables initialized successfully'))
+Type.dropTable()
+  .then(() => {
+    console.log('Old table dropped successfully');
+    return Type.createTable();
+  })
+  .then(() => console.log('Database tables initialized successfully with new schema'))
   .catch(err => console.error('Error initializing database tables:', err));
 
 // Routes

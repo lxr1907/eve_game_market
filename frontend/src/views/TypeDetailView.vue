@@ -19,10 +19,16 @@
           <template #header>
             <div class="card-header">
               <span>{{ type.name || 'Type详情' }}</span>
-              <el-button type="primary" @click="$router.back()">
-                <el-icon><ArrowLeft /></el-icon>
-                返回列表
-              </el-button>
+              <div>
+                <el-button type="success" @click="updateTask(type)">
+                  <el-icon><Check /></el-icon>
+                  更新任务
+                </el-button>
+                <el-button type="primary" @click="$router.back()">
+                  <el-icon><ArrowLeft /></el-icon>
+                  返回列表
+                </el-button>
+              </div>
             </div>
           </template>
           
@@ -60,8 +66,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { House, Collection, ArrowLeft } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { House, Collection, ArrowLeft, Check } from '@element-plus/icons-vue'
 import { typeApi } from '../services/api'
 
 const route = useRoute()
@@ -92,6 +98,33 @@ const handleSelect = (key) => {
     router.push('/')
   } else if (key === '2') {
     router.push('/types')
+  }
+}
+
+// 更新任务状态
+const updateTask = async (type) => {
+  try {
+    // 弹出确认对话框
+    await ElMessageBox.confirm('确定要更新这个任务吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    // 调用API更新状态
+    await typeApi.updateStatus(type.id, 'in_progress')
+    
+    ElMessage.success('任务更新成功')
+    
+    // 重新加载数据
+    loadTypeDetail()
+  } catch (error) {
+    if (error === 'cancel') {
+      // 用户取消了操作
+      return
+    }
+    ElMessage.error('任务更新失败')
+    console.error('Error updating task:', error)
   }
 }
 

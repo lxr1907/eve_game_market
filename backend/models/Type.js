@@ -1,6 +1,11 @@
 const pool = require('../config/database');
 
 class Type {
+  static async dropTable() {
+    const query = `DROP TABLE IF EXISTS types`;
+    await pool.execute(query);
+  }
+
   static async createTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS types (
@@ -14,6 +19,7 @@ class Type {
         capacity DECIMAL(18,4),
         portion_size INT,
         published BOOLEAN,
+        status VARCHAR(20) DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
@@ -100,6 +106,35 @@ class Type {
 
     const [rows] = await pool.query(query);
     return rows[0].total;
+  }
+
+  static async update(id, updates) {
+    try {
+      // 构建更新语句
+      const updateFields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+      const updateValues = Object.values(updates);
+      
+      // 将id添加到参数数组末尾
+      updateValues.push(id);
+      
+      const query = `
+        UPDATE types 
+        SET ${updateFields}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `;
+      
+      const [result] = await pool.execute(query, updateValues);
+      
+      // Check if any row was affected
+      if (result.affectedRows === 0) {
+        return { success: false, message: 'Type not found' };
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating type:', error);
+      throw error;
+    }
   }
 }
 

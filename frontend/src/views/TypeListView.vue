@@ -62,7 +62,7 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="100" fixed="right">
+            <el-table-column label="操作" width="180" fixed="right">
               <template #default="scope">
                 <el-button
                   type="primary"
@@ -71,6 +71,14 @@
                   @click.stop="viewType(scope.row.id)"
                 >
                   查看
+                </el-button>
+                <el-button
+                  type="success"
+                  text
+                  size="small"
+                  @click.stop="updateTask(scope.row)"
+                >
+                  更新任务
                 </el-button>
               </template>
             </el-table-column>
@@ -97,7 +105,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { House, Collection, RefreshRight, Search } from '@element-plus/icons-vue'
 import { typeApi } from '../services/api'
 
@@ -172,6 +180,33 @@ const handleCurrentChange = (page) => {
 // 查看详情
 const viewType = (id) => {
   router.push(`/types/${id}`)
+}
+
+// 更新任务状态
+const updateTask = async (row) => {
+  try {
+    // 弹出确认对话框
+    await ElMessageBox.confirm('确定要更新这个任务吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    // 调用API更新状态
+    await typeApi.updateStatus(row.id, 'in_progress')
+    
+    ElMessage.success('任务更新成功')
+    
+    // 重新加载数据
+    loadTypes()
+  } catch (error) {
+    if (error === 'cancel') {
+      // 用户取消了操作
+      return
+    }
+    ElMessage.error('任务更新失败')
+    console.error('Error updating task:', error)
+  }
 }
 
 // 行点击事件

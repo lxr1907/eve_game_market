@@ -13,7 +13,8 @@ async function insertMockData() {
         volume: 1,
         capacity: 0.5,
         portion_size: 1,
-        published: true
+        published: true,
+        status: 'pending'
       },
       {
         id: 2,
@@ -25,7 +26,8 @@ async function insertMockData() {
         volume: 2,
         capacity: 1,
         portion_size: 1,
-        published: true
+        published: true,
+        status: 'in_progress'
       },
       {
         id: 3,
@@ -37,7 +39,8 @@ async function insertMockData() {
         volume: 3,
         capacity: 1.5,
         portion_size: 1,
-        published: false
+        published: false,
+        status: 'completed'
       },
       {
         id: 4,
@@ -49,7 +52,8 @@ async function insertMockData() {
         volume: 5,
         capacity: 2,
         portion_size: 1,
-        published: true
+        published: true,
+        status: 'pending'
       },
       {
         id: 5,
@@ -61,14 +65,15 @@ async function insertMockData() {
         volume: 1.5,
         capacity: 0.8,
         portion_size: 1,
-        published: true
+        published: true,
+        status: 'in_progress'
       }
     ];
 
     for (const type of mockTypes) {
       await pool.execute(
-        `INSERT INTO types (id, name, description, group_id, category_id, mass, volume, capacity, portion_size, published) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+        `INSERT INTO types (id, name, description, group_id, category_id, mass, volume, capacity, portion_size, published, status) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
          ON DUPLICATE KEY UPDATE 
            name = VALUES(name), 
            description = VALUES(description), 
@@ -78,8 +83,9 @@ async function insertMockData() {
            volume = VALUES(volume), 
            capacity = VALUES(capacity), 
            portion_size = VALUES(portion_size), 
-           published = VALUES(published)`,
-        [type.id, type.name, type.description, type.group_id, type.category_id, type.mass, type.volume, type.capacity, type.portion_size, type.published]
+           published = VALUES(published),
+           status = VALUES(status)`,
+        [type.id, type.name, type.description, type.group_id, type.category_id, type.mass, type.volume, type.capacity, type.portion_size, type.published, type.status]
       );
     }
 

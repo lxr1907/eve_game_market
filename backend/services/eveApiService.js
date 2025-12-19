@@ -17,14 +17,21 @@ class EveApiService {
 
   async getTypeIds(page = 1) {
     try {
+      console.log(`Sending request to /universe/types/?page=${page}&datasource=serenity`);
       const response = await this.client.get(`/universe/types/`, {
         params: {
-          page: page
+          page: page,
+          datasource: 'serenity'
         }
       });
+      console.log(`Received ${response.data.length} type IDs from page ${page}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching type IDs:', error.message);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
       throw error;
     }
   }
@@ -41,9 +48,20 @@ class EveApiService {
     this.lastRequestTime = Date.now();
 
     try {
+      console.log(`Sending request for type details: /universe/types/${typeId}/?datasource=serenity`);
       const response = await this.client.get(`/universe/types/${typeId}/`, {
+        params: {
+          datasource: 'serenity'
+        },
         timeout: 5000 // 设置5秒超时
       });
+      
+      // 记录完整的响应数据结构（只记录前几个以避免日志过多）
+      if (typeId <= 10) {
+        console.log(`Raw response data for type ID ${typeId}:`, JSON.stringify(response.data));
+      }
+      
+      console.log(`Received details for type ID ${typeId}: ${response.data.name || 'Unknown'}`);
       return response.data;
     } catch (error) {
       if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
@@ -54,6 +72,10 @@ class EveApiService {
         return this.getTypeDetails(typeId, retries - 1);
       } else {
         console.error(`Error fetching type details for ID ${typeId}: ${error.message}`);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
         // 不再重试，返回null或抛出错误
         return null; // 返回null表示获取失败，但不中断整个同步过程
       }
@@ -81,9 +103,13 @@ class EveApiService {
       let page = startPage;
       let hasMoreData = true;
       
+      console.log('Starting recursive fetch from page', startPage);
+      
       while (hasMoreData) {
         console.log(`Fetching types from page ${page}...`);
         const typeIds = await this.getTypeIds(page);
+        
+        console.log(`Type IDs for page ${page}:`, typeIds.slice(0, 10), typeIds.length > 10 ? '...' : '');
         
         if (typeIds.length === 0) {
           hasMoreData = false;
@@ -92,15 +118,26 @@ class EveApiService {
         
         // 不再使用Promise.all并发请求，而是串行请求以配合节流控制
         const typeDetails = [];
+        console.log(`Starting to fetch details for ${typeIds.length} type IDs from page ${page}`);
+        let processedIds = 0;
         for (const id of typeIds) {
+          processedIds++;
+          if (processedIds % 10 === 0) {
+            console.log(`Processed ${processedIds} out of ${typeIds.length} type IDs from page ${page}`);
+          }
           const details = await this.getTypeDetails(id);
-          typeDetails.push(details);
+          if (details) {
+            typeDetails.push(details);
+          } else {
+            console.log(`Skipping type ID ${id} due to null details`);
+          }
         }
         
-        console.log(`Fetched ${typeDetails.length} types from page ${page}`);
+        console.log(`Fetched ${typeDetails.length} valid types from page ${page}`);
         
         // 调用回调函数处理当前页的数据
         if (callback && typeof callback === 'function') {
+          console.log(`Calling callback with ${typeDetails.length} types from page ${page}`);
           await callback(typeDetails, page);
         }
         
@@ -111,6 +148,7 @@ class EveApiService {
       return page - 1; // 返回总页数
     } catch (error) {
       console.error('Error in recursive fetching:', error.message);
+      console.error('Error stack:', error.stack);
       throw error;
     }
   }
