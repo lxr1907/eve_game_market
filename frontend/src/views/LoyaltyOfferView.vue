@@ -22,6 +22,10 @@
                   <el-icon><RefreshRight /></el-icon>
                   同步数据
                 </el-button>
+                <el-button type="success" @click="calculateProfit" style="margin-left: 10px">
+                  <el-icon><CirclePlus /></el-icon>
+                  计算所有收益
+                </el-button>
               </div>
             </div>
           </template>
@@ -76,7 +80,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { RefreshRight } from '@element-plus/icons-vue'
+import { RefreshRight, CirclePlus } from '@element-plus/icons-vue'
 import { loyaltyApi } from '../services/api'
 
 // 数据
@@ -142,6 +146,42 @@ async function syncLoyaltyOffers() {
     if (error !== 'cancel') {
       console.error('同步忠诚度商店商品失败:', error)
       ElMessage.error('同步忠诚度商店商品失败')
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+// 计算LP收益
+async function calculateProfit() {
+  if (!selectedCorporationId.value) {
+    ElMessage.warning('请先选择公司')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要计算公司 ${selectedCorporationId.value} 的所有LP收益吗？这可能需要一些时间。`,
+      '计算确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    )
+
+    loading.value = true
+    const response = await loyaltyApi.calculateProfit(selectedCorporationId.value)
+    ElMessage.success(response.message)
+    
+    // 计算完成后刷新数据
+    setTimeout(() => {
+      fetchLoyaltyOffers()
+    }, 2000) // 延迟2秒，给后台一些处理时间
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('计算LP收益失败:', error)
+      ElMessage.error('计算LP收益失败')
     }
   } finally {
     loading.value = false

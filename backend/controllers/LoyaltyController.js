@@ -1,4 +1,6 @@
 const LoyaltyOffer = require('../models/LoyaltyOffer');
+const Order = require('../models/Order');
+const LoyaltyTypeLpIsk = require('../models/LoyaltyTypeLpIsk');
 const eveApiService = require('../services/eveApiService');
 
 class LoyaltyController {
@@ -189,6 +191,100 @@ class LoyaltyController {
       res.status(200).json({ message: 'Loyalty offer deleted successfully' });
     } catch (error) {
       console.error(`Error deleting loyalty offer ${req.params.id}:`, error.message);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  // 计算LP收益
+  static async calculateProfit(req, res) {
+    try {
+      const { corporationId } = req.body;
+      const regionId = 10000002; // 固定为特定区域
+      
+      if (!corporationId) {
+        return res.status(400).json({ message: 'corporationId is required' });
+      }
+
+      // 直接返回成功给前端，任务在后台执行
+      res.status(202).json({
+        message: `LP profit calculation for corporation ${corporationId} has started in background`,
+        status: 'started'
+      });
+
+      // 在后台异步执行计算
+      (async () => {
+        try {
+          console.log(`Starting LP profit calculation for corporation ${corporationId} in background...`);
+          
+          // 获取该公司的所有loyalty_offers
+          const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId);
+          const offers = allOffers.offers;
+          
+          console.log(`Fetched ${offers.length} loyalty offers from database`);
+          
+          // 过滤掉有required_items的offer
+          const filteredOffers = offers.filter(offer => 
+            !offer.required_items || offer.required_items.length === 0
+          );
+          
+          console.log(`Filtered to ${filteredOffers.length} offers without required items`);
+          
+          // 遍历处理每个offer
+          let processedOffers = 0;
+          let savedOffers = 0;
+          
+          for (const offer of filteredOffers) {
+            try {
+              // 查询该type_id在特定区域的最高价买单
+              const buyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1);
+              
+              if (buyOrders.length > 0) {
+                const highestBuyPrice = buyOrders[0].price;
+                
+                // 计算总收益和每LP收益
+                const totalRevenue = highestBuyPrice * offer.quantity;
+                const totalProfit = totalRevenue - offer.isk_cost;
+                const profitPerLp = offer.lp_cost > 0 ? totalProfit / offer.lp_cost : 0;
+                
+                // 准备数据
+                const profitData = {
+                  type_id: offer.type_id,
+                  corporation_id: offer.corporation_id,
+                  region_id: regionId,
+                  lp_cost: offer.lp_cost,
+                  isk_cost: offer.isk_cost,
+                  sell_price: highestBuyPrice,
+                  quantity: offer.quantity,
+                  total_profit: totalProfit,
+                  profit_per_lp: profitPerLp
+                };
+                
+                // 保存到数据库
+                const saved = await LoyaltyTypeLpIsk.insertOrUpdate(profitData);
+                if (saved) {
+                  savedOffers++;
+                }
+              }
+              
+              processedOffers++;
+              
+              if (processedOffers % 10 === 0) {
+                console.log(`Progress: ${processedOffers}/${filteredOffers.length} offers processed`);
+              }
+            } catch (dbError) {
+              console.error(`Error processing offer ${offer.offer_id}:`, dbError.message);
+            }
+          }
+          
+          console.log(`LP profit calculation completed for corporation ${corporationId}`);
+          console.log(`Results: ${savedOffers} saved, ${filteredOffers.length - processedOffers} failed`);
+        } catch (error) {
+          console.error(`Error in background calculating LP profit for corporation ${corporationId}:`, error.message);
+          console.error('Error stack:', error.stack);
+        }
+      })();
+    } catch (error) {
+      console.error('Error starting LP profit calculation:', error.message);
       res.status(500).json({ message: 'Internal server error' });
     }
   }

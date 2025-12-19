@@ -197,6 +197,12 @@ export const loyaltyApi = {
   async deleteLoyaltyOffer(id) {
     const response = await apiClient.delete(`/loyalty/offers/${id}`);
     return response;
+  },
+  
+  // 计算LP收益
+  async calculateProfit(corporationId) {
+    const response = await apiClient.post(`/loyalty/offers/calculate-profit`, { corporationId });
+    return response;
   }
 };
 
