@@ -15,24 +15,39 @@ class EveApiService {
     this.throttleInterval = 1000; // 1秒
   }
 
-  async getTypeIds(page = 1) {
+  async getTypeIds(page = 1, retries = 3) {
     try {
       console.log(`Sending request to /universe/types/?page=${page}&datasource=serenity`);
       const response = await this.client.get(`/universe/types/`, {
         params: {
           page: page,
           datasource: 'serenity'
-        }
+        },
+        timeout: 10000 // 设置10秒超时
       });
       console.log(`Received ${response.data.length} type IDs from page ${page}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching type IDs:', error.message);
-      if (error.response) {
-        console.error('Response status:', error.response.status);
-        console.error('Response data:', error.response.data);
+      // 检查是否是页码超出范围的错误（API返回500并提示"Requested page does not exist!"）
+      if (error.response?.status === 500 && error.response?.data?.error?.includes('Requested page does not exist')) {
+        console.log(`Page ${page} does not exist, stopping pagination`);
+        return []; // 返回空数组表示没有更多数据
       }
-      throw error;
+      
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        // 如果是超时或连接重置错误，进行重试
+        console.log(`Error fetching type IDs for page ${page}, retrying (${retries} left)...`);
+        // 指数退避策略，每次重试等待时间增加
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getTypeIds(page, retries - 1);
+      } else {
+        console.error('Error fetching type IDs:', error.message);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+        throw error;
+      }
     }
   }
 
@@ -98,7 +113,7 @@ class EveApiService {
     }
   }
 
-  async getAllTypesRecursively(startPage = 1, callback) {
+  async getAllTypesRecursively(startPage = 1, callback, idsOnly = false) {
     try {
       let page = startPage;
       let hasMoreData = true;
@@ -116,29 +131,39 @@ class EveApiService {
           break;
         }
         
-        // 不再使用Promise.all并发请求，而是串行请求以配合节流控制
-        const typeDetails = [];
-        console.log(`Starting to fetch details for ${typeIds.length} type IDs from page ${page}`);
-        let processedIds = 0;
-        for (const id of typeIds) {
-          processedIds++;
-          if (processedIds % 10 === 0) {
-            console.log(`Processed ${processedIds} out of ${typeIds.length} type IDs from page ${page}`);
-          }
-          const details = await this.getTypeDetails(id);
-          if (details) {
-            typeDetails.push(details);
-          } else {
-            console.log(`Skipping type ID ${id} due to null details`);
-          }
-        }
+        let processedData = [];
         
-        console.log(`Fetched ${typeDetails.length} valid types from page ${page}`);
+        if (idsOnly) {
+          // 如果只需要ID，直接使用typeIds
+          processedData = typeIds;
+          console.log(`Retrieved ${typeIds.length} type IDs from page ${page}`);
+        } else {
+          // 否则请求详细信息
+          // 不再使用Promise.all并发请求，而是串行请求以配合节流控制
+          const typeDetails = [];
+          console.log(`Starting to fetch details for ${typeIds.length} type IDs from page ${page}`);
+          let processedIds = 0;
+          for (const id of typeIds) {
+            processedIds++;
+            if (processedIds % 10 === 0) {
+              console.log(`Processed ${processedIds} out of ${typeIds.length} type IDs from page ${page}`);
+            }
+            const details = await this.getTypeDetails(id);
+            if (details) {
+              typeDetails.push(details);
+            } else {
+              console.log(`Skipping type ID ${id} due to null details`);
+            }
+          }
+          
+          processedData = typeDetails;
+          console.log(`Fetched ${typeDetails.length} valid types from page ${page}`);
+        }
         
         // 调用回调函数处理当前页的数据
         if (callback && typeof callback === 'function') {
-          console.log(`Calling callback with ${typeDetails.length} types from page ${page}`);
-          await callback(typeDetails, page);
+          console.log(`Calling callback with ${processedData.length} items from page ${page}`);
+          await callback(processedData, page);
         }
         
         page++;

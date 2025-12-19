@@ -10,7 +10,7 @@ class Type {
     const query = `
       CREATE TABLE IF NOT EXISTS types (
         id INT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
+        name VARCHAR(255),
         description TEXT,
         group_id INT,
         category_id INT,
@@ -29,12 +29,18 @@ class Type {
 
   static async insertOrUpdate(typeData) {
     // 将所有undefined值转换为null，避免数据库绑定参数错误
-    const safeData = { ...typeData };
-    Object.keys(safeData).forEach(key => {
-      if (safeData[key] === undefined) {
-        safeData[key] = null;
-      }
-    });
+    const safeData = {
+      id: typeData.id !== undefined ? typeData.id : null,
+      name: typeData.name !== undefined ? typeData.name : null,
+      description: typeData.description !== undefined ? typeData.description : null,
+      group_id: typeData.group_id !== undefined ? typeData.group_id : null,
+      category_id: typeData.category_id !== undefined ? typeData.category_id : null,
+      mass: typeData.mass !== undefined ? typeData.mass : null,
+      volume: typeData.volume !== undefined ? typeData.volume : null,
+      capacity: typeData.capacity !== undefined ? typeData.capacity : null,
+      portion_size: typeData.portion_size !== undefined ? typeData.portion_size : null,
+      published: typeData.published !== undefined ? typeData.published : null
+    };
     
     const query = `
       INSERT INTO types (

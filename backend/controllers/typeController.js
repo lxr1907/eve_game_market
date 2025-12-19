@@ -26,46 +26,94 @@ class TypeController {
       try {
         console.log('Starting types synchronization in background...');
         
-        // 获取所有类型数据（分页）
-        await eveApiService.getAllTypesRecursively(1, async (types, page) => {
-          console.log(`Processing ${types.length} types from page ${page}`);
+        // 第一步：先获取所有类型ID并插入数据库
+        console.log('Step 1: Fetching all type IDs from EVE API...');
+        let totalTypeIds = 0;
+        let insertedIds = 0;
+        
+        await eveApiService.getAllTypesRecursively(1, async (typeIds, page) => {
+          console.log(`Fetched ${typeIds.length} type IDs from page ${page}`);
+          totalTypeIds += typeIds.length;
           
-          let processedCount = 0;
-          let errorCount = 0;
+          // 只插入ID，其他字段可以为空
+          for (const typeId of typeIds) {
+            try {
+              await Type.insertOrUpdate({ id: typeId });
+              insertedIds++;
+            } catch (dbError) {
+              console.error(`Error inserting type ID ${typeId} to database:`, dbError.message);
+            }
+          }
           
-          for (const type of types) {
-              if (type !== null) { // 只有当type不为null时才插入或更新
-                console.log(`Processing type ID: ${type.type_id}, Name: ${type.name}`);
-                try {
-                  const result = await Type.insertOrUpdate({
-                    id: type.type_id,
-                    name: type.name || 'Unknown',
-                    description: type.description || '',
-                    group_id: type.group_id,
-                    category_id: type.category_id,
-                    mass: type.mass,
-                    volume: type.volume,
-                    capacity: type.capacity,
-                    portion_size: type.portion_size,
-                    published: type.published
+          console.log(`Progress: ${insertedIds}/${totalTypeIds} type IDs inserted`);
+        }, true); // 第三个参数true表示只返回ID
+        
+        console.log(`Step 1 completed: ${insertedIds} type IDs inserted into database`);
+        
+        // 第二步：分页查询数据库中的ID，请求详情并更新
+        console.log('Step 2: Updating type details...');
+        
+        const pageSize = 100; // 每次查询的数量
+        let currentPage = 1;
+        let hasMore = true;
+        let updatedTypes = 0;
+        
+        while (hasMore) {
+          try {
+            // 分页查询数据库中的类型ID
+            const types = await Type.findAll(currentPage, pageSize, '');
+            
+            if (types.length === 0) {
+              hasMore = false;
+              break;
+            }
+            
+            console.log(`Processing page ${currentPage} with ${types.length} type IDs`);
+            
+            // 对每个ID请求详细信息
+            for (const type of types) {
+              const typeId = type.id;
+              
+              try {
+                // 请求类型详情
+                const typeDetails = await eveApiService.getTypeDetails(typeId);
+                
+                if (typeDetails !== null) {
+                  // 使用详情更新数据库
+                  await Type.insertOrUpdate({
+                    id: typeDetails.type_id,
+                    name: typeDetails.name || '',
+                    description: typeDetails.description || '',
+                    group_id: typeDetails.group_id,
+                    category_id: typeDetails.category_id,
+                    mass: typeDetails.mass,
+                    volume: typeDetails.volume,
+                    capacity: typeDetails.capacity,
+                    portion_size: typeDetails.portion_size,
+                    published: typeDetails.published
                   });
-                  processedCount++;
-                  console.log(`Saved type ID ${type.type_id} to database, result: ${result}`);
-                } catch (dbError) {
-                  console.error(`Error saving type ID ${type.type_id} to database:`, dbError.message);
-                  console.error('Database error stack:', dbError.stack);
-                  errorCount++;
+                  
+                  updatedTypes++;
+                  
+                  // 每处理100个类型打印一次进度
+                  if (updatedTypes % 100 === 0) {
+                    console.log(`Progress: ${updatedTypes} types updated with details`);
+                  }
                 }
-              } else {
-                console.log('Skipping null type data');
-                errorCount++;
+              } catch (apiError) {
+                console.error(`Error fetching details for type ID ${typeId}:`, apiError.message);
               }
             }
-          
-          console.log(`Processed ${types.length} types from page ${page}: ${processedCount} saved, ${errorCount} errors`);
-        });
+            
+            currentPage++;
+          } catch (dbError) {
+            console.error(`Error querying types from database on page ${currentPage}:`, dbError.message);
+            hasMore = false;
+          }
+        }
         
-        console.log('Data synchronization completed.');
+        console.log(`Step 2 completed: ${updatedTypes} types updated with details`);
+        console.log('Data synchronization completed successfully.');
       } catch (error) {
         console.error('Error in background syncing:', error.message);
         console.error('Error stack:', error.stack);
