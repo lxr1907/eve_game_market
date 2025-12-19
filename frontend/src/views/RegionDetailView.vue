@@ -2,19 +2,18 @@
   <div class="region-detail">
     <el-container>
       <el-header>
-        <h1>Region详情</h1>
-        <el-menu :default-active="activeIndex" mode="horizontal" @select="handleSelect">
+        <el-menu :default-active="activeIndex" mode="horizontal" @select="handleSelect" style="width: 100%">
           <el-menu-item index="1">
             <el-icon><House /></el-icon>
             首页
           </el-menu-item>
           <el-menu-item index="2">
-            <el-icon><MapLocation /></el-icon>
-            Region列表
+            <el-icon><Collection /></el-icon>
+            Type列表
           </el-menu-item>
           <el-menu-item index="3">
-            <el-icon><InfoFilled /></el-icon>
-            Region详情
+            <el-icon><MapLocation /></el-icon>
+            Region列表
           </el-menu-item>
         </el-menu>
       </el-header>
@@ -57,7 +56,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { House, MapLocation, InfoFilled, Back } from '@element-plus/icons-vue'
+import { House, MapLocation, Collection, Back } from '@element-plus/icons-vue'
 import { regionApi } from '../services/api'
 
 const router = useRouter()
@@ -119,6 +118,8 @@ const handleSelect = (key) => {
   if (key === '1') {
     router.push('/')
   } else if (key === '2') {
+    router.push('/types')
+  } else if (key === '3') {
     router.push('/regions')
   }
 }

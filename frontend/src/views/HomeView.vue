@@ -2,8 +2,7 @@
   <div class="home">
     <el-container>
       <el-header>
-        <h1>EVE Online Explorer</h1>
-        <el-menu :default-active="activeIndex" mode="horizontal" @select="handleSelect">
+        <el-menu :default-active="activeIndex" mode="horizontal" @select="handleSelect" style="width: 100%">
           <el-menu-item index="1">
             <el-icon><House /></el-icon>
             首页
