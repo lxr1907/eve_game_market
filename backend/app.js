@@ -6,6 +6,7 @@ const typeRoutes = require('./routes/typeRoutes');
 const regionRoutes = require('./routes/regionRoutes');
 const Type = require('./models/Type');
 const Region = require('./models/Region');
+const RegionType = require('./models/RegionType');
 
 const app = express();
 
@@ -19,7 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 // Initialize database tables
 Promise.all([
   Type.createTable(),
-  Region.createTable()
+  Region.createTable(),
+  RegionType.createTable()
 ])
   .then(() => console.log('Database tables initialized successfully'))
   .catch(err => console.error('Error initializing database tables:', err));

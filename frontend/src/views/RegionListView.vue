@@ -26,9 +26,13 @@
                 <el-icon><RefreshRight /></el-icon>
                 同步Region IDs
               </el-button>
-              <el-button type="success" @click="syncRegionDetails">
+              <el-button type="success" @click="syncRegionDetails" style="margin-right: 10px;">
                 <el-icon><RefreshRight /></el-icon>
                 同步Region详情
+              </el-button>
+              <el-button type="warning" @click="syncAllRegionTypes">
+                <el-icon><RefreshRight /></el-icon>
+                同步所有Region Types
               </el-button>
             </div>
           </template>
@@ -154,6 +158,20 @@ const syncRegionDetails = async () => {
   } catch (error) {
     ElMessage.error('Region详情同步任务启动失败')
     console.error('Error starting sync region details:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 同步所有Region Types
+const syncAllRegionTypes = async () => {
+  loading.value = true
+  try {
+    await regionApi.syncAllRegionTypes()
+    ElMessage.success('所有Region Types同步任务已开始，将在后台执行')
+  } catch (error) {
+    ElMessage.error('所有Region Types同步任务启动失败')
+    console.error('Error starting sync all region types:', error)
   } finally {
     loading.value = false
   }

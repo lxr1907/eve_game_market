@@ -256,6 +256,89 @@ class EveApiService {
     }
   }
 
+  async getMarketRegionTypes(regionId, page = 1, retries = 3) {
+    // 节流控制：确保每1秒只请求1次
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.throttleInterval) {
+      const waitTime = this.throttleInterval - timeSinceLastRequest;
+      console.log(`Throttling request for market region types: regionId=${regionId}, waiting ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastRequestTime = Date.now();
+
+    try {
+      console.log(`Sending request for market region types: /markets/${regionId}/types/?page=${page}&datasource=serenity`);
+      const response = await this.client.get(`/markets/${regionId}/types/`, {
+        params: {
+          page: page,
+          datasource: 'serenity'
+        },
+        timeout: 5000 // 设置5秒超时
+      });
+      
+      console.log(`Received ${response.data.length} type IDs for region ID ${regionId}, page ${page}`);
+      return response.data;
+    } catch (error) {
+      // 检查是否是页码超出范围的错误
+      if (error.response?.status === 500 && error.response?.data?.error?.includes('Requested page does not exist')) {
+        console.log(`Page ${page} does not exist for region ${regionId}, stopping pagination`);
+        return []; // 返回空数组表示没有更多数据
+      }
+      
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        // 如果是超时或连接重置错误，进行重试
+        console.log(`Timeout fetching market region types for region ID ${regionId}, page ${page}, retrying (${retries} left)...`);
+        // 指数退避策略，每次重试等待时间增加
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getMarketRegionTypes(regionId, page, retries - 1);
+      } else {
+        console.error(`Error fetching market region types for region ID ${regionId}, page ${page}: ${error.message}`);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+        throw error;
+      }
+    }
+  }
+
+  async getAllMarketRegionTypesRecursively(regionId, startPage = 1, callback) {
+    try {
+      let page = startPage;
+      let hasMoreData = true;
+      
+      console.log(`Starting recursive fetch of market types for region ${regionId} from page ${startPage}`);
+      
+      while (hasMoreData) {
+        console.log(`Fetching market types for region ${regionId} from page ${page}...`);
+        const typeIds = await this.getMarketRegionTypes(regionId, page);
+        
+        console.log(`Type IDs for region ${regionId}, page ${page}:`, typeIds.slice(0, 10), typeIds.length > 10 ? '...' : '');
+        
+        if (typeIds.length === 0) {
+          hasMoreData = false;
+          break;
+        }
+        
+        // 调用回调函数处理当前页的数据
+        if (callback && typeof callback === 'function') {
+          console.log(`Calling callback with ${typeIds.length} items from page ${page}`);
+          await callback(typeIds, page);
+        }
+        
+        page++;
+      }
+      
+      console.log(`Finished fetching all market types for region ${regionId}`);
+      return page - 1; // 返回总页数
+    } catch (error) {
+      console.error(`Error in recursive fetching of market types for region ${regionId}:`, error.message);
+      console.error('Error stack:', error.stack);
+      throw error;
+    }
+  }
+
   async getAllRegionsRecursively(startPage = 1, callback, idsOnly = false) {
     try {
       let page = startPage;

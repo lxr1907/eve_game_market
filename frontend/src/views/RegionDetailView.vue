@@ -22,10 +22,12 @@
           <template #header>
             <div class="card-header">
               <span>Region信息</span>
-              <el-button type="primary" @click="goBack">
-                <el-icon><Back /></el-icon>
-                返回列表
-              </el-button>
+              <div>
+                <el-button type="primary" @click="goBack">
+                  <el-icon><Back /></el-icon>
+                  返回列表
+                </el-button>
+              </div>
             </div>
           </template>
           
@@ -73,6 +75,8 @@ const region = ref({
   updated_at: null
 })
 const loading = ref(false)
+
+
 
 // 格式化日期
 const formatDate = (dateString) => {

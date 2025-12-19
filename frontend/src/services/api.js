@@ -123,6 +123,18 @@ export const regionApi = {
   async deleteRegion(id) {
     const response = await apiClient.delete(`/regions/${id}`);
     return response;
+  },
+  
+  // 同步区域类型
+  async syncRegionTypes(regionId) {
+    const response = await apiClient.get(`/regions/${regionId}/sync-types`);
+    return response;
+  },
+  
+  // 同步所有区域类型
+  async syncAllRegionTypes() {
+    const response = await apiClient.get('/regions/sync-all-types');
+    return response;
   }
 };
 
