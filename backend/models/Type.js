@@ -28,49 +28,35 @@ class Type {
   }
 
   static async insertOrUpdate(typeData) {
-    // 将所有undefined值转换为null，避免数据库绑定参数错误
-    const safeData = {
-      id: typeData.id !== undefined ? typeData.id : null,
-      name: typeData.name !== undefined ? typeData.name : null,
-      description: typeData.description !== undefined ? typeData.description : null,
-      group_id: typeData.group_id !== undefined ? typeData.group_id : null,
-      category_id: typeData.category_id !== undefined ? typeData.category_id : null,
-      mass: typeData.mass !== undefined ? typeData.mass : null,
-      volume: typeData.volume !== undefined ? typeData.volume : null,
-      capacity: typeData.capacity !== undefined ? typeData.capacity : null,
-      portion_size: typeData.portion_size !== undefined ? typeData.portion_size : null,
-      published: typeData.published !== undefined ? typeData.published : null
-    };
+    // 过滤掉未定义的字段
+    const definedFields = {};
+    for (const [key, value] of Object.entries(typeData)) {
+      if (value !== undefined) {
+        definedFields[key] = value;
+      }
+    }
+    
+    // 如果没有定义任何字段，直接返回
+    if (Object.keys(definedFields).length === 0) {
+      return;
+    }
+    
+    const fields = Object.keys(definedFields);
+    const values = Object.values(definedFields);
+    const placeholders = fields.map(() => '?').join(',');
+    
+    // 构建ON DUPLICATE KEY UPDATE部分，只更新传入的字段
+    const updateClause = fields.map(field => `${field} = VALUES(${field})`).join(', ');
     
     const query = `
-      INSERT INTO types (
-        id, name, description, group_id, category_id, 
-        mass, volume, capacity, portion_size, published
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO types (${fields.join(', ')})
+      VALUES (${placeholders})
       ON DUPLICATE KEY UPDATE
-        name = VALUES(name),
-        description = VALUES(description),
-        group_id = VALUES(group_id),
-        category_id = VALUES(category_id),
-        mass = VALUES(mass),
-        volume = VALUES(volume),
-        capacity = VALUES(capacity),
-        portion_size = VALUES(portion_size),
-        published = VALUES(published),
+        ${updateClause},
         updated_at = CURRENT_TIMESTAMP
     `;
-    await pool.execute(query, [
-      safeData.id,
-      safeData.name,
-      safeData.description,
-      safeData.group_id,
-      safeData.category_id,
-      safeData.mass,
-      safeData.volume,
-      safeData.capacity,
-      safeData.portion_size,
-      safeData.published
-    ]);
+    
+    await pool.execute(query, values);
   }
 
   static async findById(id) {
