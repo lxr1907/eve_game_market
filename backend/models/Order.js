@@ -127,6 +127,24 @@ class Order {
     const [result] = await pool.execute(query, [regionId, typeId]);
     return result.affectedRows;
   }
+
+  static async getLatestUpdateTime(regionId, typeId, orderType = null) {
+    let query = `
+      SELECT MAX(updated_at) as latest_update
+      FROM orders
+      WHERE region_id = ? AND type_id = ?
+    `;
+    const params = [regionId, typeId];
+
+    if (orderType === 'buy') {
+      query += ` AND is_buy_order = 1`;
+    } else if (orderType === 'sell') {
+      query += ` AND is_buy_order = 0`;
+    }
+
+    const [rows] = await pool.execute(query, params);
+    return rows[0].latest_update;
+  }
 }
 
 module.exports = Order;

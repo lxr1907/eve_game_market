@@ -293,9 +293,34 @@ class LoyaltyController {
         // 检查是否已有该regionId和typeId的buy订单数据
         const existingOrderCount = await Order.countByRegionAndType(regionId, offer.type_id, 'buy');
         
-        if (existingOrderCount === 0) {
-          // 如果没有订单数据，先同步
-          console.log(`No buy orders found for type ${offer.type_id} in region ${regionId}, synchronizing...`);
+        let shouldSync = existingOrderCount === 0;
+        
+        // 如果有订单数据，检查更新时间是否超过1小时
+        if (!shouldSync) {
+          const latestUpdate = await Order.getLatestUpdateTime(regionId, offer.type_id, 'buy');
+          if (latestUpdate) {
+            const now = new Date();
+            const updateTime = new Date(latestUpdate);
+            const timeDiff = now - updateTime;
+            const hoursDiff = timeDiff / (1000 * 60 * 60);
+            
+            if (hoursDiff > 1) {
+              console.log(`Orders for type ${offer.type_id} in region ${regionId} are more than 1 hour old (${hoursDiff.toFixed(2)} hours), synchronizing...`);
+              shouldSync = true;
+            } else {
+              console.log(`Orders for type ${offer.type_id} in region ${regionId} are up-to-date (${hoursDiff.toFixed(2)} hours old), using existing data`);
+            }
+          } else {
+            // 如果没有更新时间，重新同步
+            shouldSync = true;
+          }
+        }
+        
+        if (shouldSync) {
+          // 如果没有订单数据或数据过期，先同步
+          if (existingOrderCount === 0) {
+            console.log(`No buy orders found for type ${offer.type_id} in region ${regionId}, synchronizing...`);
+          }
           
           // 先删除该区域和类型的现有订单数据（如果有）
           await Order.deleteByRegionAndType(regionId, offer.type_id);
