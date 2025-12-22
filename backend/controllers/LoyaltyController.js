@@ -363,23 +363,28 @@ class LoyaltyController {
           const totalProfit = totalRevenue - offer.isk_cost;
           const profitPerLp = offer.lp_cost > 0 ? totalProfit / offer.lp_cost : 0;
           
-          // 准备数据
-          const lpIskData = {
-            type_id: offer.type_id,
-            corporation_id: corporationId,
-            region_id: regionId,
-            lp_cost: offer.lp_cost,
-            isk_cost: offer.isk_cost,
-            sell_price: highestBuyPrice,
-            quantity: offer.quantity,
-            total_profit: totalProfit,
-            profit_per_lp: profitPerLp
-          };
-          
-          // 插入或更新数据库
-          const saved = await LoyaltyTypeLpIsk.insertOrUpdate(lpIskData);
-          if (saved) {
-            savedOffers++;
+          // 只有当每LP收益大于900时才插入或更新数据库
+          if (profitPerLp > 900) {
+            // 准备数据
+            const lpIskData = {
+              type_id: offer.type_id,
+              corporation_id: corporationId,
+              region_id: regionId,
+              lp_cost: offer.lp_cost,
+              isk_cost: offer.isk_cost,
+              sell_price: highestBuyPrice,
+              quantity: offer.quantity,
+              total_profit: totalProfit,
+              profit_per_lp: profitPerLp
+            };
+            
+            // 插入或更新数据库
+            const saved = await LoyaltyTypeLpIsk.insertOrUpdate(lpIskData);
+            if (saved) {
+              savedOffers++;
+            }
+          } else {
+            console.log(`Skipping offer for type ${offer.type_id} - profit per LP (${profitPerLp.toFixed(2)}) is less than 900`);
           }
         }
         
