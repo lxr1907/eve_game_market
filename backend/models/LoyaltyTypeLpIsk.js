@@ -95,6 +95,18 @@ class LoyaltyTypeLpIsk {
     }
   }
 
+  // 按corporationId删除数据
+  static async deleteByCorporationId(corporationId) {
+    const query = `DELETE FROM loyalty_type_lp_isk WHERE corporation_id = ?`;
+    try {
+      await pool.execute(query, [corporationId]);
+      return true;
+    } catch (error) {
+      console.error('Error deleting loyalty_type_lp_isk by corporationId:', error);
+      return false;
+    }
+  }
+
   // 清空表数据
   static async truncate() {
     const query = `TRUNCATE TABLE loyalty_type_lp_isk`;

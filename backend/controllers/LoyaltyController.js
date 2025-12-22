@@ -249,9 +249,9 @@ class LoyaltyController {
         try {
           console.log(`Starting cleaning and recalculating LP profit for corporation ${corporationId} in background...`);
           
-          // 清空表数据
-          await LoyaltyTypeLpIsk.truncate();
-          console.log('Successfully truncated loyalty_type_lp_isk table');
+          // 清空该公司的表数据
+          await LoyaltyTypeLpIsk.deleteByCorporationId(corporationId);
+          console.log(`Successfully deleted loyalty_type_lp_isk data for corporation ${corporationId}`);
           
           // 重新计算利润 - 直接调用静态方法
           await LoyaltyController.calculateProfitInternal(corporationId);
