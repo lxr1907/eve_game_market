@@ -253,6 +253,13 @@ class Type {
     return rows[0].total;
   }
 
+  // 获取types表中不重复的groupId列表
+  static async findDistinctGroupIds() {
+    const query = 'SELECT DISTINCT group_id FROM types WHERE group_id IS NOT NULL ORDER BY group_id';
+    const [rows] = await pool.query(query);
+    return rows.map(row => row.group_id);
+  }
+
   static async update(id, updates) {
     try {
       // 构建更新语句

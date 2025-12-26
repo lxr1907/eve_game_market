@@ -92,7 +92,7 @@ class OrderController {
   // 查询订单数据
   static async getOrders(req, res) {
     try {
-      const { regionId, typeId, orderType } = req.query;
+      const { regionId, typeId } = req.query;
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
       
@@ -113,12 +113,16 @@ class OrderController {
         return res.status(404).json({ error: 'Type not found' });
       }
 
-      // 获取订单数据
-      let orders = await Order.findByRegionAndType(regionId, typeId, orderType, page, limit);
-      let total = await Order.countByRegionAndType(regionId, typeId, orderType);
+      // 获取买入订单数据
+      let buyOrders = await Order.findByRegionAndType(regionId, typeId, 'buy', page, limit);
+      let buyTotal = await Order.countByRegionAndType(regionId, typeId, 'buy');
+      
+      // 获取卖出订单数据
+      let sellOrders = await Order.findByRegionAndType(regionId, typeId, 'sell', page, limit);
+      let sellTotal = await Order.countByRegionAndType(regionId, typeId, 'sell');
 
       // 如果本地没有数据，从官方API同步
-      if (total === 0) {
+      if (buyTotal === 0 && sellTotal === 0) {
         console.log(`No orders found in local database for region ${regionId}, type ${typeId}. Synchronizing from official API...`);
         
         // 只删除该区域和类型的1小时之前的订单数据
@@ -161,17 +165,31 @@ class OrderController {
         console.log(`Order synchronization completed for region ${regionId}, type ${typeId}`);
         
         // 再次查询本地数据库
-        orders = await Order.findByRegionAndType(regionId, typeId, orderType, page, limit);
-        total = await Order.countByRegionAndType(regionId, typeId, orderType);
+        buyOrders = await Order.findByRegionAndType(regionId, typeId, 'buy', page, limit);
+        buyTotal = await Order.countByRegionAndType(regionId, typeId, 'buy');
+        
+        sellOrders = await Order.findByRegionAndType(regionId, typeId, 'sell', page, limit);
+        sellTotal = await Order.countByRegionAndType(regionId, typeId, 'sell');
       }
 
       res.status(200).json({
-        data: orders,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit)
+        buyOrders: {
+          data: buyOrders,
+          pagination: {
+            page,
+            limit,
+            total: buyTotal,
+            totalPages: Math.ceil(buyTotal / limit)
+          }
+        },
+        sellOrders: {
+          data: sellOrders,
+          pagination: {
+            page,
+            limit,
+            total: sellTotal,
+            totalPages: Math.ceil(sellTotal / limit)
+          }
         }
       });
 

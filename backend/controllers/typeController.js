@@ -1,4 +1,5 @@
 const Type = require('../models/Type');
+const Group = require('../models/Group');
 const eveApiService = require('../services/eveApiService');
 const pool = require('../config/database');
 
@@ -87,6 +88,27 @@ class TypeController {
             // 使用批量API请求获取类型详情
             const loyaltyTypeDetails = await eveApiService.getTypeDetailsBatch(loyaltyTypeIds);
             
+            // 处理group信息：收集所有唯一的group_id并同步
+            const uniqueGroupIds = [...new Set(loyaltyTypeDetails.map(details => details.group_id))];
+            for (const groupId of uniqueGroupIds) {
+              if (groupId) {
+                // 检查group是否已存在于数据库
+                const existingGroup = await Group.findById(groupId);
+                if (!existingGroup) {
+                  // 从API获取group详情并保存到数据库
+                  const groupDetails = await eveApiService.getGroupDetails(groupId);
+                  if (groupDetails) {
+                    await Group.insertOrUpdate({
+                      group_id: groupDetails.group_id,
+                      category_id: groupDetails.category_id,
+                      name: groupDetails.name || '',
+                      published: groupDetails.published
+                    });
+                  }
+                }
+              }
+            }
+            
             // 将获取到的类型详情转换为数据库更新格式
             const loyaltyTypeUpdateData = loyaltyTypeDetails.map(details => ({
               id: details.type_id,
@@ -136,6 +158,27 @@ class TypeController {
             
             // 使用批量API请求获取类型详情
             const typeDetailsList = await eveApiService.getTypeDetailsBatch(typeIds);
+            
+            // 处理group信息：收集所有唯一的group_id并同步
+            const uniqueGroupIds = [...new Set(typeDetailsList.map(details => details.group_id))];
+            for (const groupId of uniqueGroupIds) {
+              if (groupId) {
+                // 检查group是否已存在于数据库
+                const existingGroup = await Group.findById(groupId);
+                if (!existingGroup) {
+                  // 从API获取group详情并保存到数据库
+                  const groupDetails = await eveApiService.getGroupDetails(groupId);
+                  if (groupDetails) {
+                    await Group.insertOrUpdate({
+                      group_id: groupDetails.group_id,
+                      category_id: groupDetails.category_id,
+                      name: groupDetails.name || '',
+                      published: groupDetails.published
+                    });
+                  }
+                }
+              }
+            }
             
             // 将获取到的类型详情转换为数据库更新格式
             const typeUpdateData = typeDetailsList.map(details => ({

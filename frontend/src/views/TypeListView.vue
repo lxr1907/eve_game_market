@@ -15,9 +15,13 @@
                   <el-icon><RefreshRight /></el-icon>
                   同步Type IDs
                 </el-button>
-                <el-button type="success" @click="syncTypeDetails">
+                <el-button type="success" @click="syncTypeDetails" style="margin-right: 10px;">
                   <el-icon><RefreshRight /></el-icon>
                   同步Type详情
+                </el-button>
+                <el-button type="warning" @click="syncAllGroupsFromTypes">
+                  <el-icon><RefreshRight /></el-icon>
+                  同步Group数据
                 </el-button>
               </div>
             </div>
@@ -103,7 +107,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { RefreshRight, Search } from '@element-plus/icons-vue'
-import { typeApi } from '../services/api'
+import { typeApi, groupApi } from '../services/api'
 
 const router = useRouter()
 
@@ -164,6 +168,21 @@ const syncTypeDetails = async () => {
   } catch (error) {
     ElMessage.error('Type详情同步任务启动失败')
     console.error('Error starting sync type details:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 同步Group数据
+const syncAllGroupsFromTypes = async () => {
+  loading.value = true
+  try {
+    await groupApi.syncAllGroupsFromTypes()
+    ElMessage.success('Group数据同步任务已开始，将在后台执行')
+    // 不立即重新加载数据，因为同步在后台进行
+  } catch (error) {
+    ElMessage.error('Group数据同步任务启动失败')
+    console.error('Error starting sync group data:', error)
   } finally {
     loading.value = false
   }

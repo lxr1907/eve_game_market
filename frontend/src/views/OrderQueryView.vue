@@ -267,9 +267,9 @@ export default {
           typeId: selectedTypeId.value
         })
         
-        // 分离买入和卖出订单
-        buyOrders.value = response.data.filter(order => order.is_buy_order)
-        sellOrders.value = response.data.filter(order => !order.is_buy_order)
+        // 使用API返回的分离好的订单数据
+        buyOrders.value = response.buyOrders.data
+        sellOrders.value = response.sellOrders.data
       } catch (error) {
         console.error('查询订单失败:', error)
         alert('查询失败：' + (error.response?.data?.message || error.message))
