@@ -210,8 +210,12 @@ class LoyaltyController {
       const corporationId = req.query.corporationId ? parseInt(req.query.corporationId) : null;
       const regionId = req.query.regionId ? parseInt(req.query.regionId) : null;
       
+      console.log('getProfitData params:', { page, limit, corporationId, regionId });
+      
       // 调用模型方法获取分页数据
       const result = await LoyaltyTypeLpIsk.getProfitDataWithTypeNames(page, limit, { corporationId, regionId });
+      
+      console.log('getProfitData result:', { total: result.total, dataLength: result.data.length });
       
       res.status(200).json({
         data: result.data,
@@ -223,7 +227,7 @@ class LoyaltyController {
         }
       });
     } catch (error) {
-      console.error('Error getting profit data:', error.message);
+      console.error('Error getting profit data:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   }

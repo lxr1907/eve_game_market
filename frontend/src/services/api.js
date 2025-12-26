@@ -79,6 +79,12 @@ export const typeApi = {
   async deleteType(id) {
     const response = await apiClient.delete(`/types/${id}`);
     return response;
+  },
+
+  // 获取name不为null的数据总数
+  async getCountWithNameNotNull() {
+    const response = await apiClient.get(`/types/count-with-name-not-null`);
+    return response;
   }
 };
 

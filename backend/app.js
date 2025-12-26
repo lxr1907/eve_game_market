@@ -42,7 +42,16 @@ app.use('/api', loyaltyRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
+  console.log('Health check request received!');
+  console.log('Request headers:', req.headers);
+  console.log('Request URL:', req.url);
   res.status(200).json({ status: 'ok', message: 'EVE Online API Service is running' });
+});
+
+// Simple test route
+app.get('/test', (req, res) => {
+  console.log('Test request received!');
+  res.send('Server is working!');
 });
 
 // 404 route

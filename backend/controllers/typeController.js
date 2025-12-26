@@ -299,6 +299,17 @@ class TypeController {
       res.status(500).json({ message: 'Internal server error' });
     }
   }
+
+  // 获取name不为null的数据总数
+  static async getCountWithNameNotNull(req, res) {
+    try {
+      const count = await Type.countWithNameNotNull();
+      res.status(200).json({ count });
+    } catch (error) {
+      console.error('Error getting count of types with name not null:', error);
+      res.status(500).json({ message: 'Failed to get count', error: error.message });
+    }
+  }
 }
 
 module.exports = TypeController;

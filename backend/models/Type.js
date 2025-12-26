@@ -194,6 +194,13 @@ class Type {
     return rows[0].total;
   }
 
+  // 获取name不为null的数据总数
+  static async countWithNameNotNull() {
+    const query = 'SELECT COUNT(*) AS total FROM types WHERE name IS NOT NULL AND name <> \'\'';
+    const [rows] = await pool.query(query);
+    return rows[0].total;
+  }
+
   static async update(id, updates) {
     try {
       // 构建更新语句

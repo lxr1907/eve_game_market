@@ -4,15 +4,22 @@
         <el-card shadow="hover">
           <template #header>
             <div class="card-header">
-              <span>Type数据列表</span>
-              <el-button type="primary" @click="syncTypeIds" style="margin-right: 10px;">
-                <el-icon><RefreshRight /></el-icon>
-                同步Type IDs
-              </el-button>
-              <el-button type="success" @click="syncTypeDetails">
-                <el-icon><RefreshRight /></el-icon>
-                同步Type详情
-              </el-button>
+              <div class="title-container">
+                <span>Type数据列表</span>
+                <el-tag type="info" size="small" style="margin-left: 10px;">
+                  已同步数据总数: {{ typeCountWithNameNotNull }}
+                </el-tag>
+              </div>
+              <div class="button-container">
+                <el-button type="primary" @click="syncTypeIds" style="margin-right: 10px;">
+                  <el-icon><RefreshRight /></el-icon>
+                  同步Type IDs
+                </el-button>
+                <el-button type="success" @click="syncTypeDetails">
+                  <el-icon><RefreshRight /></el-icon>
+                  同步Type详情
+                </el-button>
+              </div>
             </div>
           </template>
           
@@ -92,7 +99,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { RefreshRight, Search } from '@element-plus/icons-vue'
@@ -104,6 +111,7 @@ const router = useRouter()
 const types = ref([])
 const loading = ref(false)
 const total = ref(0)
+const typeCountWithNameNotNull = ref(0)
 
 // 分页
 const currentPage = ref(1)
@@ -218,9 +226,56 @@ const handleRowClick = (row) => {
 
 
 
+// 加载类型总数（name不为null）
+const loadTypeCountWithNameNotNull = async () => {
+  try {
+    const response = await typeApi.getCountWithNameNotNull()
+    typeCountWithNameNotNull.value = response.count
+  } catch (error) {
+    console.error('加载类型总数失败:', error)
+  }
+}
+
+// 加载数据（包含列表和总数）
+const loadAllData = async () => {
+  await Promise.all([
+    loadTypes(),
+    loadTypeCountWithNameNotNull()
+  ])
+}
+
+// 自动刷新定时器
+let refreshTimer = null
+
+// 开始自动刷新
+const startAutoRefresh = () => {
+  // 清除现有的定时器
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+  }
+  // 设置新的定时器，每5秒刷新一次
+  refreshTimer = setInterval(() => {
+    loadAllData()
+  }, 5000)
+}
+
+// 停止自动刷新
+const stopAutoRefresh = () => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+}
+
 // 初始加载
 onMounted(() => {
-  loadTypes()
+  loadAllData()
+  startAutoRefresh()
+})
+
+// 组件卸载时清除定时器
+onUnmounted(() => {
+  stopAutoRefresh()
 })
 </script>
 
@@ -253,6 +308,25 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.title-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.button-container {
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .search-bar {
