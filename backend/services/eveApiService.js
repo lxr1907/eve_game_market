@@ -116,6 +116,37 @@ class EveApiService {
     }
   }
 
+  async getCategoryDetails(categoryId, retries = 3) {
+    // 节流控制：确保每1秒只请求1次
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.throttleInterval) {
+      const waitTime = this.throttleInterval - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastRequestTime = Date.now();
+
+    try {
+      const response = await this.client.get(`/universe/categories/${categoryId}/`, {
+        params: {
+          datasource: 'serenity'
+        },
+        timeout: 5000 // 设置5秒超时
+      });
+      
+      return response.data;
+    } catch (error) {
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        // 如果是超时或连接重置错误，进行重试
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getCategoryDetails(categoryId, retries - 1);
+      } else {
+        console.error(`Error fetching category details for ID ${categoryId}: ${error.message}`);
+        return null; // 返回null表示获取失败，但不中断整个同步过程
+      }
+    }
+  }
+
   // 批量获取类型详情，提高效率
   async getTypeDetailsBatch(typeIds, retries = 3) {
     console.log(`Processing batch of ${typeIds.length} type IDs`);

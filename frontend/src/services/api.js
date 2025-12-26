@@ -242,4 +242,12 @@ export const groupApi = {
   syncAllGroupsFromTypes: () => apiClient.get('/api/groups/sync-all')
 };
 
+// Category API
+export const categoryApi = {
+  getCategories: (params) => apiClient.get('/api/categories', { params }),
+  getCategoryById: (id) => apiClient.get(`/api/categories/${id}`),
+  syncCategory: (id) => apiClient.get(`/api/categories/${id}/sync`),
+  syncAllCategoriesFromGroups: () => apiClient.get('/api/categories/sync-all')
+};
+
 export default apiClient

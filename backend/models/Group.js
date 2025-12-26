@@ -86,6 +86,19 @@ class Group {
     }
   }
 
+  // 从groups表中获取不重复的category_id
+  static async findDistinctCategoryIds() {
+    const sql = 'SELECT DISTINCT category_id FROM item_groups WHERE category_id IS NOT NULL';
+    try {
+      const [rows] = await pool.execute(sql);
+      // 转换为数字数组
+      return rows.map(row => parseInt(row.category_id));
+    } catch (error) {
+      console.error('Error finding distinct category IDs:', error);
+      throw error;
+    }
+  }
+
   static async count(search = '') {
     // 构建查询字符串，使用字符串拼接代替参数绑定
     let query = 'SELECT COUNT(*) AS total FROM item_groups';
