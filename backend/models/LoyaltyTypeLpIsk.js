@@ -127,15 +127,14 @@ class LoyaltyTypeLpIsk {
       
       // 构建查询条件
       let whereClause = '';
-      let params = [];
       
       if (corporationId) {
-        whereClause += `WHERE corporation_id = ${parseInt(corporationId)} `;
+        whereClause += `WHERE l.corporation_id = ${parseInt(corporationId)} `;
       }
       
       if (regionId) {
         whereClause += whereClause ? 'AND ' : 'WHERE ';
-        whereClause += `region_id = ${parseInt(regionId)} `;
+        whereClause += `l.region_id = ${parseInt(regionId)} `;
       }
       
       // 构建总数查询
@@ -162,9 +161,22 @@ class LoyaltyTypeLpIsk {
       
       // 构建主查询
       const query = `
-        SELECT l.*, t.name as type_name
+        SELECT l.*, t.name as type_name, 
+               o.volume_remaining as max_buy_order_volume_remaining,
+               ((l.total_profit / l.quantity) * o.volume_remaining) as max_buy_order_total_profit
         FROM loyalty_type_lp_isk l
         LEFT JOIN types t ON l.type_id = t.id
+        LEFT JOIN (
+          SELECT type_id, region_id, price, volume_remaining
+          FROM orders o1
+          WHERE o1.is_buy_order = 1 AND 
+                (o1.type_id, o1.region_id, o1.price) IN (
+                  SELECT type_id, region_id, MAX(price) as max_price
+                  FROM orders
+                  WHERE is_buy_order = 1
+                  GROUP BY type_id, region_id
+                )
+        ) o ON l.type_id = o.type_id AND l.region_id = o.region_id
         ${whereClause}
         ORDER BY l.profit_per_lp DESC
         LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}

@@ -45,7 +45,7 @@
             style="width: 100%"
             stripe
           >
-            <el-table-column prop="type_id" label="物品类型ID" width="120" />
+
             <el-table-column label="物品名称" min-width="250">
               <template #default="scope">
                 <div class="item-name-container">
@@ -54,8 +54,10 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="corporation_id" label="公司ID" width="120" />
-            <el-table-column prop="region_id" label="区域ID" width="120" />
+
+            <el-table-column prop="max_buy_order_volume_remaining" label="最高价买单剩余数量" width="150" />
+            <el-table-column prop="max_buy_order_total_profit" label="最高价买单总利润" width="150" :formatter="formatNumber" />
+
             <el-table-column prop="lp_cost" label="LP成本" width="100" :formatter="formatNumber" />
             <el-table-column prop="isk_cost" label="ISK成本" width="120" :formatter="formatNumber" />
             <el-table-column prop="sell_price" label="售价" width="120" :formatter="formatNumber" />
@@ -123,16 +125,35 @@ const formatDate = (row, column, cellValue) => {
   return date.toLocaleString()
 }
 
-// 格式化数字，只保留整数部分
+// 格式化数字，大数字转换为带单位的形式（10000 → 1w）
 const formatNumber = (row, column, cellValue) => {
-  // 处理直接调用的情况（如在物品名称列中）
+  // 确定实际要格式化的值
+  let value;
   if (column === undefined && cellValue === undefined) {
     // 直接调用：formatNumber(value)
-    return Math.floor(row)
+    value = row;
+  } else {
+    // 处理表格列格式化的情况：formatNumber(row, column, cellValue)
+    value = cellValue;
   }
-  // 处理表格列格式化的情况：formatNumber(row, column, cellValue)
-  if (cellValue === null || cellValue === undefined) return ''
-  return Math.floor(cellValue)
+  
+  if (value === null || value === undefined) return '';
+  
+  // 转换为数字
+  value = Number(value);
+  if (isNaN(value)) return '';
+  
+  // 格式化逻辑：添加单位转换
+  if (value >= 100000000) {
+    // 大于等于1亿
+    return (value / 100000000).toFixed(1) + '亿';
+  } else if (value >= 10000) {
+    // 大于等于1万
+    return (value / 10000).toFixed(1) + 'w';
+  } else {
+    // 小于1万，保留整数
+    return Math.floor(value).toString();
+  }
 }
 
 // 获取收益数据
