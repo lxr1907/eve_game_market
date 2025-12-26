@@ -317,14 +317,14 @@ export default {
 .order-query-container {
   width: 100%;
   min-height: 100vh;
-  padding: 20px;
+  padding: 10px 20px 20px 20px;
   font-family: Arial, sans-serif;
 }
 
 /* 顶部查询条件 */
 .top-query-form {
   margin-bottom: 20px;
-  padding: 15px;
+  padding: 1px;
   background-color: #f5f5f5;
   border-radius: 8px;
 }
@@ -433,6 +433,7 @@ export default {
   padding: 20px;
   flex: 1;
   overflow-y: auto;
+  width: 800px;
 }
 
 .order-section h2 {

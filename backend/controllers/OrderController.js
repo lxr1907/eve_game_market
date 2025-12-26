@@ -114,8 +114,56 @@ class OrderController {
       }
 
       // 获取订单数据
-      const orders = await Order.findByRegionAndType(regionId, typeId, orderType, page, limit);
-      const total = await Order.countByRegionAndType(regionId, typeId, orderType);
+      let orders = await Order.findByRegionAndType(regionId, typeId, orderType, page, limit);
+      let total = await Order.countByRegionAndType(regionId, typeId, orderType);
+
+      // 如果本地没有数据，从官方API同步
+      if (total === 0) {
+        console.log(`No orders found in local database for region ${regionId}, type ${typeId}. Synchronizing from official API...`);
+        
+        // 只删除该区域和类型的1小时之前的订单数据
+        const deletedCount = await Order.deleteOlderThanOneHourByRegionAndType(regionId, typeId);
+        console.log(`Deleted ${deletedCount} outdated orders for region ${regionId}, type ${typeId}`);
+        
+        // 定义处理订单数据的回调函数
+        const processOrders = async (orders, page) => {
+          console.log(`Processing page ${page} with ${orders.length} orders`);
+          
+          // 为每个订单添加region_id和type_id
+          const ordersWithRegionAndType = orders.map(order => ({
+            ...order,
+            region_id: regionId,
+            type_id: typeId
+          }));
+          
+          // 批量插入或更新数据库
+          await Order.insertOrUpdate(ordersWithRegionAndType);
+        };
+
+        // 获取买入订单
+        console.log(`Fetching buy orders for region ${regionId}, type ${typeId}`);
+        await eveApiService.getAllMarketOrdersByRegionAndType(
+          regionId, 
+          typeId, 
+          'buy', 
+          processOrders
+        );
+
+        // 获取卖出订单
+        console.log(`Fetching sell orders for region ${regionId}, type ${typeId}`);
+        await eveApiService.getAllMarketOrdersByRegionAndType(
+          regionId, 
+          typeId, 
+          'sell', 
+          processOrders
+        );
+
+        console.log(`Order synchronization completed for region ${regionId}, type ${typeId}`);
+        
+        // 再次查询本地数据库
+        orders = await Order.findByRegionAndType(regionId, typeId, orderType, page, limit);
+        total = await Order.countByRegionAndType(regionId, typeId, orderType);
+      }
 
       res.status(200).json({
         data: orders,
