@@ -38,8 +38,9 @@ class OrderController {
         try {
           console.log(`Starting order synchronization for region ${regionId}, type ${typeId}`);
           
-          // 先删除该区域和类型的现有订单数据
-          await Order.deleteByRegionAndType(regionId, typeId);
+          // 只删除该区域和类型的1小时之前的订单数据
+          const deletedCount = await Order.deleteOlderThanOneHourByRegionAndType(regionId, typeId);
+          console.log(`Deleted ${deletedCount} outdated orders for region ${regionId}, type ${typeId}`);
           
           // 定义处理订单数据的回调函数
           const processOrders = async (orders, page) => {

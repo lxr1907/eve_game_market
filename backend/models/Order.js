@@ -128,6 +128,12 @@ class Order {
     return result.affectedRows;
   }
 
+  static async deleteOlderThanOneHourByRegionAndType(regionId, typeId) {
+    const query = `DELETE FROM orders WHERE region_id = ? AND type_id = ? AND updated_at < DATE_SUB(NOW(), INTERVAL 1 HOUR)`;
+    const [result] = await pool.execute(query, [regionId, typeId]);
+    return result.affectedRows;
+  }
+
   static async getLatestUpdateTime(regionId, typeId, orderType = null) {
     let query = `
       SELECT MAX(updated_at) as latest_update
