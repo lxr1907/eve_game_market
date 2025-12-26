@@ -163,7 +163,11 @@ class LoyaltyTypeLpIsk {
       const query = `
         SELECT l.*, t.name as type_name, 
                o.volume_remaining as max_buy_order_volume_remaining,
-               ((l.total_profit / l.quantity) * o.volume_remaining) as max_buy_order_total_profit
+               ((l.total_profit / l.quantity) * o.volume_remaining) as max_buy_order_total_profit,
+               NOT EXISTS(
+                 SELECT 1 FROM loyalty_offers lo
+                 WHERE lo.type_id = l.type_id AND lo.corporation_id != l.corporation_id
+               ) as is_unique
         FROM loyalty_type_lp_isk l
         LEFT JOIN types t ON l.type_id = t.id
         LEFT JOIN (

@@ -50,6 +50,7 @@
               <template #default="scope">
                 <div class="item-name-container">
                   <span>{{ scope.row.type_name }}</span>
+                  <el-icon v-if="scope.row.is_unique === 1" class="unique-icon" title="独特物品"><Star /></el-icon>
                   <el-tag type="info" size="small" style="margin-left: 10px">每LP: {{ formatNumber(scope.row.profit_per_lp) }}</el-tag>
                 </div>
               </template>
@@ -86,7 +87,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Star } from '@element-plus/icons-vue'
 import { loyaltyApi } from '../services/api'
 
 // 数据
@@ -213,5 +214,12 @@ onMounted(() => {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+}
+
+.unique-icon {
+  color: #f56c6c !important;
+  font-size: 16px;
+  margin-left: 5px;
+  vertical-align: middle;
 }
 </style>
