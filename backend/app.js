@@ -11,6 +11,7 @@ const Region = require('./models/Region');
 const RegionType = require('./models/RegionType');
 const Order = require('./models/Order');
 const LoyaltyOffer = require('./models/LoyaltyOffer');
+const LoyaltyTypeLpIsk = require('./models/LoyaltyTypeLpIsk');
 
 const app = express();
 
@@ -27,7 +28,8 @@ Promise.all([
   Region.createTable(),
   RegionType.createTable(),
   Order.createTable(),
-  LoyaltyOffer.createTable()
+  LoyaltyOffer.createTable(),
+  LoyaltyTypeLpIsk.createTable()
 ])
   .then(() => console.log('Database tables initialized successfully'))
   .catch(err => console.error('Error initializing database tables:', err));

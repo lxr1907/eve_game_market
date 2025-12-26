@@ -1,5 +1,5 @@
 const express = require('express');
-const TypeController = require('../controllers/typeController');
+const TypeController = require('../controllers/TypeController');
 const router = express.Router();
 
 // Type Routes
