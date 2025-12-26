@@ -90,9 +90,13 @@ class LoyaltyController {
   // 获取所有忠诚度商店商品（带分页）
   static async getLoyaltyOffers(req, res) {
     try {
+      console.log('getLoyaltyOffers request query:', req.query);
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
+      const search = req.query.search || '';
       const corporationId = req.query.corporationId ? parseInt(req.query.corporationId) : null;
+      
+      console.log('getLoyaltyOffers params:', { page, limit, search, corporationId });
       
       // 计算偏移量
       const offset = (page - 1) * limit;
@@ -102,11 +106,11 @@ class LoyaltyController {
       
       if (corporationId) {
         // 按公司筛选
-        offers = await LoyaltyOffer.findAll(page, limit, '', corporationId);
+        offers = await LoyaltyOffer.findAll(page, limit, search, corporationId);
         total = offers.total;
       } else {
         // 获取所有
-        offers = await LoyaltyOffer.findAll(page, limit);
+        offers = await LoyaltyOffer.findAll(page, limit, search);
         total = offers.total;
       }
       

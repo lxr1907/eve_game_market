@@ -10,6 +10,7 @@
                   v-model="filters.corporationId"
                   placeholder="选择公司"
                   style="width: 200px; margin-right: 10px"
+                  @change="fetchProfitData"
                 >
                   <el-option
                     v-for="corp in corporations"

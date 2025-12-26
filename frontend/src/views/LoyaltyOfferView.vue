@@ -6,10 +6,21 @@
             <div class="card-header">
               <span>忠诚度商店商品</span>
               <div class="sync-controls">
+                <el-input
+                  v-model="searchKeyword"
+                  placeholder="搜索物品名称"
+                  style="width: 200px; margin-right: 10px"
+                  @keyup.enter="fetchLoyaltyOffers"
+                >
+                  <template #append>
+                    <el-icon @click="fetchLoyaltyOffers"><Search /></el-icon>
+                  </template>
+                </el-input>
                 <el-select
                   v-model="selectedCorporationId"
                   placeholder="选择公司"
                   style="width: 200px; margin-right: 10px"
+                  @change="fetchLoyaltyOffers"
                 >
                   <el-option
                     v-for="corp in corporations"
@@ -39,6 +50,7 @@
           >
             <el-table-column prop="id" label="商品ID" width="100" />
             <el-table-column prop="corporation_id" label="公司ID" width="120" />
+            <el-table-column prop="type_name" label="物品名称" width="200" />
             <el-table-column prop="type_id" label="物品类型ID" width="120" />
             <el-table-column prop="quantity" label="数量" width="100" />
             <el-table-column prop="lp_cost" label="LP成本" width="100" />
@@ -80,7 +92,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { RefreshRight, CirclePlus } from '@element-plus/icons-vue'
+import { RefreshRight, CirclePlus, Search } from '@element-plus/icons-vue'
 import { loyaltyApi } from '../services/api'
 
 // 数据
@@ -89,6 +101,7 @@ const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const searchKeyword = ref('')
 
 // 公司选择器
 const selectedCorporationId = ref(1000180) // 默认公司ID
@@ -108,7 +121,8 @@ async function fetchLoyaltyOffers() {
     const data = await loyaltyApi.getLoyaltyOffers(
       currentPage.value,
       pageSize.value,
-      selectedCorporationId.value
+      selectedCorporationId.value,
+      searchKeyword.value
     )
     loyaltyOffers.value = data.data
     total.value = data.pagination.totalItems

@@ -176,34 +176,47 @@ class LoyaltyOffer {
       if (search && corporationId) {
         // 同时有搜索条件和公司ID
         const [offersResult] = await pool.query(
-          `SELECT lo.* FROM loyalty_offers lo WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ?) AND lo.corporation_id = ? ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
-          [`%${search}%`, `%${search}%`, parseInt(corporationId, 10), parseInt(limit, 10), parseInt(offset, 10)]
+          `SELECT lo.*, t.name as type_name FROM loyalty_offers lo 
+           LEFT JOIN types t ON lo.type_id = t.id 
+           WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?) AND lo.corporation_id = ? 
+           ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
+          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(corporationId, 10), parseInt(limit, 10), parseInt(offset, 10)]
         );
         offers = offersResult;
         
         const [countResultData] = await pool.query(
-          `SELECT COUNT(*) as count FROM loyalty_offers lo WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ?) AND lo.corporation_id = ?`,
-          [`%${search}%`, `%${search}%`, parseInt(corporationId, 10)]
+          `SELECT COUNT(*) as count FROM loyalty_offers lo 
+           LEFT JOIN types t ON lo.type_id = t.id 
+           WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?) AND lo.corporation_id = ?`,
+          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(corporationId, 10)]
         );
         countResult = countResultData;
       } else if (search) {
         // 只有搜索条件
         const [offersResult] = await pool.query(
-          `SELECT lo.* FROM loyalty_offers lo WHERE lo.offer_id LIKE ? OR lo.type_id LIKE ? ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
-          [`%${search}%`, `%${search}%`, parseInt(limit, 10), parseInt(offset, 10)]
+          `SELECT lo.*, t.name as type_name FROM loyalty_offers lo 
+           LEFT JOIN types t ON lo.type_id = t.id 
+           WHERE lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ? 
+           ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
+          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(limit, 10), parseInt(offset, 10)]
         );
         offers = offersResult;
         
         const [countResultData] = await pool.query(
-          `SELECT COUNT(*) as count FROM loyalty_offers lo WHERE lo.offer_id LIKE ? OR lo.type_id LIKE ?`,
-          [`%${search}%`, `%${search}%`]
+          `SELECT COUNT(*) as count FROM loyalty_offers lo 
+           LEFT JOIN types t ON lo.type_id = t.id 
+           WHERE lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?`,
+          [`%${search}%`, `%${search}%`, `%${search}%`]
         );
         countResult = countResultData;
       } else if (corporationId) {
         // 只有公司ID
         console.log('Only corporationId:', corporationId, limit, offset);
         const [offersResult] = await pool.query(
-          `SELECT lo.* FROM loyalty_offers lo WHERE lo.corporation_id = ? ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
+          `SELECT lo.*, t.name as type_name FROM loyalty_offers lo 
+           LEFT JOIN types t ON lo.type_id = t.id 
+           WHERE lo.corporation_id = ? 
+           ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
           [parseInt(corporationId, 10), parseInt(limit, 10), parseInt(offset, 10)]
         );
         offers = offersResult;
@@ -216,7 +229,9 @@ class LoyaltyOffer {
       } else {
         // 没有条件
         const [offersResult] = await pool.query(
-          `SELECT lo.* FROM loyalty_offers lo ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
+          `SELECT lo.*, t.name as type_name FROM loyalty_offers lo 
+           LEFT JOIN types t ON lo.type_id = t.id 
+           ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
           [parseInt(limit, 10), parseInt(offset, 10)]
         );
         offers = offersResult;
@@ -261,15 +276,16 @@ class LoyaltyOffer {
     let query = `
       SELECT COUNT(*) as count
       FROM loyalty_offers lo
+      LEFT JOIN types t ON lo.type_id = t.id
       WHERE 1 = 1
     `;
     
     const params = [];
     
     if (search) {
-      query += ` AND (lo.offer_id LIKE ? OR lo.type_id LIKE ?)`;
+      query += ` AND (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?)`;
       const searchParam = `%${search}%`;
-      params.push(searchParam, searchParam);
+      params.push(searchParam, searchParam, searchParam);
     }
     
     if (corporationId) {

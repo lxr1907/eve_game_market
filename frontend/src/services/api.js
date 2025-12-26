@@ -172,10 +172,13 @@ export const loyaltyApi = {
   },
   
   // 获取所有忠诚度商店商品
-  async getLoyaltyOffers(page = 1, limit = 10, corporationId = null) {
+  async getLoyaltyOffers(page = 1, limit = 10, corporationId = null, search = '') {
     const params = { page, limit };
     if (corporationId) {
       params.corporationId = corporationId;
+    }
+    if (search) {
+      params.search = search;
     }
     const response = await apiClient.get(`/loyalty/offers`, { params });
     return response;
