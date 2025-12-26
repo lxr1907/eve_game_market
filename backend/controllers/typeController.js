@@ -70,6 +70,7 @@ class TypeController {
         console.log('Starting type details synchronization in background...');
         
         const batchSize = 100; // 每批处理的数量
+        const pageSize = 100; // 分页查询的数量（修复：添加pageSize变量定义）
         let updatedTypes = 0;
         
         // 首先同步loyalty_offers表中存在的、且name为空的type记录
