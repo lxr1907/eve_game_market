@@ -60,13 +60,11 @@ class EveApiService {
     const timeSinceLastRequest = now - this.lastRequestTime;
     if (timeSinceLastRequest < this.throttleInterval) {
       const waitTime = this.throttleInterval - timeSinceLastRequest;
-      console.log(`Throttling request for type ID ${typeId}, waiting ${waitTime}ms...`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
     this.lastRequestTime = Date.now();
 
     try {
-      console.log(`Sending request for type details: /universe/types/${typeId}/?datasource=serenity`);
       const response = await this.client.get(`/universe/types/${typeId}/`, {
         params: {
           datasource: 'serenity'
@@ -74,30 +72,62 @@ class EveApiService {
         timeout: 5000 // 设置5秒超时
       });
       
-      // 记录完整的响应数据结构（只记录前几个以避免日志过多）
-      if (typeId <= 10) {
-        console.log(`Raw response data for type ID ${typeId}:`, JSON.stringify(response.data));
-      }
-      
-      console.log(`Received details for type ID ${typeId}: ${response.data.name || 'Unknown'}`);
       return response.data;
     } catch (error) {
       if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
         // 如果是超时或连接重置错误，进行重试
-        console.log(`Timeout fetching type details for ID ${typeId}, retrying (${retries} left)...`);
-        // 指数退避策略，每次重试等待时间增加
         await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
         return this.getTypeDetails(typeId, retries - 1);
       } else {
         console.error(`Error fetching type details for ID ${typeId}: ${error.message}`);
-        if (error.response) {
-          console.error('Response status:', error.response.status);
-          console.error('Response data:', error.response.data);
-        }
-        // 不再重试，返回null或抛出错误
         return null; // 返回null表示获取失败，但不中断整个同步过程
       }
     }
+  }
+
+  // 批量获取类型详情，提高效率
+  async getTypeDetailsBatch(typeIds, retries = 3) {
+    console.log(`Processing batch of ${typeIds.length} type IDs`);
+    
+    // 将请求分块，每批最多50个请求（避免并发过多）
+    const chunkSize = 50;
+    const chunks = [];
+    for (let i = 0; i < typeIds.length; i += chunkSize) {
+      chunks.push(typeIds.slice(i, i + chunkSize));
+    }
+    
+    const allResults = [];
+    
+    // 依次处理每个块
+    for (const chunk of chunks) {
+      // 节流控制：确保每1秒只处理一个块
+      const now = Date.now();
+      const timeSinceLastRequest = now - this.lastRequestTime;
+      if (timeSinceLastRequest < this.throttleInterval) {
+        const waitTime = this.throttleInterval - timeSinceLastRequest;
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+      this.lastRequestTime = Date.now();
+      
+      // 并发请求当前块中的所有类型详情
+      const promises = chunk.map(id => this.getTypeDetails(id, 0)); // 不重试，由外层处理
+      const results = await Promise.allSettled(promises);
+      
+      // 处理结果
+      const chunkResults = results.map((result, index) => {
+        if (result.status === 'fulfilled' && result.value !== null) {
+          return result.value;
+        } else {
+          console.error(`Error fetching details for type ID ${chunk[index]}`);
+          return null;
+        }
+      }).filter(Boolean); // 过滤掉null结果
+      
+      allResults.push(...chunkResults);
+    }
+    
+    console.log(`Successfully fetched details for ${allResults.length}/${typeIds.length} type IDs`);
+    return allResults;
   }
 
   // 获取特定公司的忠诚度商店商品

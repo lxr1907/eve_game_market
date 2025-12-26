@@ -14,9 +14,9 @@ class Type {
         description TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
         group_id INT,
         category_id INT,
-        mass DECIMAL(30,10),
-        volume DECIMAL(30,10),
-        capacity DECIMAL(30,10),
+        mass VARCHAR(50),
+        volume VARCHAR(50),
+        capacity VARCHAR(50),
         portion_size INT,
         published BOOLEAN,
         status VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
@@ -57,6 +57,58 @@ class Type {
     `;
     
     await pool.execute(query, values);
+  }
+
+  // 批量插入或更新类型数据，提高效率
+  static async bulkInsertOrUpdate(typeDataList) {
+    if (!Array.isArray(typeDataList) || typeDataList.length === 0) {
+      return;
+    }
+    
+    // 过滤掉未定义的字段，确保所有对象都有相同的字段结构
+    const firstItem = typeDataList[0];
+    const fields = Object.keys(firstItem).filter(key => firstItem[key] !== undefined);
+    
+    // 如果没有定义任何字段，直接返回
+    if (fields.length === 0) {
+      return;
+    }
+    
+    // 构建批量插入的values部分
+    const values = [];
+    const placeholders = [];
+    
+    typeDataList.forEach(item => {
+      const rowValues = fields.map(field => item[field]);
+      values.push(...rowValues);
+      placeholders.push(`(${fields.map(() => '?').join(', ')})`);
+    });
+    
+    // 构建ON DUPLICATE KEY UPDATE部分
+    const updateClause = fields.map(field => `${field} = VALUES(${field})`).join(', ');
+    
+    const query = `
+      INSERT INTO types (${fields.join(', ')})
+      VALUES ${placeholders.join(', ')}
+      ON DUPLICATE KEY UPDATE
+        ${updateClause},
+        updated_at = CURRENT_TIMESTAMP
+    `;
+    
+    try {
+      await pool.execute(query, values);
+      console.log(`Successfully updated ${typeDataList.length} types in bulk`);
+    } catch (error) {
+      console.error('Error in bulk insert/update:', error);
+      // 如果批量操作失败，尝试逐个插入
+      for (const item of typeDataList) {
+        try {
+          await this.insertOrUpdate(item);
+        } catch (singleError) {
+          console.error(`Error updating single type ID ${item.id}:`, singleError);
+        }
+      }
+    }
   }
 
   static async findById(id) {

@@ -84,48 +84,27 @@ class TypeController {
           console.log(`Total loyalty type IDs to process: ${totalLoyaltyTypes}`);
           
           if (totalLoyaltyTypes > 0) {
-            // 将ID列表分成批次进行处理
-            for (let i = 0; i < totalLoyaltyTypes; i += batchSize) {
-              const batchIds = loyaltyTypeIds.slice(i, i + batchSize);
-              const batchNumber = Math.floor(i / batchSize) + 1;
-              
-              console.log(`Processing loyalty type batch ${batchNumber} with ${batchIds.length} type IDs (name is empty)`);
-              
-              // 对每个ID请求详细信息
-              for (const typeId of batchIds) {
-                try {
-                  // 请求类型详情
-                  const typeDetails = await eveApiService.getTypeDetails(typeId);
-                  
-                  if (typeDetails !== null) {
-                    // 使用详情更新数据库
-                    await Type.insertOrUpdate({
-                      id: typeDetails.type_id,
-                      name: typeDetails.name || '',
-                      description: typeDetails.description || '',
-                      group_id: typeDetails.group_id,
-                      category_id: typeDetails.category_id,
-                      mass: typeDetails.mass,
-                      volume: typeDetails.volume,
-                      capacity: typeDetails.capacity,
-                      portion_size: typeDetails.portion_size,
-                      published: typeDetails.published
-                    });
-                    
-                    updatedTypes++;
-                    
-                    // 每处理100个类型打印一次进度
-                    if (updatedTypes % 100 === 0) {
-                      console.log(`Progress: ${updatedTypes} types updated with details`);
-                    }
-                  }
-                  
-                  // 设置同步间隔为200ms
-                  await new Promise(resolve => setTimeout(resolve, 200));
-                } catch (apiError) {
-                  console.error(`Error fetching details for type ID ${typeId}:`, apiError.message);
-                }
-              }
+            // 使用批量API请求获取类型详情
+            const loyaltyTypeDetails = await eveApiService.getTypeDetailsBatch(loyaltyTypeIds);
+            
+            // 将获取到的类型详情转换为数据库更新格式
+            const loyaltyTypeUpdateData = loyaltyTypeDetails.map(details => ({
+              id: details.type_id,
+              name: details.name || '',
+              description: details.description || '',
+              group_id: details.group_id,
+              category_id: details.category_id,
+              mass: details.mass,
+              volume: details.volume,
+              capacity: details.capacity,
+              portion_size: details.portion_size,
+              published: details.published
+            }));
+            
+            // 批量更新数据库
+            if (loyaltyTypeUpdateData.length > 0) {
+              await Type.bulkInsertOrUpdate(loyaltyTypeUpdateData);
+              updatedTypes += loyaltyTypeUpdateData.length;
             }
           }
         } catch (dbError) {
@@ -152,42 +131,35 @@ class TypeController {
             
             console.log(`Processing page ${currentPage} with ${types.length} type IDs (name is empty)`);
             
-            // 对每个ID请求详细信息
-            for (const type of types) {
-              const typeId = type.id;
-              
-              try {
-                // 请求类型详情
-                const typeDetails = await eveApiService.getTypeDetails(typeId);
-                
-                if (typeDetails !== null) {
-                  // 使用详情更新数据库
-                  await Type.insertOrUpdate({
-                    id: typeDetails.type_id,
-                    name: typeDetails.name || '',
-                    description: typeDetails.description || '',
-                    group_id: typeDetails.group_id,
-                    category_id: typeDetails.category_id,
-                    mass: typeDetails.mass,
-                    volume: typeDetails.volume,
-                    capacity: typeDetails.capacity,
-                    portion_size: typeDetails.portion_size,
-                    published: typeDetails.published
-                  });
-                  
-                  updatedTypes++;
-                  
-                  // 每处理100个类型打印一次进度
-                  if (updatedTypes % 100 === 0) {
-                    console.log(`Progress: ${updatedTypes} types updated with details`);
-                  }
-                }
-                
-                // 设置同步间隔为200ms
-                await new Promise(resolve => setTimeout(resolve, 200));
-              } catch (apiError) {
-                console.error(`Error fetching details for type ID ${typeId}:`, apiError.message);
-              }
+            // 提取类型ID列表
+            const typeIds = types.map(type => type.id);
+            
+            // 使用批量API请求获取类型详情
+            const typeDetailsList = await eveApiService.getTypeDetailsBatch(typeIds);
+            
+            // 将获取到的类型详情转换为数据库更新格式
+            const typeUpdateData = typeDetailsList.map(details => ({
+              id: details.type_id,
+              name: details.name || '',
+              description: details.description || '',
+              group_id: details.group_id,
+              category_id: details.category_id,
+              mass: details.mass,
+              volume: details.volume,
+              capacity: details.capacity,
+              portion_size: details.portion_size,
+              published: details.published
+            }));
+            
+            // 批量更新数据库
+            if (typeUpdateData.length > 0) {
+              await Type.bulkInsertOrUpdate(typeUpdateData);
+              updatedTypes += typeUpdateData.length;
+            }
+            
+            // 每处理100个类型打印一次进度
+            if (updatedTypes % 100 === 0) {
+              console.log(`Progress: ${updatedTypes} types updated with details`);
             }
             
             currentPage++;
