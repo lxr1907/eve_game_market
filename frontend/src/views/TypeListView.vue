@@ -193,18 +193,20 @@ const syncAllGroupsFromTypes = async () => {
 }
 
 // 同步Category数据
-const syncAllCategoriesFromGroups = async () => {
+const syncAllCategoriesFromGroups = () => {
   loading.value = true
-  try {
-    await categoryApi.syncAllCategoriesFromGroups()
-    ElMessage.success('Category数据同步任务已开始，将在后台执行')
-    // 不立即重新加载数据，因为同步在后台进行
-  } catch (error) {
-    ElMessage.error('Category数据同步任务启动失败')
-    console.error('Error starting sync category data:', error)
-  } finally {
-    loading.value = false
-  }
+  // 改为异步执行，不等待API响应
+  categoryApi.syncAllCategoriesFromGroups()
+    .then(() => {
+      ElMessage.success('Category数据同步任务已开始，将在后台执行')
+    })
+    .catch((error) => {
+      ElMessage.error('Category数据同步任务启动失败')
+      console.error('Error starting sync category data:', error)
+    })
+    .finally(() => {
+      loading.value = false
+    })
 }
 
 // 搜索

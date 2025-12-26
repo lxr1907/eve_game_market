@@ -81,7 +81,7 @@ class CategoryController {
     }
   }
 
-  // 从Group表中获取不重复的category_id并同步所有数据
+  // 从Group表中获取不重复的category_id并同步所有数据（异步处理）
   static async syncAllCategoriesFromGroups(req, res) {
     try {
       // 从Group表中获取不重复的category_id
@@ -91,6 +91,13 @@ class CategoryController {
         return res.status(200).json({ message: 'No category IDs found in groups table' });
       }
 
+      // 立即返回响应，告知同步任务已启动
+      res.status(200).json({
+        message: 'Category sync task started',
+        total: categoryIds.length
+      });
+
+      // 在后台执行同步操作
       const syncStats = {
         total: categoryIds.length,
         success: 0,
@@ -99,36 +106,38 @@ class CategoryController {
         failedIds: []
       };
 
-      // 同步每个Category
-      for (const categoryId of categoryIds) {
-        try {
-          const categoryDetails = await eveApiService.getCategoryDetails(categoryId);
-          if (categoryDetails) {
-            await Category.insertOrUpdate({
-              category_id: categoryDetails.category_id,
-              name: categoryDetails.name || '',
-              published: categoryDetails.published
-            });
-            syncStats.success++;
-            syncStats.syncedIds.push(categoryId);
-          } else {
+      // 使用setTimeout将同步操作放入事件循环，不阻塞当前响应
+      setTimeout(async () => {
+        // 同步每个Category
+        for (const categoryId of categoryIds) {
+          try {
+            const categoryDetails = await eveApiService.getCategoryDetails(categoryId);
+            if (categoryDetails) {
+              await Category.insertOrUpdate({
+                category_id: categoryDetails.category_id,
+                name: categoryDetails.name || '',
+                published: categoryDetails.published
+              });
+              syncStats.success++;
+              syncStats.syncedIds.push(categoryId);
+            } else {
+              syncStats.failed++;
+              syncStats.failedIds.push(categoryId);
+            }
+          } catch (error) {
+            console.error(`Error syncing category ${categoryId}:`, error);
             syncStats.failed++;
             syncStats.failedIds.push(categoryId);
           }
-        } catch (error) {
-          console.error(`Error syncing category ${categoryId}:`, error);
-          syncStats.failed++;
-          syncStats.failedIds.push(categoryId);
         }
-      }
 
-      res.status(200).json({
-        message: 'Category sync completed',
-        stats: syncStats
-      });
+        // 同步完成后记录统计信息
+        console.log('Category sync completed', syncStats);
+      }, 0);
+
     } catch (error) {
-      console.error('Error syncing all categories:', error);
-      res.status(500).json({ message: 'Failed to sync all categories', error: error.message });
+      console.error('Error starting category sync:', error);
+      res.status(500).json({ message: 'Failed to start category sync', error: error.message });
     }
   }
 }

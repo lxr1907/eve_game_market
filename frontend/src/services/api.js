@@ -236,18 +236,18 @@ export const loyaltyApi = {
 
 // Group API
 export const groupApi = {
-  getGroups: (params) => apiClient.get('/api/groups', { params }),
-  getGroupById: (id) => apiClient.get(`/api/groups/${id}`),
-  syncGroup: (id) => apiClient.get(`/api/groups/${id}/sync`),
-  syncAllGroupsFromTypes: () => apiClient.get('/api/groups/sync-all')
+  getGroups: (params) => apiClient.get('/groups', { params }),
+  getGroupById: (id) => apiClient.get(`/groups/${id}`),
+  syncGroup: (id) => apiClient.get(`/groups/${id}/sync`),
+  syncAllGroupsFromTypes: () => apiClient.get('/groups/sync-all')
 };
 
 // Category API
 export const categoryApi = {
-  getCategories: (params) => apiClient.get('/api/categories', { params }),
-  getCategoryById: (id) => apiClient.get(`/api/categories/${id}`),
-  syncCategory: (id) => apiClient.get(`/api/categories/${id}/sync`),
-  syncAllCategoriesFromGroups: () => apiClient.get('/api/categories/sync-all')
+  getCategories: (params) => apiClient.get('/categories', { params }),
+  getCategoryById: (id) => apiClient.get(`/categories/${id}`),
+  syncCategory: (id) => apiClient.get(`/categories/${id}/sync`),
+  syncAllCategoriesFromGroups: () => apiClient.get('/categories/sync-all')
 };
 
 export default apiClient
