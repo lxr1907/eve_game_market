@@ -133,7 +133,7 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const timeDimension = ref('hour') // 默认为按小时展示
 
-// 格式化日期时间
+// 格式化日期时间（东八区）
 const formatDateTime = (datetime) => {
   if (!datetime) return ''
   const date = new Date(datetime)
@@ -143,11 +143,12 @@ const formatDateTime = (datetime) => {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
+    timeZone: 'Asia/Shanghai'
   })
 }
 
-// 格式化时间维度的标签
+// 格式化时间维度的标签（东八区）
 const formatTimeLabel = (datetime) => {
   if (!datetime) return ''
   const date = new Date(datetime)
@@ -156,23 +157,27 @@ const formatTimeLabel = (datetime) => {
     case 'month':
       return date.toLocaleString('zh-CN', {
         year: 'numeric',
-        month: '2-digit'
+        month: '2-digit',
+        timeZone: 'Asia/Shanghai'
       })
     case 'day':
       return date.toLocaleString('zh-CN', {
         month: '2-digit',
-        day: '2-digit'
+        day: '2-digit',
+        timeZone: 'Asia/Shanghai'
       })
     case 'hour':
       return date.toLocaleString('zh-CN', {
         month: '2-digit',
         day: '2-digit',
-        hour: '2-digit'
+        hour: '2-digit',
+        timeZone: 'Asia/Shanghai'
       })
     case 'minute':
       return date.toLocaleString('zh-CN', {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: 'Asia/Shanghai'
       })
     default:
       return formatDateTime(datetime)

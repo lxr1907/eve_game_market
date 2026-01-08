@@ -12,18 +12,33 @@ class OnlinePlayerStatsController {
       const datasource = req.query.datasource || 'serenity';
       const serverStatus = await this.eveApiService.getServerStatus(datasource);
       
-      // 创建可靠的日期转换函数
+      // 手动格式化日期为MySQL DATETIME格式（东八区）
+      const formatDateTimeMySQL = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      };
+
+      // 创建可靠的日期转换函数（系统时间已经是东八区）
       const formatDateForMySQL = (dateString) => {
         try {
           const date = new Date(dateString);
           if (isNaN(date.getTime())) {
             // 如果日期无效，使用当前时间
-            return new Date().toISOString().slice(0, 19).replace('T', ' ');
+            return formatDateTimeMySQL(new Date());
           }
-          return date.toISOString().slice(0, 19).replace('T', ' ');
+          
+          // API返回的时间是0时区，需要转换为东八区
+          const east8Date = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+          return formatDateTimeMySQL(east8Date);
         } catch (error) {
           // 如果转换失败，使用当前时间
-          return new Date().toISOString().slice(0, 19).replace('T', ' ');
+          return formatDateTimeMySQL(new Date());
         }
       };
 
@@ -32,7 +47,7 @@ class OnlinePlayerStatsController {
         server_version: serverStatus.server_version,
         start_time: formatDateForMySQL(serverStatus.start_time),
         vip: serverStatus.vip || false,
-        recorded_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+        recorded_at: formatDateTimeMySQL(new Date())
       };
       
       await OnlinePlayerStats.insert(stats);
