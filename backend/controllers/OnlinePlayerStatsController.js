@@ -33,9 +33,8 @@ class OnlinePlayerStatsController {
             return formatDateTimeMySQL(new Date());
           }
           
-          // API返回的时间是0时区，需要转换为东八区
-          const east8Date = new Date(date.getTime() + 8 * 60 * 60 * 1000);
-          return formatDateTimeMySQL(east8Date);
+          // JavaScript的new Date()已经将ISO格式的0时区时间转换为本地时间（东八区）
+          return formatDateTimeMySQL(date);
         } catch (error) {
           // 如果转换失败，使用当前时间
           return formatDateTimeMySQL(new Date());
