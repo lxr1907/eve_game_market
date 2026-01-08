@@ -25,7 +25,6 @@
       <div class="chart-container">
         <el-card shadow="hover" class="chart-card">
           <template #header>
-            <span>在线玩家数量趋势</span>
           </template>
           <v-chart
             v-loading="loading"
@@ -292,7 +291,7 @@ const chartOption = computed(() => {
   
   return {
     title: {
-      text: '在线玩家数量趋势',
+      text: '',
       left: 'center'
     },
     tooltip: {
