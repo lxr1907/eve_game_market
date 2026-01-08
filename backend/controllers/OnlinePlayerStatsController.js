@@ -48,9 +48,20 @@ class OnlinePlayerStatsController {
     try {
       const page = req.query.page || 1;
       const limit = req.query.limit || 10;
+      const dimension = req.query.dimension;
       
-      const stats = await OnlinePlayerStats.findAll(page, limit);
-      const total = await OnlinePlayerStats.countAll();
+      let stats, total;
+      
+      // 如果指定了时间维度，使用聚合查询
+      if (dimension && ['month', 'day', 'hour', 'minute'].includes(dimension)) {
+        const aggregatedResult = await OnlinePlayerStats.getAggregatedStats(dimension, page, limit);
+        stats = aggregatedResult.data;
+        total = aggregatedResult.total;
+      } else {
+        // 否则使用普通查询
+        stats = await OnlinePlayerStats.findAll(page, limit);
+        total = await OnlinePlayerStats.countAll();
+      }
       
       res.status(200).json({
         success: true,
