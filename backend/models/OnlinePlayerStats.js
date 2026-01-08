@@ -51,7 +51,7 @@ class OnlinePlayerStats {
     
     const query = `
       SELECT * FROM online_player_stats
-      ORDER BY recorded_at DESC
+      ORDER BY recorded_at ASC
       LIMIT ${limitInt} OFFSET ${offset}
     `;
     
@@ -137,7 +137,7 @@ class OnlinePlayerStats {
         COUNT(*) as data_points
       FROM online_player_stats
       GROUP BY DATE_FORMAT(recorded_at, '${timeFormat}')
-      ORDER BY recorded_at DESC
+      ORDER BY recorded_at ASC
       LIMIT ${limitInt} OFFSET ${offset}
     `;
     
