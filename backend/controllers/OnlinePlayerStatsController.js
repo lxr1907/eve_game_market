@@ -41,12 +41,16 @@ class OnlinePlayerStatsController {
         }
       };
 
+      // 获取当前时间并格式化（东八区）
+      const currentDateTime = new Date();
+      const formattedDateTime = formatDateTimeMySQL(currentDateTime);
+      
       const stats = {
         players: serverStatus.players,
         server_version: serverStatus.server_version,
-        start_time: formatDateForMySQL(serverStatus.start_time),
+        start_time: formattedDateTime,
         vip: serverStatus.vip || false,
-        recorded_at: formatDateTimeMySQL(new Date())
+        recorded_at: formattedDateTime
       };
       
       await OnlinePlayerStats.insert(stats);

@@ -24,14 +24,15 @@ class OnlinePlayerStats {
 
   static async insert(stats) {
     const query = `
-      INSERT INTO online_player_stats (players, server_version, start_time, vip, recorded_at)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO online_player_stats (players, server_version, start_time, vip, recorded_at, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
     const params = [
       stats.players,
       stats.server_version,
       stats.start_time,
       stats.vip ? 1 : 0,
+      stats.recorded_at,
       stats.recorded_at
     ];
     
