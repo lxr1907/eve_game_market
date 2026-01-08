@@ -8,6 +8,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const loyaltyRoutes = require('./routes/loyaltyRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const onlinePlayerStatsRoutes = require('./routes/onlinePlayerStatsRoutes');
 const Type = require('./models/Type');
 const Region = require('./models/Region');
 const RegionType = require('./models/RegionType');
@@ -16,6 +17,7 @@ const LoyaltyOffer = require('./models/LoyaltyOffer');
 const LoyaltyTypeLpIsk = require('./models/LoyaltyTypeLpIsk');
 const Group = require('./models/Group');
 const Category = require('./models/Category');
+const OnlinePlayerStats = require('./models/OnlinePlayerStats');
 
 const app = express();
 
@@ -35,7 +37,8 @@ Promise.all([
   LoyaltyOffer.createTable(),
   LoyaltyTypeLpIsk.createTable(),
   Group.createTable(),
-  Category.createTable()
+  Category.createTable(),
+  OnlinePlayerStats.createTable()
 ])
   .then(() => console.log('Database tables initialized successfully'))
   .catch(err => console.error('Error initializing database tables:', err));
@@ -47,6 +50,7 @@ app.use('/api', orderRoutes);
 app.use('/api', loyaltyRoutes);
 app.use('/api', groupRoutes);
 app.use('/api', categoryRoutes);
+app.use('/api', onlinePlayerStatsRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

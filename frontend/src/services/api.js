@@ -250,4 +250,33 @@ export const categoryApi = {
   syncAllCategoriesFromGroups: () => apiClient.get('/categories/sync-all')
 };
 
+// Online Player Stats API
+export const onlinePlayerStatsApi = {
+  // 获取所有统计数据
+  async getStats(page = 1, limit = 10) {
+    const response = await apiClient.get('/online-player-stats', { params: { page, limit } });
+    return response;
+  },
+  
+  // 根据日期范围获取统计数据
+  async getStatsByDateRange(startDate, endDate, page = 1, limit = 10) {
+    const response = await apiClient.get('/online-player-stats/by-date-range', { 
+      params: { startDate, endDate, page, limit } 
+    });
+    return response;
+  },
+  
+  // 获取最新的统计数据
+  async getLatestStats() {
+    const response = await apiClient.get('/online-player-stats/latest');
+    return response;
+  },
+  
+  // 手动记录一次统计数据
+  async recordStats() {
+    const response = await apiClient.post('/online-player-stats/record');
+    return response;
+  }
+};
+
 export default apiClient

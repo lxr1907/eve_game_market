@@ -1,5 +1,7 @@
 const app = require('./app');
 require('dotenv').config();
+const onlinePlayerStatsScheduler = require('./utils/onlinePlayerStatsScheduler');
+
 
 console.log('Starting server...');
 console.log('Environment variables loaded:', process.env.PORT);
@@ -11,6 +13,9 @@ const server = app.listen(PORT, '127.0.0.1', () => {
   console.log(`Health check: http://localhost:${PORT}/health`);
   console.log(`API documentation: http://localhost:${PORT}/api`);
   console.log('Server listening:', server.address());
+  
+  // Start the online player stats scheduler
+  onlinePlayerStatsScheduler.startScheduler();
 });
 
 server.on('error', (err) => {

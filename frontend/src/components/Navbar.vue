@@ -26,6 +26,10 @@
           <el-icon><Money /></el-icon>
           LP收益数据
         </el-menu-item>
+        <el-menu-item index="7">
+          <el-icon><UserFilled /></el-icon>
+          在线玩家统计
+        </el-menu-item>
       </el-menu>
     </el-header>
   </el-container>
@@ -34,7 +38,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { House, Collection, MapLocation, Document, Star, Money } from '@element-plus/icons-vue'
+import { House, Collection, MapLocation, Document, Star, Money, UserFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -48,6 +52,7 @@ const activeIndex = computed(() => {
   if (path === '/orders') return '4'
   if (path === '/loyalty') return '5'
   if (path === '/profit-data') return '6'
+  if (path === '/online-player-stats') return '7'
   return '1'
 })
 
@@ -66,6 +71,8 @@ const handleSelect = (key, keyPath) => {
     router.push('/loyalty')
   } else if (key === '6') {
     router.push('/profit-data')
+  } else if (key === '7') {
+    router.push('/online-player-stats')
   }
 }
 </script>

@@ -7,6 +7,7 @@ import RegionDetailView from '../views/RegionDetailView.vue'
 import OrderQueryView from '../views/OrderQueryView.vue'
 import LoyaltyOfferView from '../views/LoyaltyOfferView.vue'
 import ProfitDataView from '../views/ProfitDataView.vue'
+import OnlinePlayerStatsView from '../views/OnlinePlayerStatsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -50,6 +51,11 @@ const router = createRouter({
       path: '/profit-data',
       name: 'profit-data',
       component: ProfitDataView
+    },
+    {
+      path: '/online-player-stats',
+      name: 'online-player-stats',
+      component: OnlinePlayerStatsView
     }
   ]
 })
