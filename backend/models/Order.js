@@ -35,11 +35,41 @@ class Order {
       return;
     }
 
-    // 构建批量插入语句 - 使用参数化查询更安全
-    const placeholders = orders.map((_, index) => `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).join(', ');
-    const params = [];
+    // 合并相同价格的订单
+    const mergedOrdersMap = new Map();
     
     orders.forEach(order => {
+      // 构建合并键：price_regionId_typeId_isBuyOrder
+      const mergeKey = `${order.price}_${order.region_id}_${order.type_id}_${order.is_buy_order ? 1 : 0}`;
+      
+      if (mergedOrdersMap.has(mergeKey)) {
+        // 合并订单：累加数量
+        const existingOrder = mergedOrdersMap.get(mergeKey);
+        existingOrder.volume_remaining += order.volume_remaining;
+        existingOrder.volume_total += order.volume_total;
+        
+        // 保留最小的order_id作为合并后的order_id
+        if (order.order_id < existingOrder.order_id) {
+          existingOrder.order_id = order.order_id;
+        }
+      } else {
+        // 添加新订单
+        mergedOrdersMap.set(mergeKey, {
+          ...order,
+          volume_remaining: order.volume_remaining,
+          volume_total: order.volume_total
+        });
+      }
+    });
+    
+    // 转换为数组
+    const mergedOrders = Array.from(mergedOrdersMap.values());
+    
+    // 构建批量插入语句 - 使用参数化查询更安全
+    const placeholders = mergedOrders.map((_, index) => `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).join(', ');
+    const params = [];
+    
+    mergedOrders.forEach(order => {
       params.push(
         order.order_id,
         order.region_id,
@@ -80,6 +110,7 @@ class Order {
     `;
 
     try {
+      console.log(`Processing ${orders.length} orders, merged into ${mergedOrders.length} records`);
       await pool.execute(query, params);
       return true;
     } catch (error) {

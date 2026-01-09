@@ -44,6 +44,10 @@
                   <el-icon><Search /></el-icon>
                   查询
                 </el-button>
+                <el-button type="success" @click="calculateProfit" style="margin-left: 10px">
+                  <el-icon><CirclePlus /></el-icon>
+                  计算所有收益
+                </el-button>
               </div>
             </div>
           </template>
@@ -94,10 +98,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup>// 导入
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Search, Star } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search, Star, CirclePlus } from '@element-plus/icons-vue'
 import { loyaltyApi } from '../services/api'
 
 // 数据
@@ -182,6 +186,48 @@ async function fetchProfitData() {
   } catch (error) {
     console.error('获取收益数据失败:', error)
     ElMessage.error('获取收益数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 清理并计算所有LP收益
+async function calculateProfit() {
+  if (!filters.value.corporationId) {
+    ElMessage.warning('请先选择公司')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要清理并重新计算公司 ${filters.value.corporationId} 的所有LP收益吗？这可能需要一些时间。`,
+      '计算确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    )
+
+    loading.value = true
+    // 同时调用两个数据源的API
+    const [responseSerenity, responseInfinity] = await Promise.all([
+      loyaltyApi.cleanAndRecalculateProfit(filters.value.corporationId, 'serenity'),
+      loyaltyApi.cleanAndRecalculateProfit(filters.value.corporationId, 'infinity')
+    ])
+    
+    // 显示成功消息
+    ElMessage.success('两个数据源的收益计算任务已启动')
+    
+    // 计算完成后刷新数据（使用当前选择的数据源）
+    setTimeout(() => {
+      fetchProfitData()
+    }, 2000) // 延迟2秒，给后台一些处理时间
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('清理并计算LP收益失败:', error)
+      ElMessage.error('清理并计算LP收益失败')
+    }
   } finally {
     loading.value = false
   }

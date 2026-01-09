@@ -29,6 +29,37 @@ class LoyaltyTypeLpIsk {
     await pool.execute(query);
   }
 
+  // 保留每个corporation_id和type_id下profit_per_lp最高的2条数据
+  static async keepTop2ProfitRecords(corporationId, typeId, datasource = 'serenity') {
+    const query = `
+      DELETE FROM loyalty_type_lp_isk
+      WHERE id NOT IN (
+        SELECT id FROM (
+          SELECT id 
+          FROM loyalty_type_lp_isk 
+          WHERE corporation_id = ? AND type_id = ? AND datasource = ?
+          ORDER BY profit_per_lp DESC
+          LIMIT 2
+        ) AS top_records
+      ) AND corporation_id = ? AND type_id = ? AND datasource = ?
+    `;
+    
+    try {
+      await pool.execute(query, [
+        corporationId,
+        typeId,
+        datasource,
+        corporationId,
+        typeId,
+        datasource
+      ]);
+      return true;
+    } catch (error) {
+      console.error('Error keeping top 2 profit records:', error);
+      return false;
+    }
+  }
+
   static async insertOrUpdate(data, datasource = 'serenity') {
     const query = `
       INSERT INTO loyalty_type_lp_isk (
@@ -59,6 +90,10 @@ class LoyaltyTypeLpIsk {
         data.profit_per_lp,
         datasource
       ]);
+      
+      // 插入/更新后，保留该corporation_id和type_id下profit_per_lp最高的2条数据
+      await this.keepTop2ProfitRecords(data.corporation_id, data.type_id, datasource);
+      
       return true;
     } catch (error) {
       console.error('Error inserting/updating loyalty type lp isk:', error);
@@ -163,17 +198,23 @@ class LoyaltyTypeLpIsk {
                ((l.total_profit / l.quantity) * o.volume_remaining) as max_buy_order_total_profit,
                NOT EXISTS(
                  SELECT 1 FROM loyalty_offers lo
-                 WHERE lo.type_id = l.type_id AND lo.corporation_id != l.corporation_id AND lo.datasource = ?
+                 WHERE lo.type_id = l.type_id AND lo.corporation_id != l.corporation_id
                ) as is_unique
         FROM loyalty_type_lp_isk l
         LEFT JOIN types t ON l.type_id = t.id
-        LEFT JOIN orders o ON l.type_id = o.type_id AND l.region_id = o.region_id AND o.is_buy_order = 1 AND o.datasource = ?
         LEFT JOIN (
-          SELECT type_id, region_id, MAX(price) as max_price
-          FROM orders
-          WHERE is_buy_order = 1 AND datasource = ?
-          GROUP BY type_id, region_id
-        ) o_max ON o.type_id = o_max.type_id AND o.region_id = o_max.region_id AND o.price = o_max.max_price
+          SELECT o1.*
+          FROM orders o1
+          WHERE o1.is_buy_order = 1 AND o1.datasource = ?
+          AND o1.order_id = (
+            SELECT o2.order_id
+            FROM orders o2
+            WHERE o2.type_id = o1.type_id AND o2.region_id = o1.region_id
+            AND o2.is_buy_order = 1 AND o2.datasource = ?
+            ORDER BY o2.price DESC, o2.order_id DESC
+            LIMIT 1
+          )
+        ) o ON l.type_id = o.type_id AND l.region_id = o.region_id
         WHERE l.datasource = ?
         ${corporationId ? ' AND l.corporation_id = ?' : ''}
         ${regionId ? ' AND l.region_id = ?' : ''}
@@ -185,7 +226,6 @@ class LoyaltyTypeLpIsk {
       const queryParams = [];
       
       // 添加子查询和JOIN条件的datasource参数
-      queryParams.push(datasource); // loyalty_offers.datasource
       queryParams.push(datasource); // orders.datasource
       queryParams.push(datasource); // orders subquery.datasource
       queryParams.push(datasource); // loyalty_type_lp_isk.datasource

@@ -106,11 +106,11 @@ class LoyaltyController {
       
       if (corporationId) {
         // 按公司筛选
-        offers = await LoyaltyOffer.findAll(page, limit, search, corporationId);
+        offers = await LoyaltyOffer.findAll(page, limit, search, corporationId, 'serenity');
         total = offers.total;
       } else {
         // 获取所有
-        offers = await LoyaltyOffer.findAll(page, limit, search);
+        offers = await LoyaltyOffer.findAll(page, limit, search, null, 'serenity');
         total = offers.total;
       }
       
@@ -292,7 +292,7 @@ class LoyaltyController {
     const regionId = 10000002; // 固定为特定区域
     
     // 获取该公司的所有loyalty_offers
-    const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId, datasource);
+    const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId);
     const offers = allOffers.offers;
     
     console.log(`Fetched ${offers.length} loyalty offers from database`);

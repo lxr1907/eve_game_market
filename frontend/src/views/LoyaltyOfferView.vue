@@ -29,23 +29,12 @@
                     :value="corp.id"
                   />
                 </el-select>
-                <el-select
-                  v-model="selectedDatasource"
-                  placeholder="选择数据源"
-                  style="width: 150px; margin-right: 10px"
-                  @change="fetchLoyaltyOffers"
-                >
-                  <el-option label="晨曦(serenity)" value="serenity" />
-                  <el-option label="曙光(infinity)" value="infinity" />
-                </el-select>
+
                 <el-button type="primary" @click="syncLoyaltyOffers">
                   <el-icon><RefreshRight /></el-icon>
                   同步数据
                 </el-button>
-                <el-button type="success" @click="calculateProfit" style="margin-left: 10px">
-                  <el-icon><CirclePlus /></el-icon>
-                  计算所有收益
-                </el-button>
+
               </div>
             </div>
           </template>
@@ -114,7 +103,6 @@ const searchKeyword = ref('')
 
 // 公司选择器
 const selectedCorporationId = ref(1000180) // 默认公司ID
-const selectedDatasource = ref('serenity') // 默认数据源
 const corporations = ref([
   { id: 1000436, name: '天使-摩拉辛狂热者' },
   { id: 1000437, name: '古斯塔斯-古力突击队' },
@@ -132,8 +120,7 @@ async function fetchLoyaltyOffers() {
       currentPage.value,
       pageSize.value,
       selectedCorporationId.value,
-      searchKeyword.value,
-      selectedDatasource.value
+      searchKeyword.value
     )
     loyaltyOffers.value = data.data
     total.value = data.pagination.totalItems
@@ -164,7 +151,7 @@ async function syncLoyaltyOffers() {
     )
 
     loading.value = true
-    const response = await loyaltyApi.syncLoyaltyOffers(selectedCorporationId.value, selectedDatasource.value)
+    const response = await loyaltyApi.syncLoyaltyOffers(selectedCorporationId.value)
     ElMessage.success(response.message)
     
     // 同步完成后刷新数据
@@ -181,47 +168,7 @@ async function syncLoyaltyOffers() {
   }
 }
 
-// 清理并计算所有LP收益
-async function calculateProfit() {
-  if (!selectedCorporationId.value) {
-    ElMessage.warning('请先选择公司')
-    return
-  }
 
-  try {
-    await ElMessageBox.confirm(
-      `确定要清理并重新计算公司 ${selectedCorporationId.value} 的所有LP收益吗？这可能需要一些时间。`,
-      '计算确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info'
-      }
-    )
-
-    loading.value = true
-    // 同时调用两个数据源的API
-    const [responseSerenity, responseInfinity] = await Promise.all([
-      loyaltyApi.cleanAndRecalculateProfit(selectedCorporationId.value, 'serenity'),
-      loyaltyApi.cleanAndRecalculateProfit(selectedCorporationId.value, 'infinity')
-    ])
-    
-    // 显示成功消息
-    ElMessage.success('两个数据源的收益计算任务已启动')
-    
-    // 计算完成后刷新数据（使用当前选择的数据源）
-    setTimeout(() => {
-      fetchLoyaltyOffers()
-    }, 2000) // 延迟2秒，给后台一些处理时间
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('清理并计算LP收益失败:', error)
-      ElMessage.error('清理并计算LP收益失败')
-    }
-  } finally {
-    loading.value = false
-  }
-}
 
 // 分页处理
 function handleSizeChange(size) {

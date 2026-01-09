@@ -172,8 +172,8 @@ export const loyaltyApi = {
   },
   
   // 获取所有忠诚度商店商品
-  async getLoyaltyOffers(page = 1, limit = 10, corporationId = null, search = '', datasource = 'serenity') {
-    const params = { page, limit, datasource };
+  async getLoyaltyOffers(page = 1, limit = 10, corporationId = null, search = '') {
+    const params = { page, limit };
     if (corporationId) {
       params.corporationId = corporationId;
     }
