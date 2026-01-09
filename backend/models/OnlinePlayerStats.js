@@ -111,6 +111,8 @@ class OnlinePlayerStats {
     const offset = (pageInt - 1) * limitInt;
     
     let timeFormat = '';
+    let queryParams = [];
+    let whereClause = '';
     
     switch (dimension) {
       case 'month':
@@ -121,6 +123,8 @@ class OnlinePlayerStats {
         break;
       case 'hour':
         timeFormat = '%Y-%m-%d %H:00';
+        // 对于小时维度，只返回最近24小时的数据
+        whereClause = 'WHERE recorded_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)';
         break;
       case 'minute':
       default:
@@ -137,8 +141,9 @@ class OnlinePlayerStats {
         MIN(players) as min_players,
         COUNT(*) as data_points
       FROM online_player_stats
+      ${whereClause}
       GROUP BY DATE_FORMAT(recorded_at, '${timeFormat}')
-      ORDER BY recorded_at ASC
+      ORDER BY recorded_at DESC
       LIMIT ${limitInt} OFFSET ${offset}
     `;
     
@@ -146,11 +151,12 @@ class OnlinePlayerStats {
     const countQuery = `
       SELECT COUNT(DISTINCT DATE_FORMAT(recorded_at, '${timeFormat}')) as count
       FROM online_player_stats
+      ${whereClause}
     `;
     
     try {
-      const [rows] = await pool.execute(query);
-      const [countRows] = await pool.execute(countQuery);
+      const [rows] = await pool.execute(query, queryParams);
+      const [countRows] = await pool.execute(countQuery, queryParams);
       
       return {
         data: rows,
