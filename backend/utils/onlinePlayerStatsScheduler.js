@@ -8,13 +8,15 @@ const apiClient = axios.create({
 });
 
 // 定时调用记录统计数据的函数
-const recordStats = async () => {
+const recordStats = async (datasource) => {
   try {
-    console.log('Starting to record online player stats...');
-    const response = await apiClient.post('/online-player-stats/record');
-    console.log('Stats recorded successfully:', response.data);
+    console.log(`Starting to record online player stats for ${datasource}...`);
+    const response = await apiClient.post('/online-player-stats/record', null, {
+      params: { datasource: datasource }
+    });
+    console.log(`${datasource} stats recorded successfully:`, response.data);
   } catch (error) {
-    console.error('Error recording stats:', error.message);
+    console.error(`Error recording ${datasource} stats:`, error.message);
     if (error.response) {
       console.error('Response status:', error.response.status);
       console.error('Response data:', error.response.data);
@@ -22,15 +24,21 @@ const recordStats = async () => {
   }
 };
 
+// 为所有数据源记录统计数据
+const recordAllStats = async () => {
+  await recordStats('serenity');
+  await recordStats('infinity');
+};
+
 // 设置定时任务，每分钟执行一次
 const startScheduler = () => {
   console.log('Starting online player stats scheduler...');
   
   // 立即执行一次
-  recordStats();
+  recordAllStats();
   
   // 然后每分钟执行一次
-  setInterval(recordStats, 60 * 1000);
+  setInterval(recordAllStats, 60 * 1000);
 };
 
 // 如果直接运行这个文件，启动调度器

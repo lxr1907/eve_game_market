@@ -21,6 +21,14 @@
         </el-radio-group>
       </div>
 
+      <!-- 数据源选择 -->
+      <div class="datasource-selector">
+        <el-radio-group v-model="datasource" @change="fetchStats">
+          <el-radio-button label="serenity">晨曦</el-radio-button>
+          <el-radio-button label="infinity">曙光</el-radio-button>
+        </el-radio-group>
+      </div>
+
       <!-- 图表展示 -->
       <div class="chart-container">
         <el-card shadow="hover" class="chart-card">
@@ -131,6 +139,7 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(20)
 const timeDimension = ref('hour') // 默认为按小时展示
+const datasource = ref('serenity') // 默认为晨曦数据源
 
 // 格式化日期时间（东八区）
 const formatDateTime = (datetime) => {
@@ -191,7 +200,8 @@ const fetchStats = async () => {
       params: {
         page: currentPage.value,
         limit: pageSize.value,
-        dimension: timeDimension.value
+        dimension: timeDimension.value,
+        datasource: datasource.value
       }
     })
     // 反转数据顺序，使图表和表格从左到右展示从24小时前到当前时间的数据
@@ -379,6 +389,13 @@ onMounted(() => {
 /* 时间维度选择器样式 */
 .time-dimension-selector {
   margin: 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* 数据源选择器样式 */
+.datasource-selector {
+  margin: 10px 0 20px 0;
   display: flex;
   justify-content: center;
 }

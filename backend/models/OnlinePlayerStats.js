@@ -16,7 +16,8 @@ class OnlinePlayerStats {
         start_time DATETIME NOT NULL,
         vip BOOLEAN DEFAULT FALSE,
         recorded_at DATETIME NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        datasource VARCHAR(20) NOT NULL DEFAULT 'serenity'
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query);
@@ -24,8 +25,8 @@ class OnlinePlayerStats {
 
   static async insert(stats) {
     const query = `
-      INSERT INTO online_player_stats (players, server_version, start_time, vip, recorded_at, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO online_player_stats (players, server_version, start_time, vip, recorded_at, created_at, datasource)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
       stats.players,
@@ -33,7 +34,8 @@ class OnlinePlayerStats {
       stats.start_time,
       stats.vip ? 1 : 0,
       stats.recorded_at,
-      stats.recorded_at
+      stats.recorded_at,
+      stats.datasource || 'serenity'
     ];
     
     try {
@@ -45,67 +47,107 @@ class OnlinePlayerStats {
     }
   }
 
-  static async findAll(page = 1, limit = 10) {
+  static async findAll(page = 1, limit = 10, datasource = null) {
     const pageInt = parseInt(page) || 1;
     const limitInt = parseInt(limit) || 10;
     const offset = (pageInt - 1) * limitInt;
     
-    const query = `
+    let query = `
       SELECT * FROM online_player_stats
+    `;
+    
+    const params = [];
+    if (datasource) {
+      query += ` WHERE datasource = ?`;
+      params.push(datasource);
+    }
+    
+    query += `
       ORDER BY recorded_at ASC
       LIMIT ${limitInt} OFFSET ${offset}
     `;
     
-    const [rows] = await pool.execute(query);
+    const [rows] = await pool.execute(query, params);
     return rows;
   }
 
-  static async countAll() {
-    const query = `SELECT COUNT(*) as count FROM online_player_stats`;
-    const [rows] = await pool.execute(query);
+  static async countAll(datasource = null) {
+    let query = `SELECT COUNT(*) as count FROM online_player_stats`;
+    const params = [];
+    
+    if (datasource) {
+      query += ` WHERE datasource = ?`;
+      params.push(datasource);
+    }
+    
+    const [rows] = await pool.execute(query, params);
     return rows[0].count;
   }
 
-  static async findByDateRange(startDate, endDate, page = 1, limit = 10) {
+  static async findByDateRange(startDate, endDate, page = 1, limit = 10, datasource = null) {
     const pageInt = parseInt(page) || 1;
     const limitInt = parseInt(limit) || 10;
     const offset = (pageInt - 1) * limitInt;
     
-    const query = `
+    let query = `
       SELECT * FROM online_player_stats
       WHERE recorded_at BETWEEN ? AND ?
+    `;
+    
+    const params = [startDate, endDate];
+    
+    if (datasource) {
+      query += ` AND datasource = ?`;
+      params.push(datasource);
+    }
+    
+    query += `
       ORDER BY recorded_at DESC
       LIMIT ${limitInt} OFFSET ${offset}
     `;
     
-    const params = [startDate, endDate];
     const [rows] = await pool.execute(query, params);
     return rows;
   }
 
-  static async countByDateRange(startDate, endDate) {
-    const query = `
+  static async countByDateRange(startDate, endDate, datasource = null) {
+    let query = `
       SELECT COUNT(*) as count FROM online_player_stats
       WHERE recorded_at BETWEEN ? AND ?
     `;
     const params = [startDate, endDate];
+    
+    if (datasource) {
+      query += ` AND datasource = ?`;
+      params.push(datasource);
+    }
+    
     const [rows] = await pool.execute(query, params);
     return rows[0].count;
   }
 
-  static async getLatest() {
-    const query = `
+  static async getLatest(datasource = null) {
+    let query = `
       SELECT * FROM online_player_stats
+    `;
+    
+    const params = [];
+    if (datasource) {
+      query += ` WHERE datasource = ?`;
+      params.push(datasource);
+    }
+    
+    query += `
       ORDER BY recorded_at DESC
       LIMIT 1
     `;
     
-    const [rows] = await pool.execute(query);
+    const [rows] = await pool.execute(query, params);
     return rows.length > 0 ? rows[0] : null;
   }
 
   // 按时间维度聚合数据
-  static async getAggregatedStats(dimension, page = 1, limit = 10) {
+  static async getAggregatedStats(dimension, page = 1, limit = 10, datasource = null) {
     const pageInt = parseInt(page) || 1;
     const limitInt = parseInt(limit) || 10;
     const offset = (pageInt - 1) * limitInt;
@@ -130,6 +172,16 @@ class OnlinePlayerStats {
       default:
         timeFormat = '%Y-%m-%d %H:%i';
         break;
+    }
+    
+    // 添加数据源过滤条件
+    if (datasource) {
+      if (whereClause) {
+        whereClause += ` AND datasource = ?`;
+      } else {
+        whereClause = 'WHERE datasource = ?';
+      }
+      queryParams.push(datasource);
     }
     
     // 查询聚合数据

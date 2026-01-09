@@ -50,7 +50,8 @@ class OnlinePlayerStatsController {
         server_version: serverStatus.server_version,
         start_time: formattedDateTime,
         vip: serverStatus.vip || false,
-        recorded_at: formattedDateTime
+        recorded_at: formattedDateTime,
+        datasource: datasource
       };
       
       await OnlinePlayerStats.insert(stats);
@@ -67,18 +68,19 @@ class OnlinePlayerStatsController {
       const page = req.query.page || 1;
       const limit = req.query.limit || 10;
       const dimension = req.query.dimension;
+      const datasource = req.query.datasource;
       
       let stats, total;
       
       // 如果指定了时间维度，使用聚合查询
       if (dimension && ['month', 'day', 'hour', 'minute'].includes(dimension)) {
-        const aggregatedResult = await OnlinePlayerStats.getAggregatedStats(dimension, page, limit);
+        const aggregatedResult = await OnlinePlayerStats.getAggregatedStats(dimension, page, limit, datasource);
         stats = aggregatedResult.data;
         total = aggregatedResult.total;
       } else {
         // 否则使用普通查询
-        stats = await OnlinePlayerStats.findAll(page, limit);
-        total = await OnlinePlayerStats.countAll();
+        stats = await OnlinePlayerStats.findAll(page, limit, datasource);
+        total = await OnlinePlayerStats.countAll(datasource);
       }
       
       res.status(200).json({
@@ -103,13 +105,14 @@ class OnlinePlayerStatsController {
       const { startDate, endDate } = req.query;
       const page = req.query.page || 1;
       const limit = req.query.limit || 10;
+      const datasource = req.query.datasource;
       
       if (!startDate || !endDate) {
         return res.status(400).json({ success: false, message: 'startDate and endDate are required' });
       }
       
-      const stats = await OnlinePlayerStats.findByDateRange(startDate, endDate, page, limit);
-      const total = await OnlinePlayerStats.countByDateRange(startDate, endDate);
+      const stats = await OnlinePlayerStats.findByDateRange(startDate, endDate, page, limit, datasource);
+      const total = await OnlinePlayerStats.countByDateRange(startDate, endDate, datasource);
       
       res.status(200).json({
         success: true,
@@ -130,7 +133,8 @@ class OnlinePlayerStatsController {
   // 获取最新的统计数据
   async getLatestStats(req, res) {
     try {
-      const stats = await OnlinePlayerStats.getLatest();
+      const datasource = req.query.datasource;
+      const stats = await OnlinePlayerStats.getLatest(datasource);
       if (stats) {
         res.status(200).json({ success: true, data: stats });
       } else {
