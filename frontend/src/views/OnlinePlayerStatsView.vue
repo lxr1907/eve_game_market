@@ -194,7 +194,8 @@ const fetchStats = async () => {
         dimension: timeDimension.value
       }
     })
-    statsData.value = response.data.data
+    // 反转数据顺序，使图表和表格从左到右展示从24小时前到当前时间的数据
+    statsData.value = response.data.data.reverse()
     total.value = response.data.pagination.total
   } catch (error) {
     console.error('获取在线玩家统计失败:', error)
