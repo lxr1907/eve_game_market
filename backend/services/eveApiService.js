@@ -15,16 +15,16 @@ class EveApiService {
     this.throttleInterval = 1000; // 1秒
   }
 
-  async getTypeIds(page = 1, retries = 3) {
+  async getTypeIds(page = 1, datasource = 'serenity', retries = 3) {
     try {
       // 构建完整URL以便调试
-      const fullUrl = `${process.env.EVE_API_BASE_URL}/${process.env.EVE_API_VERSION}/universe/types/?page=${page}&datasource=serenity`;
+      const fullUrl = `${process.env.EVE_API_BASE_URL}/${process.env.EVE_API_VERSION}/universe/types/?page=${page}&datasource=${datasource}`;
       console.log(`Sending request to full URL: ${fullUrl}`);
-      console.log(`Sending request to /universe/types/?page=${page}&datasource=serenity`);
+      console.log(`Sending request to /universe/types/?page=${page}&datasource=${datasource}`);
       const response = await this.client.get(`/universe/types/`, {
         params: {
           page: page,
-          datasource: 'serenity'
+          datasource: datasource
         },
         timeout: 10000 // 设置10秒超时
       });
@@ -54,7 +54,7 @@ class EveApiService {
     }
   }
 
-  async getTypeDetails(typeId, retries = 3) {
+  async getTypeDetails(typeId, datasource = 'serenity', retries = 3) {
     // 节流控制：确保每1秒只请求1次
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
@@ -67,7 +67,7 @@ class EveApiService {
     try {
       const response = await this.client.get(`/universe/types/${typeId}/`, {
         params: {
-          datasource: 'serenity'
+          datasource: datasource
         },
         timeout: 5000 // 设置5秒超时
       });
@@ -85,7 +85,7 @@ class EveApiService {
     }
   }
 
-  async getGroupDetails(groupId, retries = 3) {
+  async getGroupDetails(groupId, datasource = 'serenity', retries = 3) {
     // 节流控制：确保每1秒只请求1次
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
@@ -98,7 +98,7 @@ class EveApiService {
     try {
       const response = await this.client.get(`/universe/groups/${groupId}/`, {
         params: {
-          datasource: 'serenity'
+          datasource: datasource
         },
         timeout: 5000 // 设置5秒超时
       });
@@ -116,7 +116,7 @@ class EveApiService {
     }
   }
 
-  async getCategoryDetails(categoryId, retries = 3) {
+  async getCategoryDetails(categoryId, datasource = 'serenity', retries = 3) {
     // 节流控制：确保每1秒只请求1次
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
@@ -129,7 +129,7 @@ class EveApiService {
     try {
       const response = await this.client.get(`/universe/categories/${categoryId}/`, {
         params: {
-          datasource: 'serenity'
+          datasource: datasource
         },
         timeout: 5000 // 设置5秒超时
       });
@@ -148,7 +148,7 @@ class EveApiService {
   }
 
   // 批量获取类型详情，提高效率
-  async getTypeDetailsBatch(typeIds, retries = 3) {
+  async getTypeDetailsBatch(typeIds, datasource = 'serenity', retries = 3) {
     console.log(`Processing batch of ${typeIds.length} type IDs`);
     
     // 将请求分块，每批最多50个请求（避免并发过多）
@@ -172,7 +172,7 @@ class EveApiService {
       this.lastRequestTime = Date.now();
       
       // 并发请求当前块中的所有类型详情
-      const promises = chunk.map(id => this.getTypeDetails(id, 0)); // 不重试，由外层处理
+      const promises = chunk.map(id => this.getTypeDetails(id, datasource, 0)); // 不重试，由外层处理
       const results = await Promise.allSettled(promises);
       
       // 处理结果
@@ -193,7 +193,7 @@ class EveApiService {
   }
 
   // 获取特定公司的忠诚度商店商品
-  async getLoyaltyStoreOffers(corporationId, retries = 3) {
+  async getLoyaltyStoreOffers(corporationId, datasource = 'serenity', retries = 3) {
     // 节流控制：确保每1秒只请求1次
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
@@ -205,10 +205,10 @@ class EveApiService {
     this.lastRequestTime = Date.now();
 
     try {
-      console.log(`Sending request for loyalty store offers: /loyalty/stores/${corporationId}/offers/?datasource=serenity`);
+      console.log(`Sending request for loyalty store offers: /loyalty/stores/${corporationId}/offers/?datasource=${datasource}`);
       const response = await this.client.get(`/loyalty/stores/${corporationId}/offers/`, {
         params: {
-          datasource: 'serenity'
+          datasource: datasource
         },
         timeout: 10000 // 设置10秒超时
       });
@@ -221,7 +221,7 @@ class EveApiService {
         console.log(`Timeout fetching loyalty store offers for corporation ${corporationId}, retrying (${retries} left)...`);
         // 指数退避策略，每次重试等待时间增加
         await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
-        return this.getLoyaltyStoreOffers(corporationId, retries - 1);
+        return this.getLoyaltyStoreOffers(corporationId, datasource, retries - 1);
       } else {
         console.error(`Error fetching loyalty store offers for corporation ${corporationId}: ${error.message}`);
         if (error.response) {
@@ -233,13 +233,13 @@ class EveApiService {
     }
   }
 
-  async getAllTypes(page = 1) {
+  async getAllTypes(page = 1, datasource = 'serenity') {
     try {
-      const typeIds = await this.getTypeIds(page);
+      const typeIds = await this.getTypeIds(page, datasource);
       // 不再使用Promise.all并发请求，而是串行请求以配合节流控制
       const typeDetails = [];
       for (const id of typeIds) {
-        const details = await this.getTypeDetails(id);
+        const details = await this.getTypeDetails(id, datasource);
         typeDetails.push(details);
       }
       return typeDetails;
@@ -249,7 +249,7 @@ class EveApiService {
     }
   }
 
-  async getAllTypesRecursively(startPage = 1, callback, idsOnly = false) {
+  async getAllTypesRecursively(startPage = 1, callback, idsOnly = false, datasource = 'serenity') {
     try {
       let page = startPage;
       let hasMoreData = true;
@@ -258,7 +258,7 @@ class EveApiService {
       
       while (hasMoreData) {
         console.log(`Fetching types from page ${page}...`);
-        const typeIds = await this.getTypeIds(page);
+        const typeIds = await this.getTypeIds(page, datasource);
         
         console.log(`Type IDs for page ${page}:`, typeIds.slice(0, 10), typeIds.length > 10 ? '...' : '');
         
@@ -284,7 +284,7 @@ class EveApiService {
             if (processedIds % 10 === 0) {
               console.log(`Processed ${processedIds} out of ${typeIds.length} type IDs from page ${page}`);
             }
-            const details = await this.getTypeDetails(id);
+            const details = await this.getTypeDetails(id, datasource);
             if (details) {
               typeDetails.push(details);
             } else {
@@ -341,13 +341,13 @@ class EveApiService {
   }
 
   // Region-related methods
-  async getRegionIds(page = 1, retries = 3) {
+  async getRegionIds(page = 1, datasource = 'serenity', retries = 3) {
     try {
-      console.log(`Sending request to /universe/regions/?page=${page}&datasource=serenity`);
+      console.log(`Sending request to /universe/regions/?page=${page}&datasource=${datasource}`);
       const response = await this.client.get(`/universe/regions/`, {
         params: {
           page: page,
-          datasource: 'serenity'
+          datasource: datasource
         },
         timeout: 10000 // 设置10秒超时
       });
@@ -377,7 +377,7 @@ class EveApiService {
     }
   }
 
-  async getRegionDetails(regionId, retries = 3) {
+  async getRegionDetails(regionId, datasource = 'serenity', retries = 3) {
     // 节流控制：确保每1秒只请求1次
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
@@ -389,10 +389,10 @@ class EveApiService {
     this.lastRequestTime = Date.now();
 
     try {
-      console.log(`Sending request for region details: /universe/regions/${regionId}/?datasource=serenity`);
+      console.log(`Sending request for region details: /universe/regions/${regionId}/?datasource=${datasource}`);
       const response = await this.client.get(`/universe/regions/${regionId}/`, {
         params: {
-          datasource: 'serenity'
+          datasource: datasource
         },
         timeout: 5000 // 设置5秒超时
       });
@@ -418,7 +418,7 @@ class EveApiService {
     }
   }
 
-  async getMarketRegionTypes(regionId, page = 1, retries = 3) {
+  async getMarketRegionTypes(regionId, page = 1, datasource = 'serenity', retries = 3) {
     // 节流控制：确保每1秒只请求1次
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
@@ -430,11 +430,11 @@ class EveApiService {
     this.lastRequestTime = Date.now();
 
     try {
-      console.log(`Sending request for market region types: /markets/${regionId}/types/?page=${page}&datasource=serenity`);
+      console.log(`Sending request for market region types: /markets/${regionId}/types/?page=${page}&datasource=${datasource}`);
       const response = await this.client.get(`/markets/${regionId}/types/`, {
         params: {
           page: page,
-          datasource: 'serenity'
+          datasource: datasource
         },
         timeout: 5000 // 设置5秒超时
       });
@@ -465,7 +465,7 @@ class EveApiService {
     }
   }
 
-  async getAllMarketRegionTypesRecursively(regionId, startPage = 1, callback) {
+  async getAllMarketRegionTypesRecursively(regionId, startPage = 1, callback, datasource = 'serenity') {
     try {
       let page = startPage;
       let hasMoreData = true;
@@ -474,7 +474,7 @@ class EveApiService {
       
       while (hasMoreData) {
         console.log(`Fetching market types for region ${regionId} from page ${page}...`);
-        const typeIds = await this.getMarketRegionTypes(regionId, page);
+        const typeIds = await this.getMarketRegionTypes(regionId, page, datasource);
         
         console.log(`Type IDs for region ${regionId}, page ${page}:`, typeIds.slice(0, 10), typeIds.length > 10 ? '...' : '');
         
@@ -501,7 +501,7 @@ class EveApiService {
     }
   }
 
-  async getAllRegionsRecursively(startPage = 1, callback, idsOnly = false) {
+  async getAllRegionsRecursively(startPage = 1, callback, idsOnly = false, datasource = 'serenity') {
     try {
       let page = startPage;
       let hasMoreData = true;
@@ -510,7 +510,7 @@ class EveApiService {
       
       while (hasMoreData) {
         console.log(`Fetching regions from page ${page}...`);
-        const regionIds = await this.getRegionIds(page);
+        const regionIds = await this.getRegionIds(page, datasource);
         
         console.log(`Region IDs for page ${page}:`, regionIds.slice(0, 10), regionIds.length > 10 ? '...' : '');
         
@@ -536,7 +536,7 @@ class EveApiService {
             if (processedIds % 10 === 0) {
               console.log(`Processed ${processedIds} out of ${regionIds.length} region IDs from page ${page}`);
             }
-            const details = await this.getRegionDetails(id);
+            const details = await this.getRegionDetails(id, datasource);
             if (details) {
               regionDetails.push(details);
             } else {
@@ -566,7 +566,7 @@ class EveApiService {
     }
   }
 
-  async getMarketOrdersByRegionAndType(regionId, typeId, orderType = 'all', page = 1, retries = 3) {
+  async getMarketOrdersByRegionAndType(regionId, typeId, orderType = 'all', page = 1, datasource = 'serenity', retries = 3) {
     // 节流控制：确保每1秒只请求1次
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
@@ -580,7 +580,7 @@ class EveApiService {
     try {
       const params = {
         page: page,
-        datasource: 'serenity',
+        datasource: datasource,
         type_id: typeId
       };
 
@@ -591,7 +591,7 @@ class EveApiService {
         params.buy = '0';
       }
 
-      console.log(`Sending request for market orders: /markets/${regionId}/orders/?page=${page}&type_id=${typeId}&datasource=serenity`);
+      console.log(`Sending request for market orders: /markets/${regionId}/orders/?page=${page}&type_id=${typeId}&datasource=${datasource}`);
       const response = await this.client.get(`/markets/${regionId}/orders/`, {
         params: params,
         timeout: 5000 // 设置5秒超时
@@ -626,7 +626,7 @@ class EveApiService {
         console.log(`Timeout fetching market orders for region ID ${regionId}, type ID ${typeId}, page ${page}, retrying (${retries} left)...`);
         // 指数退避策略，每次重试等待时间增加
         await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
-        return this.getMarketOrdersByRegionAndType(regionId, typeId, orderType, page, retries - 1);
+        return this.getMarketOrdersByRegionAndType(regionId, typeId, orderType, page, datasource, retries - 1);
       } else {
         console.error(`Error fetching market orders for region ID ${regionId}, type ID ${typeId}, page ${page}: ${error.message}`);
         if (error.response) {
@@ -638,7 +638,7 @@ class EveApiService {
     }
   }
 
-  async getAllMarketOrdersByRegionAndType(regionId, typeId, orderType = 'all', callback) {
+  async getAllMarketOrdersByRegionAndType(regionId, typeId, orderType = 'all', callback, datasource = 'serenity') {
     try {
       let page = 1;
       let hasMoreData = true;
@@ -647,7 +647,7 @@ class EveApiService {
       console.log(`Starting to fetch all market orders for region ${regionId}, type ${typeId}, orderType ${orderType}`);
       
       while (hasMoreData) {
-        const orders = await this.getMarketOrdersByRegionAndType(regionId, typeId, orderType, page);
+        const orders = await this.getMarketOrdersByRegionAndType(regionId, typeId, orderType, page, datasource);
         
         if (orders.length === 0) {
           hasMoreData = false;

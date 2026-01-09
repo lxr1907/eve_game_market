@@ -19,7 +19,8 @@ class LoyaltyOffer {
         status VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_offer (offer_id, corporation_id)
+        datasource VARCHAR(20) NOT NULL DEFAULT 'serenity',
+        UNIQUE KEY unique_offer (offer_id, corporation_id, datasource)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query);
@@ -33,7 +34,8 @@ class LoyaltyOffer {
         type_id INT NOT NULL,
         quantity INT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        datasource VARCHAR(20) NOT NULL DEFAULT 'serenity'
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query2);
@@ -48,13 +50,14 @@ class LoyaltyOffer {
       quantity: offerData.quantity !== undefined ? offerData.quantity : null,
       lp_cost: offerData.lp_cost !== undefined ? offerData.lp_cost : null,
       isk_cost: offerData.isk_cost !== undefined ? offerData.isk_cost : null,
-      ak_cost: offerData.ak_cost !== undefined ? offerData.ak_cost : null
+      ak_cost: offerData.ak_cost !== undefined ? offerData.ak_cost : null,
+      datasource: offerData.datasource || 'serenity'
     };
     
     const query = `
       INSERT INTO loyalty_offers (
-        offer_id, corporation_id, type_id, quantity, lp_cost, isk_cost, ak_cost
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        offer_id, corporation_id, type_id, quantity, lp_cost, isk_cost, ak_cost, datasource
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         type_id = VALUES(type_id),
         quantity = VALUES(quantity),
@@ -73,7 +76,8 @@ class LoyaltyOffer {
         safeData.quantity,
         safeData.lp_cost,
         safeData.isk_cost,
-        safeData.ak_cost
+        safeData.ak_cost,
+        safeData.datasource
       ]);
       
       return true;
@@ -83,7 +87,7 @@ class LoyaltyOffer {
     }
   }
 
-  static async insertRequiredItems(offerId, corporationId, requiredItems) {
+  static async insertRequiredItems(offerId, corporationId, requiredItems, datasource = 'serenity') {
     if (!requiredItems || requiredItems.length === 0) {
       return true;
     }
@@ -91,15 +95,15 @@ class LoyaltyOffer {
     // 先删除该offer_id和corporation_id的所有现有required_items
     const deleteQuery = `
       DELETE FROM loyalty_offer_required_items 
-      WHERE offer_id = ? AND corporation_id = ?
+      WHERE offer_id = ? AND corporation_id = ? AND datasource = ?
     `;
-    await pool.execute(deleteQuery, [offerId, corporationId]);
+    await pool.execute(deleteQuery, [offerId, corporationId, datasource]);
     
     // 插入新的required_items
     const insertQuery = `
       INSERT INTO loyalty_offer_required_items (
-        offer_id, corporation_id, type_id, quantity
-      ) VALUES (?, ?, ?, ?)
+        offer_id, corporation_id, type_id, quantity, datasource
+      ) VALUES (?, ?, ?, ?, ?)
     `;
     
     try {
@@ -108,7 +112,8 @@ class LoyaltyOffer {
           offerId,
           corporationId,
           item.type_id,
-          item.quantity
+          item.quantity,
+          datasource
         ]);
       }
       
@@ -119,16 +124,16 @@ class LoyaltyOffer {
     }
   }
 
-  static async findById(offerId, corporationId) {
+  static async findById(offerId, corporationId, datasource = 'serenity') {
     const query = `
       SELECT lo.*, lor.type_id as required_type_id, lor.quantity as required_quantity
       FROM loyalty_offers lo
-      LEFT JOIN loyalty_offer_required_items lor ON lo.offer_id = lor.offer_id AND lo.corporation_id = lor.corporation_id
-      WHERE lo.offer_id = ? AND lo.corporation_id = ?
+      LEFT JOIN loyalty_offer_required_items lor ON lo.offer_id = lor.offer_id AND lo.corporation_id = lor.corporation_id AND lo.datasource = lor.datasource
+      WHERE lo.offer_id = ? AND lo.corporation_id = ? AND lo.datasource = ?
     `;
     
     try {
-      const [rows] = await pool.execute(query, [offerId, corporationId]);
+      const [rows] = await pool.execute(query, [offerId, corporationId, datasource]);
       
       if (rows.length === 0) {
         return null;
@@ -146,6 +151,7 @@ class LoyaltyOffer {
         status: rows[0].status,
         created_at: rows[0].created_at,
         updated_at: rows[0].updated_at,
+        datasource: rows[0].datasource,
         required_items: []
       };
       
@@ -166,7 +172,7 @@ class LoyaltyOffer {
     }
   }
 
-  static async findAll(page = 1, limit = 10, search = '', corporationId = null) {
+  static async findAll(page = 1, limit = 10, search = '', corporationId = null, datasource = 'serenity') {
     const offset = (page - 1) * limit;
     
     try {
@@ -178,17 +184,17 @@ class LoyaltyOffer {
         const [offersResult] = await pool.query(
           `SELECT lo.*, t.name as type_name FROM loyalty_offers lo 
            LEFT JOIN types t ON lo.type_id = t.id 
-           WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?) AND lo.corporation_id = ? 
+           WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?) AND lo.corporation_id = ? AND lo.datasource = ? 
            ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
-          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(corporationId, 10), parseInt(limit, 10), parseInt(offset, 10)]
+          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(corporationId, 10), datasource, parseInt(limit, 10), parseInt(offset, 10)]
         );
         offers = offersResult;
         
         const [countResultData] = await pool.query(
           `SELECT COUNT(*) as count FROM loyalty_offers lo 
            LEFT JOIN types t ON lo.type_id = t.id 
-           WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?) AND lo.corporation_id = ?`,
-          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(corporationId, 10)]
+           WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?) AND lo.corporation_id = ? AND lo.datasource = ?`,
+          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(corporationId, 10), datasource]
         );
         countResult = countResultData;
       } else if (search) {
@@ -196,17 +202,17 @@ class LoyaltyOffer {
         const [offersResult] = await pool.query(
           `SELECT lo.*, t.name as type_name FROM loyalty_offers lo 
            LEFT JOIN types t ON lo.type_id = t.id 
-           WHERE lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ? 
+           WHERE lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ? AND lo.datasource = ? 
            ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
-          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(limit, 10), parseInt(offset, 10)]
+          [`%${search}%`, `%${search}%`, `%${search}%`, datasource, parseInt(limit, 10), parseInt(offset, 10)]
         );
         offers = offersResult;
         
         const [countResultData] = await pool.query(
           `SELECT COUNT(*) as count FROM loyalty_offers lo 
            LEFT JOIN types t ON lo.type_id = t.id 
-           WHERE lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?`,
-          [`%${search}%`, `%${search}%`, `%${search}%`]
+           WHERE lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ? AND lo.datasource = ?`,
+          [`%${search}%`, `%${search}%`, `%${search}%`, datasource]
         );
         countResult = countResultData;
       } else if (corporationId) {
@@ -215,15 +221,15 @@ class LoyaltyOffer {
         const [offersResult] = await pool.query(
           `SELECT lo.*, t.name as type_name FROM loyalty_offers lo 
            LEFT JOIN types t ON lo.type_id = t.id 
-           WHERE lo.corporation_id = ? 
+           WHERE lo.corporation_id = ? AND lo.datasource = ? 
            ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
-          [parseInt(corporationId, 10), parseInt(limit, 10), parseInt(offset, 10)]
+          [parseInt(corporationId, 10), datasource, parseInt(limit, 10), parseInt(offset, 10)]
         );
         offers = offersResult;
         
         const [countResultData] = await pool.query(
-          `SELECT COUNT(*) as count FROM loyalty_offers lo WHERE lo.corporation_id = ?`,
-          [parseInt(corporationId, 10)]
+          `SELECT COUNT(*) as count FROM loyalty_offers lo WHERE lo.corporation_id = ? AND lo.datasource = ?`,
+          [parseInt(corporationId, 10), datasource]
         );
         countResult = countResultData;
       } else {
@@ -231,13 +237,15 @@ class LoyaltyOffer {
         const [offersResult] = await pool.query(
           `SELECT lo.*, t.name as type_name FROM loyalty_offers lo 
            LEFT JOIN types t ON lo.type_id = t.id 
+           WHERE lo.datasource = ?
            ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
-          [parseInt(limit, 10), parseInt(offset, 10)]
+          [datasource, parseInt(limit, 10), parseInt(offset, 10)]
         );
         offers = offersResult;
         
         const [countResultData] = await pool.query(
-          `SELECT COUNT(*) as count FROM loyalty_offers lo`
+          `SELECT COUNT(*) as count FROM loyalty_offers lo WHERE lo.datasource = ?`,
+          [datasource]
         );
         countResult = countResultData;
       }
@@ -247,9 +255,9 @@ class LoyaltyOffer {
         const requiredItemsQuery = `
           SELECT type_id, quantity
           FROM loyalty_offer_required_items
-          WHERE offer_id = ? AND corporation_id = ?
+          WHERE offer_id = ? AND corporation_id = ? AND datasource = ?
         `;
-        const [requiredItems] = await pool.execute(requiredItemsQuery, [offer.offer_id, offer.corporation_id]);
+        const [requiredItems] = await pool.execute(requiredItemsQuery, [offer.offer_id, offer.corporation_id, offer.datasource]);
         offer.required_items = requiredItems;
       }
       
@@ -272,15 +280,15 @@ class LoyaltyOffer {
     }
   }
 
-  static async count(search = '', corporationId = null) {
+  static async count(search = '', corporationId = null, datasource = 'serenity') {
     let query = `
       SELECT COUNT(*) as count
       FROM loyalty_offers lo
       LEFT JOIN types t ON lo.type_id = t.id
-      WHERE 1 = 1
+      WHERE 1 = 1 AND lo.datasource = ?
     `;
     
-    const params = [];
+    const params = [datasource];
     
     if (search) {
       query += ` AND (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?)`;
@@ -302,10 +310,10 @@ class LoyaltyOffer {
     }
   }
 
-  static async findAllByCorporationId(corporationId, limit = 10, offset = 0) {
+  static async findAllByCorporationId(corporationId, limit = 10, offset = 0, datasource = 'serenity') {
     // 将limit和offset转换为page
     const page = Math.floor(offset / limit) + 1;
-    return this.findAll(page, limit, '', corporationId);
+    return this.findAll(page, limit, '', corporationId, datasource);
   }
 }
 

@@ -20,20 +20,21 @@ class LoyaltyTypeLpIsk {
         quantity INT NOT NULL,
         total_profit DECIMAL(20,6) NOT NULL,
         profit_per_lp DECIMAL(20,6) NOT NULL,
+        datasource VARCHAR(20) NOT NULL DEFAULT 'serenity',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_type_corp_region (type_id, corporation_id, region_id)
+        UNIQUE KEY unique_type_corp_region_datasource (type_id, corporation_id, region_id, datasource)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query);
   }
 
-  static async insertOrUpdate(data) {
+  static async insertOrUpdate(data, datasource = 'serenity') {
     const query = `
       INSERT INTO loyalty_type_lp_isk (
         type_id, corporation_id, region_id, lp_cost, isk_cost, 
-        sell_price, quantity, total_profit, profit_per_lp
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        sell_price, quantity, total_profit, profit_per_lp, datasource
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         lp_cost = VALUES(lp_cost),
         isk_cost = VALUES(isk_cost),
@@ -41,6 +42,7 @@ class LoyaltyTypeLpIsk {
         quantity = VALUES(quantity),
         total_profit = VALUES(total_profit),
         profit_per_lp = VALUES(profit_per_lp),
+        datasource = VALUES(datasource),
         updated_at = CURRENT_TIMESTAMP
     `;
     
@@ -54,7 +56,8 @@ class LoyaltyTypeLpIsk {
         data.sell_price,
         data.quantity,
         data.total_profit,
-        data.profit_per_lp
+        data.profit_per_lp,
+        datasource
       ]);
       return true;
     } catch (error) {
@@ -63,15 +66,15 @@ class LoyaltyTypeLpIsk {
     }
   }
 
-  static async findByCorporationId(corporationId) {
+  static async findByCorporationId(corporationId, datasource = 'serenity') {
     const query = `
       SELECT * FROM loyalty_type_lp_isk 
-      WHERE corporation_id = ? 
+      WHERE corporation_id = ? AND datasource = ? 
       ORDER BY profit_per_lp DESC
     `;
     
     try {
-      const [rows] = await pool.execute(query, [corporationId]);
+      const [rows] = await pool.execute(query, [corporationId, datasource]);
       return rows;
     } catch (error) {
       console.error('Error finding loyalty type lp isk by corporation id:', error);
@@ -79,15 +82,15 @@ class LoyaltyTypeLpIsk {
     }
   }
 
-  static async findByCorporationIdAndRegionId(corporationId, regionId) {
+  static async findByCorporationIdAndRegionId(corporationId, regionId, datasource = 'serenity') {
     const query = `
       SELECT * FROM loyalty_type_lp_isk 
-      WHERE corporation_id = ? AND region_id = ? 
+      WHERE corporation_id = ? AND region_id = ? AND datasource = ?
       ORDER BY profit_per_lp DESC
     `;
     
     try {
-      const [rows] = await pool.execute(query, [corporationId, regionId]);
+      const [rows] = await pool.execute(query, [corporationId, regionId, datasource]);
       return rows;
     } catch (error) {
       console.error('Error finding loyalty type lp isk by corporation and region:', error);
@@ -96,10 +99,10 @@ class LoyaltyTypeLpIsk {
   }
 
   // 按corporationId删除数据
-  static async deleteByCorporationId(corporationId) {
-    const query = `DELETE FROM loyalty_type_lp_isk WHERE corporation_id = ?`;
+  static async deleteByCorporationId(corporationId, datasource = 'serenity') {
+    const query = `DELETE FROM loyalty_type_lp_isk WHERE corporation_id = ? AND datasource = ?`;
     try {
-      await pool.execute(query, [corporationId]);
+      await pool.execute(query, [corporationId, datasource]);
       return true;
     } catch (error) {
       console.error('Error deleting loyalty_type_lp_isk by corporationId:', error);
@@ -123,19 +126,30 @@ class LoyaltyTypeLpIsk {
   static async getProfitDataWithTypeNames(page = 1, limit = 10, filters = {}) {
     try {
       const offset = (page - 1) * limit;
-      const { corporationId, regionId } = filters;
+      const { corporationId, regionId, datasource = 'serenity' } = filters;
       
       // 构建查询条件
       let whereClause = '';
+      let params = [];
       
       if (corporationId) {
-        whereClause += `WHERE l.corporation_id = ${parseInt(corporationId)} `;
+        whereClause += `WHERE l.corporation_id = ? `;
+        params.push(parseInt(corporationId));
       }
       
       if (regionId) {
         whereClause += whereClause ? 'AND ' : 'WHERE ';
-        whereClause += `l.region_id = ${parseInt(regionId)} `;
+        whereClause += `l.region_id = ? `;
+        params.push(parseInt(regionId));
       }
+      
+      // 添加datasource过滤条件
+      if (whereClause) {
+        whereClause += `AND l.datasource = ? `;
+      } else {
+        whereClause += `WHERE l.datasource = ? `;
+      }
+      params.push(datasource);
       
       // 构建总数查询
       const countQuery = `
@@ -145,7 +159,7 @@ class LoyaltyTypeLpIsk {
       `;
       
       // 执行总数查询
-      const [countResult] = await pool.execute(countQuery);
+      const [countResult] = await pool.execute(countQuery, params);
       const total = countResult[0].total;
       
       // 如果没有数据，直接返回空结果
@@ -159,35 +173,40 @@ class LoyaltyTypeLpIsk {
         };
       }
       
-      // 构建主查询
+      // 构建主查询 - 使用参数化查询
       const query = `
         SELECT l.*, t.name as type_name, 
                o.volume_remaining as max_buy_order_volume_remaining,
                ((l.total_profit / l.quantity) * o.volume_remaining) as max_buy_order_total_profit,
                NOT EXISTS(
                  SELECT 1 FROM loyalty_offers lo
-                 WHERE lo.type_id = l.type_id AND lo.corporation_id != l.corporation_id
+                 WHERE lo.type_id = l.type_id AND lo.corporation_id != l.corporation_id AND lo.datasource = ?
                ) as is_unique
         FROM loyalty_type_lp_isk l
         LEFT JOIN types t ON l.type_id = t.id
         LEFT JOIN (
           SELECT type_id, region_id, price, volume_remaining
           FROM orders o1
-          WHERE o1.is_buy_order = 1 AND 
+          WHERE o1.is_buy_order = 1 AND o1.datasource = ? AND 
                 (o1.type_id, o1.region_id, o1.price) IN (
                   SELECT type_id, region_id, MAX(price) as max_price
                   FROM orders
-                  WHERE is_buy_order = 1
+                  WHERE is_buy_order = 1 AND datasource = ?
                   GROUP BY type_id, region_id
                 )
         ) o ON l.type_id = o.type_id AND l.region_id = o.region_id
         ${whereClause}
         ORDER BY l.profit_per_lp DESC
-        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+        LIMIT ? OFFSET ?
       `;
       
+      // 为子查询添加datasource参数
+      const queryParams = [...params, datasource, datasource, datasource];
+      // 添加分页参数
+      queryParams.push(parseInt(limit), parseInt(offset));
+      
       // 执行主查询
-      const [rows] = await pool.execute(query);
+      const [rows] = await pool.execute(query, queryParams);
       
       return {
         data: rows,

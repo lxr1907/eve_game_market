@@ -166,14 +166,14 @@ export const orderApi = {
 
 export const loyaltyApi = {
   // 同步忠诚度商店商品
-  async syncLoyaltyOffers(corporationId) {
-    const response = await apiClient.post(`/loyalty/offers/sync`, { corporationId });
+  async syncLoyaltyOffers(corporationId, datasource = 'serenity') {
+    const response = await apiClient.post(`/loyalty/offers/sync`, { corporationId, datasource });
     return response;
   },
   
   // 获取所有忠诚度商店商品
-  async getLoyaltyOffers(page = 1, limit = 10, corporationId = null, search = '') {
-    const params = { page, limit };
+  async getLoyaltyOffers(page = 1, limit = 10, corporationId = null, search = '', datasource = 'serenity') {
+    const params = { page, limit, datasource };
     if (corporationId) {
       params.corporationId = corporationId;
     }
@@ -185,8 +185,8 @@ export const loyaltyApi = {
   },
   
   // 获取单个忠诚度商店商品
-  async getLoyaltyOfferById(id) {
-    const response = await apiClient.get(`/loyalty/offers/${id}`);
+  async getLoyaltyOfferById(id, datasource = 'serenity') {
+    const response = await apiClient.get(`/loyalty/offers/${id}`, { params: { datasource } });
     return response;
   },
   
@@ -203,20 +203,20 @@ export const loyaltyApi = {
   },
   
   // 删除忠诚度商店商品
-  async deleteLoyaltyOffer(id) {
-    const response = await apiClient.delete(`/loyalty/offers/${id}`);
+  async deleteLoyaltyOffer(id, datasource = 'serenity') {
+    const response = await apiClient.delete(`/loyalty/offers/${id}`, { params: { datasource } });
     return response;
   },
   
   // 计算LP收益（旧接口，保留但不建议使用）
-  async calculateProfit(corporationId) {
-    const response = await apiClient.post(`/loyalty/offers/calculate-profit`, { corporationId });
+  async calculateProfit(corporationId, datasource = 'serenity') {
+    const response = await apiClient.post(`/loyalty/offers/calculate-profit`, { corporationId, datasource });
     return response;
   },
   
   // 清理并重新计算LP收益（新接口）
-  async cleanAndRecalculateProfit(corporationId) {
-    const response = await apiClient.post(`/loyalty/offers/clean-recalculate-profit`, { corporationId });
+  async cleanAndRecalculateProfit(corporationId, datasource = 'serenity') {
+    const response = await apiClient.post(`/loyalty/offers/clean-recalculate-profit`, { corporationId, datasource });
     return response;
   },
 
@@ -227,7 +227,8 @@ export const loyaltyApi = {
         page, 
         limit, 
         corporationId: filters.corporationId, 
-        regionId: filters.regionId 
+        regionId: filters.regionId,
+        datasource: filters.datasource || 'serenity'
       } 
     });
     return response;

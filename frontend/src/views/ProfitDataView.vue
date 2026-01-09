@@ -31,6 +31,15 @@
                     :value="region.id"
                   />
                 </el-select>
+                <el-select
+                  v-model="filters.datasource"
+                  placeholder="选择数据源"
+                  style="width: 150px; margin-right: 10px"
+                  @change="fetchProfitData"
+                >
+                  <el-option label="晨曦(serenity)" value="serenity" />
+                  <el-option label="曙光(infinity)" value="infinity" />
+                </el-select>
                 <el-button type="primary" @click="fetchProfitData">
                   <el-icon><Search /></el-icon>
                   查询
@@ -101,7 +110,8 @@ const total = ref(0)
 // 过滤器
 const filters = ref({
   corporationId: 1000180, // 默认公司ID
-  regionId: 10000002      // 默认区域ID
+  regionId: 10000002,     // 默认区域ID
+  datasource: 'serenity'  // 默认数据源
 })
 
 // 公司列表

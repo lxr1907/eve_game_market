@@ -29,6 +29,15 @@
                     :value="corp.id"
                   />
                 </el-select>
+                <el-select
+                  v-model="selectedDatasource"
+                  placeholder="选择数据源"
+                  style="width: 150px; margin-right: 10px"
+                  @change="fetchLoyaltyOffers"
+                >
+                  <el-option label="晨曦(serenity)" value="serenity" />
+                  <el-option label="曙光(infinity)" value="infinity" />
+                </el-select>
                 <el-button type="primary" @click="syncLoyaltyOffers">
                   <el-icon><RefreshRight /></el-icon>
                   同步数据
@@ -105,6 +114,7 @@ const searchKeyword = ref('')
 
 // 公司选择器
 const selectedCorporationId = ref(1000180) // 默认公司ID
+const selectedDatasource = ref('serenity') // 默认数据源
 const corporations = ref([
   { id: 1000436, name: '天使-摩拉辛狂热者' },
   { id: 1000437, name: '古斯塔斯-古力突击队' },
@@ -122,7 +132,8 @@ async function fetchLoyaltyOffers() {
       currentPage.value,
       pageSize.value,
       selectedCorporationId.value,
-      searchKeyword.value
+      searchKeyword.value,
+      selectedDatasource.value
     )
     loyaltyOffers.value = data.data
     total.value = data.pagination.totalItems
@@ -153,7 +164,7 @@ async function syncLoyaltyOffers() {
     )
 
     loading.value = true
-    const response = await loyaltyApi.syncLoyaltyOffers(selectedCorporationId.value)
+    const response = await loyaltyApi.syncLoyaltyOffers(selectedCorporationId.value, selectedDatasource.value)
     ElMessage.success(response.message)
     
     // 同步完成后刷新数据
@@ -189,7 +200,7 @@ async function calculateProfit() {
     )
 
     loading.value = true
-    const response = await loyaltyApi.cleanAndRecalculateProfit(selectedCorporationId.value)
+    const response = await loyaltyApi.cleanAndRecalculateProfit(selectedCorporationId.value, selectedDatasource.value)
     ElMessage.success(response.message)
     
     // 计算完成后刷新数据
