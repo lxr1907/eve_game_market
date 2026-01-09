@@ -128,38 +128,21 @@ class LoyaltyTypeLpIsk {
       const offset = (page - 1) * limit;
       const { corporationId, regionId, datasource = 'serenity' } = filters;
       
-      // 构建查询条件
-      let whereClause = '';
-      let params = [];
-      
-      if (corporationId) {
-        whereClause += `WHERE l.corporation_id = ? `;
-        params.push(parseInt(corporationId));
-      }
-      
-      if (regionId) {
-        whereClause += whereClause ? 'AND ' : 'WHERE ';
-        whereClause += `l.region_id = ? `;
-        params.push(parseInt(regionId));
-      }
-      
-      // 添加datasource过滤条件
-      if (whereClause) {
-        whereClause += `AND l.datasource = ? `;
-      } else {
-        whereClause += `WHERE l.datasource = ? `;
-      }
-      params.push(datasource);
-      
       // 构建总数查询
       const countQuery = `
         SELECT COUNT(*) as total
         FROM loyalty_type_lp_isk l
-        ${whereClause}
+        WHERE l.datasource = ?
+        ${corporationId ? ' AND l.corporation_id = ?' : ''}
+        ${regionId ? ' AND l.region_id = ?' : ''}
       `;
       
       // 执行总数查询
-      const [countResult] = await pool.execute(countQuery, params);
+      const countParams = [datasource];
+      if (corporationId) countParams.push(corporationId.toString());
+      if (regionId) countParams.push(regionId.toString());
+      
+      const [countResult] = await pool.execute(countQuery, countParams);
       const total = countResult[0].total;
       
       // 如果没有数据，直接返回空结果
@@ -173,7 +156,7 @@ class LoyaltyTypeLpIsk {
         };
       }
       
-      // 构建主查询 - 使用参数化查询
+      // 构建主查询
       const query = `
         SELECT l.*, t.name as type_name, 
                o.volume_remaining as max_buy_order_volume_remaining,
@@ -184,29 +167,53 @@ class LoyaltyTypeLpIsk {
                ) as is_unique
         FROM loyalty_type_lp_isk l
         LEFT JOIN types t ON l.type_id = t.id
+        LEFT JOIN orders o ON l.type_id = o.type_id AND l.region_id = o.region_id AND o.is_buy_order = 1 AND o.datasource = ?
         LEFT JOIN (
-          SELECT type_id, region_id, price, volume_remaining
-          FROM orders o1
-          WHERE o1.is_buy_order = 1 AND o1.datasource = ? AND 
-                (o1.type_id, o1.region_id, o1.price) IN (
-                  SELECT type_id, region_id, MAX(price) as max_price
-                  FROM orders
-                  WHERE is_buy_order = 1 AND datasource = ?
-                  GROUP BY type_id, region_id
-                )
-        ) o ON l.type_id = o.type_id AND l.region_id = o.region_id
-        ${whereClause}
+          SELECT type_id, region_id, MAX(price) as max_price
+          FROM orders
+          WHERE is_buy_order = 1 AND datasource = ?
+          GROUP BY type_id, region_id
+        ) o_max ON o.type_id = o_max.type_id AND o.region_id = o_max.region_id AND o.price = o_max.max_price
+        WHERE l.datasource = ?
+        ${corporationId ? ' AND l.corporation_id = ?' : ''}
+        ${regionId ? ' AND l.region_id = ?' : ''}
         ORDER BY l.profit_per_lp DESC
         LIMIT ? OFFSET ?
       `;
       
-      // 为子查询添加datasource参数
-      const queryParams = [...params, datasource, datasource, datasource];
+      // 构建查询参数数组
+      const queryParams = [];
+      
+      // 添加子查询和JOIN条件的datasource参数
+      queryParams.push(datasource); // loyalty_offers.datasource
+      queryParams.push(datasource); // orders.datasource
+      queryParams.push(datasource); // orders subquery.datasource
+      queryParams.push(datasource); // loyalty_type_lp_isk.datasource
+      
+      // 添加过滤条件参数
+      if (corporationId) queryParams.push(corporationId.toString()); // l.corporation_id = ?
+      if (regionId) queryParams.push(regionId.toString()); // l.region_id = ?
+      
       // 添加分页参数
-      queryParams.push(parseInt(limit), parseInt(offset));
+      queryParams.push(limit.toString()); // LIMIT ?
+      queryParams.push(offset.toString()); // OFFSET ?
+      
+      // 添加详细调试日志
+      const placeholderCount = (query.match(/\?/g) || []).length;
+      const paramCount = queryParams.length;
+      
+      console.log('Debug - Main query:', query);
+      console.log('Debug - Placeholder count:', placeholderCount);
+      console.log('Debug - Parameter count:', paramCount);
+      console.log('Debug - Parameters:', queryParams);
+      console.log('Debug - Filters:', { corporationId, regionId, datasource });
+      console.log('Debug - CorporationId type:', typeof corporationId, 'RegionId type:', typeof regionId);
       
       // 执行主查询
       const [rows] = await pool.execute(query, queryParams);
+      
+      console.log('Debug - Main query result length:', rows.length);
+      console.log('Debug - Total from count query:', total);
       
       return {
         data: rows,

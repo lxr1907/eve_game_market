@@ -213,11 +213,12 @@ class LoyaltyController {
       const limit = parseInt(req.query.limit) || 10;
       const corporationId = req.query.corporationId ? parseInt(req.query.corporationId) : null;
       const regionId = req.query.regionId ? parseInt(req.query.regionId) : null;
+      const datasource = req.query.datasource || 'serenity';
       
-      console.log('getProfitData params:', { page, limit, corporationId, regionId });
+      console.log('getProfitData params:', { page, limit, corporationId, regionId, datasource });
       
       // 调用模型方法获取分页数据
-      const result = await LoyaltyTypeLpIsk.getProfitDataWithTypeNames(page, limit, { corporationId, regionId });
+      const result = await LoyaltyTypeLpIsk.getProfitDataWithTypeNames(page, limit, { corporationId, regionId, datasource });
       
       console.log('getProfitData result:', { total: result.total, dataLength: result.data.length });
       
@@ -239,7 +240,9 @@ class LoyaltyController {
   // 清理并重新计算LP收益
   static async cleanAndRecalculateProfit(req, res) {
     try {
-      const { corporationId } = req.body;
+      // 添加更健壮的错误处理，确保即使req.body是undefined也不会抛出错误
+      const corporationId = (req.body && req.body.corporationId) || parseInt(req.query.corporationId);
+      const datasource = (req.body && req.body.datasource) || req.query.datasource || 'serenity';
       
       if (!corporationId) {
         return res.status(400).json({ message: 'corporationId is required' });
@@ -258,11 +261,11 @@ class LoyaltyController {
           console.log(`Starting cleaning and recalculating LP profit for corporation ${corporationId} in background...`);
           
           // 清空该公司的表数据
-          await LoyaltyTypeLpIsk.deleteByCorporationId(corporationId);
+          await LoyaltyTypeLpIsk.deleteByCorporationId(corporationId, datasource);
           console.log(`Successfully deleted loyalty_type_lp_isk data for corporation ${corporationId}`);
           
           // 重新计算利润 - 直接调用静态方法
-          await LoyaltyController.calculateProfitInternal(corporationId);
+          await LoyaltyController.calculateProfitInternal(corporationId, datasource);
           console.log('Profit recalculation completed');
         } catch (error) {
           console.error(`Error in background cleaning and recalculating: ${error.message}`);
@@ -275,11 +278,11 @@ class LoyaltyController {
   }
 
   // 内部方法：执行LP收益计算
-  static async calculateProfitInternal(corporationId) {
+  static async calculateProfitInternal(corporationId, datasource = 'serenity') {
     const regionId = 10000002; // 固定为特定区域
     
     // 获取该公司的所有loyalty_offers
-    const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId);
+    const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId, datasource);
     const offers = allOffers.offers;
     
     console.log(`Fetched ${offers.length} loyalty offers from database`);
@@ -299,13 +302,13 @@ class LoyaltyController {
           continue;
         }
         // 检查是否已有该regionId和typeId的buy订单数据
-        const existingOrderCount = await Order.countByRegionAndType(regionId, offer.type_id, 'buy');
+        const existingOrderCount = await Order.countByRegionAndType(regionId, offer.type_id, 'buy', datasource);
         
         let shouldSync = existingOrderCount === 0;
         
         // 如果有订单数据，检查更新时间是否超过1小时
         if (!shouldSync) {
-          const latestUpdate = await Order.getLatestUpdateTime(regionId, offer.type_id, 'buy');
+          const latestUpdate = await Order.getLatestUpdateTime(regionId, offer.type_id, 'buy', datasource);
           if (latestUpdate) {
             const now = new Date();
             const updateTime = new Date(latestUpdate);
@@ -331,7 +334,7 @@ class LoyaltyController {
           }
           
           // 先删除该区域和类型的现有订单数据（如果有）
-          await Order.deleteByRegionAndType(regionId, offer.type_id);
+          await Order.deleteByRegionAndType(regionId, offer.type_id, datasource);
           
           // 定义处理订单数据的回调函数
           const processOrders = async (orders, page) => {
@@ -345,7 +348,7 @@ class LoyaltyController {
             }));
             
             // 批量插入或更新数据库
-            await Order.insertOrUpdate(ordersWithRegionAndType);
+            await Order.insertOrUpdate(ordersWithRegionAndType, datasource);
           };
 
           // 获取买入订单
@@ -353,7 +356,8 @@ class LoyaltyController {
             regionId, 
             offer.type_id, 
             'buy', 
-            processOrders
+            processOrders,
+            datasource
           );
           
           syncedOffers++;
@@ -361,7 +365,7 @@ class LoyaltyController {
         }
         
         // 查询该type_id在特定区域的最高价买单
-        const buyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1);
+        const buyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1, datasource);
         
         if (buyOrders.length > 0) {
           const highestBuyPrice = buyOrders[0].price;
@@ -387,7 +391,7 @@ class LoyaltyController {
             };
             
             // 插入或更新数据库
-            const saved = await LoyaltyTypeLpIsk.insertOrUpdate(lpIskData);
+            const saved = await LoyaltyTypeLpIsk.insertOrUpdate(lpIskData, datasource);
             if (saved) {
               savedOffers++;
             }
@@ -415,7 +419,7 @@ class LoyaltyController {
   // 计算LP收益
   static async calculateProfit(req, res) {
     try {
-      const { corporationId } = req.body;
+      const { corporationId, datasource = 'serenity' } = req.body;
       
       if (!corporationId) {
         return res.status(400).json({ message: 'corporationId is required' });
@@ -432,7 +436,7 @@ class LoyaltyController {
         try {
           console.log(`Starting LP profit calculation for corporation ${corporationId} in background...`);
           // 直接调用静态方法
-          await LoyaltyController.calculateProfitInternal(corporationId);
+          await LoyaltyController.calculateProfitInternal(corporationId, datasource);
         } catch (error) {
           console.error(`Error in background calculation: ${error.message}`);
         }

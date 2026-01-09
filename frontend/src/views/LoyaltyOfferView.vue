@@ -200,10 +200,16 @@ async function calculateProfit() {
     )
 
     loading.value = true
-    const response = await loyaltyApi.cleanAndRecalculateProfit(selectedCorporationId.value, selectedDatasource.value)
-    ElMessage.success(response.message)
+    // 同时调用两个数据源的API
+    const [responseSerenity, responseInfinity] = await Promise.all([
+      loyaltyApi.cleanAndRecalculateProfit(selectedCorporationId.value, 'serenity'),
+      loyaltyApi.cleanAndRecalculateProfit(selectedCorporationId.value, 'infinity')
+    ])
     
-    // 计算完成后刷新数据
+    // 显示成功消息
+    ElMessage.success('两个数据源的收益计算任务已启动')
+    
+    // 计算完成后刷新数据（使用当前选择的数据源）
     setTimeout(() => {
       fetchLoyaltyOffers()
     }, 2000) // 延迟2秒，给后台一些处理时间
