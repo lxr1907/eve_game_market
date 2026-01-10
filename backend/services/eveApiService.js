@@ -667,6 +667,9 @@ class EveApiService {
           await callback(orders, page);
         }
         
+        // 添加 50ms 延迟，避免被 API 服务器限流
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
         page++;
       }
       

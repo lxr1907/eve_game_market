@@ -103,14 +103,31 @@ class Order {
         updated_at = CURRENT_TIMESTAMP
     `;
 
-    try {
-      console.log(`Processing ${orders.length} orders, merged into ${mergedOrders.length} records`);
-      await pool.execute(query, params);
-      return true;
-    } catch (error) {
-      console.error('Error inserting/updating orders:', error);
-      throw error;
+    // 添加死锁重试机制
+    const maxRetries = 3;
+    let retries = 0;
+
+    while (retries <= maxRetries) {
+      try {
+        console.log(`Processing ${orders.length} orders, merged into ${mergedOrders.length} records (attempt ${retries + 1})`);
+        await pool.execute(query, params);
+        return true;
+      } catch (error) {
+        if (error.errno === 1213 && retries < maxRetries) {
+          // 1213是MySQL死锁错误码
+          console.error(`Deadlock detected, retrying in ${2 ** retries} seconds...`);
+          retries++;
+          // 指数退避策略
+          await new Promise(resolve => setTimeout(resolve, 2 ** retries * 1000));
+        } else {
+          console.error('Error inserting/updating orders:', error);
+          throw error;
+        }
+      }
     }
+
+    // 如果所有重试都失败
+    throw new Error('Failed to insert/update orders after multiple retries due to deadlocks');
   }
 
   static async findByRegionAndType(regionId, typeId, orderType = null, page = 1, limit = 10, datasource = 'serenity') {
