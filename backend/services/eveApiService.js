@@ -621,7 +621,13 @@ class EveApiService {
         return []; // 返回空数组表示没有更多数据
       }
       
-      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+      if (error.response?.status === 420) {
+        // 420状态码：ESI API请求被屏蔽，需要长时间等待
+        console.error(`API request blocked (420) for region ID ${regionId}, type ID ${typeId}, page ${page}`);
+        console.error('Response data:', error.response.data);
+        // 被屏蔽时，抛出特殊错误，让上层处理
+        throw new Error(`API_BLOCKED: ${JSON.stringify(error.response.data)}`);
+      } else if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
         // 如果是超时或连接重置错误，进行重试
         console.log(`Timeout fetching market orders for region ID ${regionId}, type ID ${typeId}, page ${page}, retrying (${retries} left)...`);
         // 指数退避策略，每次重试等待时间增加

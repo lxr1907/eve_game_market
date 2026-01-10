@@ -418,7 +418,16 @@ class LoyaltyController {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (error) {
-        console.error(`Error processing offer ${offer.offer_id}: ${error.message}`);
+        if (error.message.startsWith('API_BLOCKED')) {
+          // 如果是API被屏蔽的错误，记录并停止处理
+          console.error(`API blocked while processing offer ${offer.offer_id}: ${error.message}`);
+          console.error('Stopping profit calculation due to API block');
+          // 抛出错误，让上层处理
+          throw error;
+        } else {
+          // 其他错误，只记录并继续处理下一个offer
+          console.error(`Error processing offer ${offer.offer_id}: ${error.message}`);
+        }
       }
     }
     
