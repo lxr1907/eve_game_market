@@ -2,6 +2,10 @@ const pool = require('../config/database');
 
 class LoyaltyOffer {
   static async dropTable() {
+    // 先删除从表
+    await pool.execute(`DROP TABLE IF EXISTS loyalty_offer_required_items`);
+    // 再删除主表
+    await pool.execute(`DROP TABLE IF EXISTS loyalty_offers`);
   }
 
   static async createTable() {
@@ -33,8 +37,7 @@ class LoyaltyOffer {
         type_id INT NOT NULL,
         quantity INT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        datasource VARCHAR(20) NOT NULL DEFAULT 'serenity'
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query2);
@@ -84,7 +87,7 @@ class LoyaltyOffer {
     }
   }
 
-  static async insertRequiredItems(offerId, corporationId, requiredItems, datasource = 'serenity') {
+  static async insertRequiredItems(offerId, corporationId, requiredItems) {
     if (!requiredItems || requiredItems.length === 0) {
       return true;
     }
@@ -92,15 +95,15 @@ class LoyaltyOffer {
     // 先删除该offer_id和corporation_id的所有现有required_items
     const deleteQuery = `
       DELETE FROM loyalty_offer_required_items 
-      WHERE offer_id = ? AND corporation_id = ? AND datasource = ?
+      WHERE offer_id = ? AND corporation_id = ?
     `;
-    await pool.execute(deleteQuery, [offerId, corporationId, datasource]);
+    await pool.execute(deleteQuery, [offerId, corporationId]);
     
     // 插入新的required_items
     const insertQuery = `
       INSERT INTO loyalty_offer_required_items (
-        offer_id, corporation_id, type_id, quantity, datasource
-      ) VALUES (?, ?, ?, ?, ?)
+        offer_id, corporation_id, type_id, quantity
+      ) VALUES (?, ?, ?, ?)
     `;
     
     try {
@@ -109,8 +112,7 @@ class LoyaltyOffer {
           offerId,
           corporationId,
           item.type_id,
-          item.quantity,
-          datasource
+          item.quantity
         ]);
       }
       
@@ -121,16 +123,16 @@ class LoyaltyOffer {
     }
   }
 
-  static async findById(offerId, corporationId, datasource = 'serenity') {
+  static async findById(offerId, corporationId) {
     const query = `
       SELECT lo.*, lor.type_id as required_type_id, lor.quantity as required_quantity
       FROM loyalty_offers lo
-      LEFT JOIN loyalty_offer_required_items lor ON lo.offer_id = lor.offer_id AND lo.corporation_id = lor.corporation_id AND lo.datasource = lor.datasource
-      WHERE lo.offer_id = ? AND lo.corporation_id = ? AND lo.datasource = ?
+      LEFT JOIN loyalty_offer_required_items lor ON lo.offer_id = lor.offer_id AND lo.corporation_id = lor.corporation_id
+      WHERE lo.offer_id = ? AND lo.corporation_id = ?
     `;
     
     try {
-      const [rows] = await pool.execute(query, [offerId, corporationId, datasource]);
+      const [rows] = await pool.execute(query, [offerId, corporationId]);
       
       if (rows.length === 0) {
         return null;
@@ -148,7 +150,6 @@ class LoyaltyOffer {
         status: rows[0].status,
         created_at: rows[0].created_at,
         updated_at: rows[0].updated_at,
-        datasource: rows[0].datasource,
         required_items: []
       };
       
@@ -250,9 +251,9 @@ class LoyaltyOffer {
         const requiredItemsQuery = `
           SELECT type_id, quantity
           FROM loyalty_offer_required_items
-          WHERE offer_id = ? AND corporation_id = ? AND datasource = ?
+          WHERE offer_id = ? AND corporation_id = ?
         `;
-        const [requiredItems] = await pool.execute(requiredItemsQuery, [offer.offer_id, offer.corporation_id, datasource]);
+        const [requiredItems] = await pool.execute(requiredItemsQuery, [offer.offer_id, offer.corporation_id]);
         offer.required_items = requiredItems;
       }
       
@@ -275,15 +276,15 @@ class LoyaltyOffer {
     }
   }
 
-  static async count(search = '', corporationId = null, datasource = 'serenity') {
+  static async count(search = '', corporationId = null) {
     let query = `
       SELECT COUNT(*) as count
       FROM loyalty_offers lo
       LEFT JOIN types t ON lo.type_id = t.id
-      WHERE 1 = 1 AND lo.datasource = ?
+      WHERE 1 = 1
     `;
     
-    const params = [datasource];
+    const params = [];
     
     if (search) {
       query += ` AND (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?)`;
@@ -305,10 +306,10 @@ class LoyaltyOffer {
     }
   }
 
-  static async findAllByCorporationId(corporationId, limit = 10, offset = 0, datasource = 'serenity') {
+  static async findAllByCorporationId(corporationId, limit = 10, offset = 0) {
     // 将limit和offset转换为page
     const page = Math.floor(offset / limit) + 1;
-    return this.findAll(page, limit, '', corporationId, datasource);
+    return this.findAll(page, limit, '', corporationId);
   }
 }
 
