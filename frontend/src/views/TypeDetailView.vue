@@ -114,7 +114,7 @@ onMounted(() => {
 <style scoped>
 .type-detail {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: transparent;
 }
 
 .el-header {

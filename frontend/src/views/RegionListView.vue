@@ -40,7 +40,6 @@
             v-loading="loading"
             :data="regions"
             style="width: 100%"
-            stripe
             @row-click="handleRowClick"
           >
             <el-table-column prop="id" label="ID" width="80" />
@@ -197,7 +196,7 @@ onMounted(() => {
 <style scoped>
 .region-list {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: transparent;
 }
 
 .el-header {

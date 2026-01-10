@@ -51,7 +51,6 @@
             v-loading="loading"
             :data="types"
             style="width: 100%"
-            stripe
             @row-click="handleRowClick"
           >
             <el-table-column prop="id" label="ID" width="80" />
@@ -322,7 +321,7 @@ onUnmounted(() => {
 <style scoped>
 .type-list {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: transparent;
 }
 
 .el-header {

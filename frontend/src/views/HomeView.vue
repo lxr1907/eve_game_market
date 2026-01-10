@@ -49,7 +49,7 @@ import { List, View, RefreshRight } from '@element-plus/icons-vue'
 <style scoped>
 .home {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: transparent;
 }
 
 .el-header h1 {

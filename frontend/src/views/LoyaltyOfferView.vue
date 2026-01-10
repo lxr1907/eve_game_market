@@ -44,7 +44,6 @@
             v-loading="loading"
             :data="loyaltyOffers"
             style="width: 100%"
-            stripe
           >
             <el-table-column prop="id" label="商品ID" width="100" />
             <el-table-column prop="corporation_id" label="公司ID" width="120" />

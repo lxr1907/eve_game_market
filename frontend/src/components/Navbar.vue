@@ -87,7 +87,7 @@ const handleSelect = (key, keyPath) => {
 }
 
 .navbar-header {
-  background-color: #409eff;
+  background-color: #2c5cc5;
   color: white;
   padding: 0;
   height: 60px;
@@ -97,7 +97,7 @@ const handleSelect = (key, keyPath) => {
 }
 
 :deep(.el-menu) {
-  background-color: #409eff;
+  background-color: #2c5cc5;
   border-bottom: none;
 }
 
@@ -107,7 +107,7 @@ const handleSelect = (key, keyPath) => {
 
 :deep(.el-menu-item:hover),
 :deep(.el-menu-item.is-active) {
-  background-color: #66b1ff;
+  background-color: #409eff;
   color: white;
 }
 </style>

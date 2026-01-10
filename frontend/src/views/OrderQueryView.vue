@@ -325,7 +325,7 @@ export default {
 .top-query-form {
   margin-bottom: 20px;
   padding: 1px;
-  background-color: #f5f5f5;
+  background-color: #2c3e50;
   border-radius: 8px;
 }
 
@@ -339,7 +339,7 @@ export default {
 /* 左侧面板 */
 .left-panel {
   width: 300px;
-  background-color: #f5f5f5;
+  background-color: #2c3e50;
   border-radius: 8px;
   padding: 20px;
   display: flex;
@@ -360,9 +360,11 @@ export default {
 .search-input input {
   flex: 1;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid #4a5568;
   border-radius: 4px;
   font-size: 16px;
+  background-color: #1a202c;
+  color: #e2e8f0;
 }
 
 .search-input button {
@@ -400,15 +402,16 @@ export default {
 .search-results li {
   padding: 10px;
   margin-bottom: 8px;
-  background-color: white;
+  background-color: #1a202c;
   border-radius: 4px;
   cursor: pointer;
-  border: 1px solid #ddd;
+  border: 1px solid #4a5568;
   transition: all 0.2s ease;
+  color: #e2e8f0;
 }
 
 .search-results li:hover {
-  background-color: #e8f5e9;
+  background-color: #2d3748;
   border-color: #4CAF50;
 }
 
@@ -428,7 +431,7 @@ export default {
 
 /* 订单区域 */
 .order-section {
-  background-color: #f5f5f5;
+  background-color: #2c3e50;
   border-radius: 8px;
   padding: 20px;
   flex: 1;
@@ -439,21 +442,22 @@ export default {
 .order-section h2 {
   margin-top: 0;
   margin-bottom: 20px;
-  color: #333;
+  color: #e2e8f0;
   font-size: 20px;
 }
 
 .order-section table {
   width: 100%;
   border-collapse: collapse;
-  background-color: white;
+  background-color: #1a202c;
+  color: #e2e8f0;
 }
 
 .order-section th,
 .order-section td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #4a5568;
   font-size: 14px;
 }
 
@@ -463,8 +467,20 @@ export default {
   font-weight: bold;
 }
 
+.order-section tr {
+  background-color: #1a202c;
+}
+
+.order-section tr:nth-child(even) {
+  background-color: #1a202c;
+}
+
+.order-section tr:nth-child(odd) {
+  background-color: #1a202c;
+}
+
 .order-section tr:hover {
-  background-color: #f5f5f5;
+  background-color: #2d3748;
 }
 
 /* 表单样式 */

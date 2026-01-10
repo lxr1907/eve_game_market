@@ -56,7 +56,6 @@
             v-loading="loading"
             :data="profitData"
             style="width: 100%"
-            stripe
           >
 
             <el-table-column label="物品名称" min-width="250">

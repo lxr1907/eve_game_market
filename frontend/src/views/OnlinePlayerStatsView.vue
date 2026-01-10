@@ -301,12 +301,24 @@ const chartOption = computed(() => {
   }
   
   return {
+    backgroundColor: '#1e1e1e',
+    textStyle: {
+      color: '#e0e0e0'
+    },
     title: {
       text: '',
-      left: 'center'
+      left: 'center',
+      textStyle: {
+        color: '#ffffff'
+      }
     },
     tooltip: {
       trigger: 'axis',
+      backgroundColor: 'rgba(44, 62, 80, 0.9)',
+      borderColor: '#333',
+      textStyle: {
+        color: '#e0e0e0'
+      },
       formatter: (params) => {
         let result = `${params[0].name}<br/>`
         params.forEach(param => {
@@ -327,26 +339,68 @@ const chartOption = computed(() => {
     },
     legend: {
       data: series.map(s => s.name),
-      top: 30
+      top: 30,
+      textStyle: {
+        color: '#e0e0e0'
+      },
+      itemWidth: 12,
+      itemHeight: 12
     },
     grid: {
       left: '3%',
       right: '4%',
       bottom: '3%',
       top: '15%',
-      containLabel: true
+      containLabel: true,
+      backgroundColor: 'transparent'
     },
     xAxis: {
       type: 'category',
       boundaryGap: false,
       data: dates,
       axisLabel: {
-        rotate: timeDimension.value === 'minute' ? 45 : 0
+        rotate: timeDimension.value === 'minute' ? 45 : 0,
+        color: '#e0e0e0'
+      },
+      axisLine: {
+        lineStyle: {
+          color: '#333'
+        }
+      },
+      axisTick: {
+        lineStyle: {
+          color: '#333'
+        }
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#333',
+          type: 'dashed'
+        }
       }
     },
     yAxis: {
       type: 'value',
-      minInterval: 1
+      minInterval: 1,
+      axisLabel: {
+        color: '#e0e0e0'
+      },
+      axisLine: {
+        lineStyle: {
+          color: '#333'
+        }
+      },
+      axisTick: {
+        lineStyle: {
+          color: '#333'
+        }
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#333',
+          type: 'dashed'
+        }
+      }
     },
     series: series
   }
