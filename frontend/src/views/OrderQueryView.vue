@@ -462,7 +462,7 @@ export default {
 }
 
 .order-section th {
-  background-color: #4CAF50;
+  background-color: #2c3e50;
   color: white;
   font-weight: bold;
 }
@@ -480,7 +480,7 @@ export default {
 }
 
 .order-section tr:hover {
-  background-color: #2d3748;
+  background-color: #34495e;
 }
 
 /* 表单样式 */

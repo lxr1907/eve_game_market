@@ -60,16 +60,93 @@ body {
   border-bottom-color: #333 !important;
 }
 
-.el-table__body-wrapper tr {
-  background-color: #1e1e1e !important;
-}
-
+/* 基础行样式 */
+.el-table__body-wrapper tr,
+.el-table__body-wrapper tr.el-table__row,
 .el-table__body-wrapper tr.el-table__row--striped {
   background-color: #1e1e1e !important;
 }
 
+/* 深度穿透选择器确保覆盖Element Plus内部样式 */
 .el-table__body-wrapper tr:hover {
-  background-color: #2c3e50 !important;
+  background-color: #34495e !important;
+  color: #ffffff !important;
+}
+
+.el-table__body-wrapper tr.el-table__row--striped:hover {
+  background-color: #34495e !important;
+  color: #ffffff !important;
+}
+
+.el-table__body-wrapper tr.el-table__row:hover {
+  background-color: #34495e !important;
+  color: #ffffff !important;
+}
+
+.el-table__body-wrapper tr.el-table__row--hover {
+  background-color: #34495e !important;
+  color: #ffffff !important;
+}
+
+/* 确保单元格背景色也被覆盖 */
+.el-table__body-wrapper tr:hover td {
+  background-color: #34495e !important;
+  color: #ffffff !important;
+}
+
+.el-table__body-wrapper tr.el-table__row--striped:hover td {
+  background-color: #34495e !important;
+  color: #ffffff !important;
+}
+
+.el-table__body-wrapper tr.el-table__row:hover td {
+  background-color: #34495e !important;
+  color: #ffffff !important;
+}
+
+.el-table__body-wrapper tr.el-table__row--hover td {
+  background-color: #34495e !important;
+  color: #ffffff !important;
+}
+
+/* 确保覆盖Element Plus的所有可能的行选择器 */
+.el-table__body tr:hover {
+  background-color: #34495e !important;
+  color: #ffffff !important;
+}
+
+.el-table__body tr.el-table__row--hover {
+  background-color: #34495e !important;
+  color: #ffffff !important;
+}
+
+.el-table__body tr:hover td {
+  background-color: #34495e !important;
+  color: #ffffff !important;
+}
+
+/* 确保覆盖Element Plus的表格行高和内边距 */
+.el-table__body tr.el-table__row {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0 !important;
+}
+
+.el-table__body tr.el-table__row--striped {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0 !important;
+}
+
+/* 使用!important确保最高优先级 */
+.el-table__body-wrapper tr:hover,
+.el-table__body-wrapper tr:hover td,
+.el-table__body tr:hover,
+.el-table__body tr:hover td,
+.el-table__row:hover,
+.el-table__row:hover td {
+  background-color: #34495e !important;
+  color: #ffffff !important;
+  background-image: none !important;
+  background-repeat: no-repeat !important;
 }
 
 .el-table__body-wrapper td {
