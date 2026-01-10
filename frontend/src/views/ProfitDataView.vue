@@ -35,7 +35,6 @@
                   v-model="filters.datasource"
                   placeholder="选择数据源"
                   style="width: 150px; margin-right: 10px"
-                  @change="fetchProfitData"
                 >
                   <el-option label="晨曦(serenity)" value="serenity" />
                   <el-option label="曙光(infinity)" value="infinity" />
@@ -118,13 +117,15 @@ const filters = ref({
   datasource: 'serenity'  // 默认数据源
 })
 
-// 监听数据源变化，自动更新区域ID
+// 监听数据源变化，自动更新区域ID并查询数据
 watch(() => filters.value.datasource, (newDatasource) => {
   if (newDatasource === 'infinity') {
     filters.value.regionId = 10000016; // 长征区域ID
   } else {
     filters.value.regionId = 10000002; // 加达里首星区域ID
   }
+  // 在区域ID更新后查询数据
+  fetchProfitData();
 })
 
 // 公司列表
@@ -139,8 +140,8 @@ const corporations = ref([
 
 // 区域列表
 const regions = ref([
-  { id: 10000002, name: '加达里首星' },
-  { id: 10000016, name: '长征' },
+  { id: 10000002, name: '吉他-加达里首星' },
+  { id: 10000016, name: '索八色基-长征' },
   // 可以根据需要添加更多区域
 ])
 
