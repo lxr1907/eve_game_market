@@ -18,6 +18,7 @@ const LoyaltyTypeLpIsk = require('./models/LoyaltyTypeLpIsk');
 const Group = require('./models/Group');
 const Category = require('./models/Category');
 const OnlinePlayerStats = require('./models/OnlinePlayerStats');
+const { syncDatabaseStructure } = require('./utils/syncDatabaseStructure');
 
 const app = express();
 
@@ -28,20 +29,15 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Initialize database tables
-Promise.all([
-  Type.createTable(),
-  Region.createTable(),
-  RegionType.createTable(),
-  Order.createTable(),
-  LoyaltyOffer.createTable(),
-  LoyaltyTypeLpIsk.createTable(),
-  Group.createTable(),
-  Category.createTable(),
-  OnlinePlayerStats.createTable()
-])
-  .then(() => console.log('Database tables initialized successfully'))
-  .catch(err => console.error('Error initializing database tables:', err));
+// Initialize database tables using syncDatabaseStructure
+(async () => {
+  try {
+    await syncDatabaseStructure();
+    console.log('Database tables initialized successfully');
+  } catch (err) {
+    console.error('Error initializing database tables:', err);
+  }
+})();
 
 // Routes
 app.use('/api', typeRoutes);

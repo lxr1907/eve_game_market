@@ -1,13 +1,6 @@
 const pool = require('../config/database');
 
 class LoyaltyOffer {
-  static async dropTable() {
-    // 先删除从表
-    await pool.execute(`DROP TABLE IF EXISTS loyalty_offer_required_items`);
-    // 再删除主表
-    await pool.execute(`DROP TABLE IF EXISTS loyalty_offers`);
-  }
-
   static async createTable() {
     // 创建主表：loyalty_offers
     const query = `

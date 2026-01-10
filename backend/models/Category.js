@@ -21,18 +21,6 @@ class Category {
     }
   }
 
-  // 删除表
-  static async dropTable() {
-    const sql = 'DROP TABLE IF EXISTS item_categories';
-    try {
-      await pool.execute(sql);
-      console.log('item_categories table dropped successfully');
-    } catch (error) {
-      console.error('Error dropping item_categories table:', error);
-      throw error;
-    }
-  }
-
   // 插入或更新Category
   static async insertOrUpdate(category) {
     const sql = `

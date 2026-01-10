@@ -1,12 +1,6 @@
 const pool = require('../config/database');
 
 class LoyaltyTypeLpIsk {
-
-  static async dropTable() {
-    const query = `DROP TABLE IF EXISTS loyalty_type_lp_isk`;
-    await pool.execute(query);
-  }
-
   static async createTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS loyalty_type_lp_isk (

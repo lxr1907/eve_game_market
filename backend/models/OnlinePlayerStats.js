@@ -1,12 +1,6 @@
 const pool = require('../config/database');
 
 class OnlinePlayerStats {
-
-  static async dropTable() {
-    const query = `DROP TABLE IF EXISTS online_player_stats`;
-    await pool.execute(query);
-  }
-
   static async createTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS online_player_stats (

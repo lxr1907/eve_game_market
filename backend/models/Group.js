@@ -1,11 +1,6 @@
 const pool = require('../config/database');
 
 class Group {
-  static async dropTable() {
-    const query = `DROP TABLE IF EXISTS item_groups`;
-    await pool.execute(query);
-  }
-
   static async createTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS item_groups (

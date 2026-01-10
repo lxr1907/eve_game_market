@@ -1,11 +1,6 @@
 const pool = require('../config/database');
 
 class Region {
-  static async dropTable() {
-    const query = `DROP TABLE IF EXISTS regions`;
-    await pool.execute(query);
-  }
-
   static async createTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS regions (
