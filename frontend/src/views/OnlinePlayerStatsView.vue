@@ -42,64 +42,6 @@
           />
         </el-card>
       </div>
-
-      <!-- 表格数据 -->
-      <el-card shadow="hover" class="table-card">
-        <template #header>
-          <span>详细数据</span>
-        </template>
-        <el-table v-loading="loading" :data="statsData" style="width: 100%">
-          <el-table-column prop="recorded_at" label="记录时间" width="180">
-            <template #default="scope">
-              {{ formatDateTime(scope.row.recorded_at) }}
-            </template>
-          </el-table-column>
-          
-          <!-- 根据数据类型显示不同的列 -->
-          <template v-if="statsData.length > 0 && 'avg_players' in statsData[0]">
-            <!-- 聚合数据列 -->
-            <el-table-column prop="avg_players" label="平均在线玩家数" width="120" align="right">
-              <template #default="scope">
-                {{ Math.round(scope.row.avg_players) }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="max_players" label="最高在线玩家数" width="120" align="right">
-              <template #default="scope">
-                {{ Math.round(scope.row.max_players) }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="min_players" label="最低在线玩家数" width="120" align="right">
-              <template #default="scope">
-                {{ Math.round(scope.row.min_players) }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="data_points" label="数据点数量" width="100" align="center" />
-          </template>
-          <template v-else>
-            <!-- 原始数据列 -->
-            <el-table-column prop="players" label="在线玩家数" width="120" align="right" />
-            <el-table-column prop="server_version" label="服务器版本" width="180" />
-            <el-table-column prop="vip" label="VIP模式" width="80" align="center">
-              <template #default="scope">
-                <el-tag type="success" v-if="scope.row.vip">是</el-tag>
-                <el-tag type="info" v-else>否</el-tag>
-              </template>
-            </el-table-column>
-          </template>
-        </el-table>
-
-        <div class="pagination" v-if="total > 0">
-          <el-pagination
-            v-model:current-page="currentPage"
-            v-model:page-size="pageSize"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            :total="total"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-          />
-        </div>
-      </el-card>
     </el-card>
   </div>
 </template>
@@ -135,9 +77,6 @@ use([
 // 状态管理
 const loading = ref(false)
 const statsData = ref([])
-const total = ref(0)
-const currentPage = ref(1)
-const pageSize = ref(20)
 const timeDimension = ref('hour') // 默认为按小时展示
 const datasource = ref('serenity') // 默认为晨曦数据源
 
@@ -198,15 +137,14 @@ const fetchStats = async () => {
   try {
     const response = await axios.get('/api/online-player-stats', {
       params: {
-        page: currentPage.value,
-        limit: pageSize.value,
+        page: 1,
+        limit: 100, // 增加默认限制以获取更多数据用于图表
         dimension: timeDimension.value,
         datasource: datasource.value
       }
     })
-    // 反转数据顺序，使图表和表格从左到右展示从24小时前到当前时间的数据
+    // 反转数据顺序，使图表从左到右展示从24小时前到当前时间的数据
     statsData.value = response.data.data.reverse()
-    total.value = response.data.pagination.total
   } catch (error) {
     console.error('获取在线玩家统计失败:', error)
     ElMessage.error('获取在线玩家统计失败，请稍后重试')
@@ -406,18 +344,6 @@ const chartOption = computed(() => {
   }
 })
 
-// 分页处理
-const handleSizeChange = (size) => {
-  pageSize.value = size
-  currentPage.value = 1
-  fetchStats()
-}
-
-const handleCurrentChange = (current) => {
-  currentPage.value = current
-  fetchStats()
-}
-
 // 组件挂载时获取数据
 onMounted(() => {
   fetchStats()
@@ -463,14 +389,30 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
-/* 表格卡片样式 */
-.table-card {
-  margin-top: 20px;
+/* 单选按钮组样式 - 确保选中和未选中状态有明显区别 */
+:deep(.el-radio-button__inner) {
+  background-color: #2c3e50;
+  border-color: #333;
+  color: #e0e0e0;
 }
 
-.pagination {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
+:deep(.el-radio-button__inner:hover) {
+  background-color: #34495e;
+  color: #ffffff;
+  border-color: #409eff;
+}
+
+:deep(.el-radio-button__orig-radio:checked + .el-radio-button__inner) {
+  background-color: #409eff;
+  border-color: #409eff;
+  color: #ffffff;
+}
+
+:deep(.el-radio-button:first-child .el-radio-button__inner) {
+  border-radius: 4px 0 0 4px;
+}
+
+:deep(.el-radio-button:last-child .el-radio-button__inner) {
+  border-radius: 0 4px 4px 0;
 }
 </style>
