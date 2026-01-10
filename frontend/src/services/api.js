@@ -215,8 +215,8 @@ export const loyaltyApi = {
   },
   
   // 清理并重新计算LP收益（新接口）
-  async cleanAndRecalculateProfit(corporationId, datasource = 'serenity') {
-    const response = await apiClient.post(`/loyalty/offers/clean-recalculate-profit`, { corporationId, datasource });
+  async cleanAndRecalculateProfit(corporationId) {
+    const response = await apiClient.post(`/loyalty/offers/clean-recalculate-profit`, { corporationId });
     return response;
   },
 

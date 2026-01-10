@@ -242,8 +242,7 @@ class LoyaltyController {
     try {
       // 添加更健壮的错误处理，确保即使req.body是undefined也不会抛出错误
       const corporationId = (req.body && req.body.corporationId) || parseInt(req.query.corporationId);
-      const datasource = (req.body && req.body.datasource) || req.query.datasource;
-      
+ 
       if (!corporationId) {
         return res.status(400).json({ message: 'corporationId is required' });
       }
@@ -261,10 +260,10 @@ class LoyaltyController {
           console.log(`Starting cleaning and recalculating LP profit for corporation ${corporationId} in background...`);
           
           // 确定要处理的数据源
-          const datasources = datasource ? [datasource] : ['serenity', 'tranquility'];
+          const datasources =  ['serenity', 'infinity'];
           
-          // 遍历处理每个数据源
-          for (const ds of datasources) {
+          // 并行处理所有数据源
+          await Promise.all(datasources.map(async (ds) => {
             console.log(`Processing datasource: ${ds}`);
             
             // 清空该公司该数据源的表数据
@@ -274,7 +273,7 @@ class LoyaltyController {
             // 重新计算利润 - 直接调用静态方法
             await LoyaltyController.calculateProfitInternal(corporationId, ds);
             console.log(`Profit recalculation completed for datasource ${ds}`);
-          }
+          }));
           
           console.log('All datasources processing completed');
         } catch (error) {
@@ -289,7 +288,8 @@ class LoyaltyController {
 
   // 内部方法：执行LP收益计算
   static async calculateProfitInternal(corporationId, datasource = 'serenity') {
-    const regionId = 10000002; // 固定为特定区域
+    // 根据数据源选择对应的区域ID
+    const regionId = datasource === 'infinity' ? 10000016 : 10000002;
     
     // 获取该公司的所有loyalty_offers
     const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId);

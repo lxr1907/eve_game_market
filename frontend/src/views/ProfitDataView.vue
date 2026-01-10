@@ -99,7 +99,7 @@
 </template>
 
 <script setup>// 导入
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Star, CirclePlus } from '@element-plus/icons-vue'
 import { loyaltyApi } from '../services/api'
@@ -118,6 +118,15 @@ const filters = ref({
   datasource: 'serenity'  // 默认数据源
 })
 
+// 监听数据源变化，自动更新区域ID
+watch(() => filters.value.datasource, (newDatasource) => {
+  if (newDatasource === 'infinity') {
+    filters.value.regionId = 10000016; // 长征区域ID
+  } else {
+    filters.value.regionId = 10000002; // 加达里首星区域ID
+  }
+})
+
 // 公司列表
 const corporations = ref([
   { id: 1000436, name: '天使-摩拉辛狂热者' },
@@ -131,6 +140,7 @@ const corporations = ref([
 // 区域列表
 const regions = ref([
   { id: 10000002, name: '加达里首星' },
+  { id: 10000016, name: '长征' },
   // 可以根据需要添加更多区域
 ])
 
@@ -210,14 +220,11 @@ async function calculateProfit() {
     )
 
     loading.value = true
-    // 同时调用两个数据源的API
-    const [responseSerenity, responseInfinity] = await Promise.all([
-      loyaltyApi.cleanAndRecalculateProfit(filters.value.corporationId, 'serenity'),
-      loyaltyApi.cleanAndRecalculateProfit(filters.value.corporationId, 'infinity')
-    ])
+    // 只调用一次API，后端会自动处理所有数据源
+    await loyaltyApi.cleanAndRecalculateProfit(filters.value.corporationId)
     
     // 显示成功消息
-    ElMessage.success('两个数据源的收益计算任务已启动')
+    ElMessage.success('收益计算任务已启动，将同时处理所有数据源')
     
     // 计算完成后刷新数据（使用当前选择的数据源）
     setTimeout(() => {
