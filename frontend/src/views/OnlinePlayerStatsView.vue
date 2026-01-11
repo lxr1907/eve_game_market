@@ -26,6 +26,8 @@
         <el-radio-group v-model="datasource" @change="fetchStats">
           <el-radio-button label="serenity">晨曦</el-radio-button>
           <el-radio-button label="infinity">曙光</el-radio-button>
+          <el-radio-button label="tranquility">欧服</el-radio-button>
+          <el-radio-button label="all">全部</el-radio-button>
         </el-radio-group>
       </div>
 
@@ -140,7 +142,7 @@ const fetchStats = async () => {
         page: 1,
         limit: 100, // 增加默认限制以获取更多数据用于图表
         dimension: timeDimension.value,
-        datasource: datasource.value
+        datasource: datasource.value // 直接传递'all'或具体数据源
       }
     })
     // 反转数据顺序，使图表从左到右展示从24小时前到当前时间的数据
@@ -155,132 +157,154 @@ const fetchStats = async () => {
 
 // 图表配置
 const chartOption = computed(() => {
-  const dates = statsData.value.map(item => formatTimeLabel(item.recorded_at))
-  
-  // 检查是否是聚合数据
-  const isAggregatedData = statsData.value.length > 0 && 'avg_players' in statsData.value[0]
-  
-  // 根据数据类型获取不同的玩家数据
-  let players, maxPlayers, minPlayers
-  if (isAggregatedData) {
-    players = statsData.value.map(item => Math.round(item.avg_players))
-    maxPlayers = statsData.value.map(item => Math.round(item.max_players))
-    minPlayers = statsData.value.map(item => Math.round(item.min_players))
-  } else {
-    players = statsData.value.map(item => item.players)
-    maxPlayers = players
-    minPlayers = players
-  }
-  
-  // 构建系列数据
-  const series = [
-    {
-      name: isAggregatedData ? '平均在线玩家数' : '在线玩家数',
-      type: 'line',
-      data: players,
-      smooth: true,
-      areaStyle: {
-        color: {
-          type: 'linear',
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
-          colorStops: [{
-            offset: 0, color: 'rgba(64, 158, 255, 0.3)'
-          }, {
-            offset: 1, color: 'rgba(64, 158, 255, 0.05)'
-          }]
-        }
-      },
-      lineStyle: {
-        color: '#409EFF'
-      },
-      itemStyle: {
-        color: '#409EFF'
-      }
+  if (statsData.value.length === 0) {
+    // 如果没有数据，返回空图表配置
+    return {
+      backgroundColor: '#1e1e1e',
+      textStyle: { color: '#e0e0e0' },
+      title: { text: '', left: 'center', textStyle: { color: '#ffffff' } },
+      tooltip: { trigger: 'axis' },
+      legend: { show: false },
+      grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
+      xAxis: { type: 'category', data: [], axisLabel: { color: '#e0e0e0' } },
+      yAxis: { type: 'value', minInterval: 1, axisLabel: { color: '#e0e0e0' } },
+      series: []
     }
-  ]
-  
-  // 如果是聚合数据，添加最高和最低玩家数曲线
-  if (isAggregatedData) {
-    series.push(
-      {
-        name: '最高在线玩家数',
+  }
+
+  // 检查是否是聚合数据
+  const isAggregatedData = 'avg_players' in statsData.value[0]
+  // 检查是否有多个数据源
+  const hasMultipleDatasources = datasource === 'all' || 
+                                (statsData.value.some(item => item.datasource) && 
+                                new Set(statsData.value.map(item => item.datasource)).size > 1)
+
+  let series = []
+  let dates = []
+
+  if (hasMultipleDatasources) {
+    // 多数据源情况：按数据源分组
+    const groupedData = {}
+    const datasources = [...new Set(statsData.value.map(item => item.datasource))]
+    const allDates = [...new Set(statsData.value.map(item => item.recorded_at))].sort()
+    dates = allDates.map(date => formatTimeLabel(date))
+
+    // 初始化分组数据
+    datasources.forEach(source => {
+      groupedData[source] = { dates: allDates, players: [] }
+    })
+
+    // 填充数据，确保每个时间点都有数据（如果没有则使用null）
+    allDates.forEach(date => {
+      datasources.forEach(source => {
+        const dataPoint = statsData.value.find(item => item.recorded_at === date && item.datasource === source)
+        if (dataPoint) {
+          if (isAggregatedData) {
+            groupedData[source].players.push(Math.round(dataPoint.avg_players))
+          } else {
+            groupedData[source].players.push(dataPoint.players)
+          }
+        } else {
+          groupedData[source].players.push(null)
+        }
+      })
+    })
+
+    // 为每个数据源创建系列
+    const sourceColors = {
+      'serenity': '#409EFF',
+      'infinity': '#67C23A',
+      'tranquility': '#F56C6C'
+    }
+
+    const sourceNames = {
+      'serenity': '晨曦',
+      'infinity': '曙光',
+      'tranquility': '欧服'
+    }
+
+    datasources.forEach(source => {
+      const color = sourceColors[source] || '#909399'
+      const name = sourceNames[source] || source
+      
+      // 添加主系列（平均/实际玩家数）
+      series.push({
+        name: isAggregatedData ? `${name}平均在线玩家数` : `${name}在线玩家数`,
         type: 'line',
-        data: maxPlayers,
+        data: groupedData[source].players,
         smooth: true,
-        lineStyle: {
-          color: '#67C23A',
-          width: 2
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: color.replace('1)', '0.3)') },
+              { offset: 1, color: color.replace('1)', '0.05)') }
+            ]
+          }
         },
-        itemStyle: {
-          color: '#67C23A'
-        },
-        symbol: 'circle',
-        symbolSize: 6
-      },
+        lineStyle: { color: color },
+        itemStyle: { color: color }
+      })
+    })
+  } else {
+    // 单数据源情况：使用原有逻辑
+    dates = statsData.value.map(item => formatTimeLabel(item.recorded_at))
+    
+    // 根据数据类型获取不同的玩家数据
+    let players
+    if (isAggregatedData) {
+      players = statsData.value.map(item => Math.round(item.avg_players))
+    } else {
+      players = statsData.value.map(item => item.players)
+    }
+    
+    // 构建系列数据
+    series = [
       {
-        name: '最低在线玩家数',
+        name: isAggregatedData ? '平均在线玩家数' : '在线玩家数',
         type: 'line',
-        data: minPlayers,
+        data: players,
         smooth: true,
-        lineStyle: {
-          color: '#F56C6C',
-          width: 2
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(64, 158, 255, 0.3)' },
+              { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
+            ]
+          }
         },
-        itemStyle: {
-          color: '#F56C6C'
-        },
-        symbol: 'circle',
-        symbolSize: 6
+        lineStyle: { color: '#409EFF' },
+        itemStyle: { color: '#409EFF' }
       }
-    )
+    ]
   }
   
   return {
     backgroundColor: '#1e1e1e',
-    textStyle: {
-      color: '#e0e0e0'
-    },
-    title: {
-      text: '',
-      left: 'center',
-      textStyle: {
-        color: '#ffffff'
-      }
-    },
+    textStyle: { color: '#e0e0e0' },
+    title: { text: '', left: 'center', textStyle: { color: '#ffffff' } },
     tooltip: {
       trigger: 'axis',
       backgroundColor: 'rgba(44, 62, 80, 0.9)',
       borderColor: '#333',
-      textStyle: {
-        color: '#e0e0e0'
-      },
+      textStyle: { color: '#e0e0e0' },
       formatter: (params) => {
         let result = `${params[0].name}<br/>`
         params.forEach(param => {
-          result += `${param.marker}${param.seriesName}: ${param.value}<br/>`
-        })
-        
-        // 如果是聚合数据，添加数据点数量信息
-        if (isAggregatedData && params.length > 0) {
-          const index = params[0].dataIndex
-          const dataPoint = statsData.value[index]
-          if (dataPoint) {
-            result += `数据点数量: ${dataPoint.data_points}`
+          if (param.value !== null) {
+            result += `${param.marker}${param.seriesName}: ${param.value}<br/>`
           }
-        }
-        
+        })
         return result
       }
     },
     legend: {
       data: series.map(s => s.name),
       top: 30,
-      textStyle: {
-        color: '#e0e0e0'
-      },
+      textStyle: { color: '#e0e0e0' },
       itemWidth: 12,
       itemHeight: 12
     },
@@ -300,45 +324,17 @@ const chartOption = computed(() => {
         rotate: timeDimension.value === 'minute' ? 45 : 0,
         color: '#e0e0e0'
       },
-      axisLine: {
-        lineStyle: {
-          color: '#333'
-        }
-      },
-      axisTick: {
-        lineStyle: {
-          color: '#333'
-        }
-      },
-      splitLine: {
-        lineStyle: {
-          color: '#333',
-          type: 'dashed'
-        }
-      }
+      axisLine: { lineStyle: { color: '#333' } },
+      axisTick: { lineStyle: { color: '#333' } },
+      splitLine: { lineStyle: { color: '#333', type: 'dashed' } }
     },
     yAxis: {
       type: 'value',
       minInterval: 1,
-      axisLabel: {
-        color: '#e0e0e0'
-      },
-      axisLine: {
-        lineStyle: {
-          color: '#333'
-        }
-      },
-      axisTick: {
-        lineStyle: {
-          color: '#333'
-        }
-      },
-      splitLine: {
-        lineStyle: {
-          color: '#333',
-          type: 'dashed'
-        }
-      }
+      axisLabel: { color: '#e0e0e0' },
+      axisLine: { lineStyle: { color: '#333' } },
+      axisTick: { lineStyle: { color: '#333' } },
+      splitLine: { lineStyle: { color: '#333', type: 'dashed' } }
     },
     series: series
   }

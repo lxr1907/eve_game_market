@@ -68,7 +68,7 @@ class OnlinePlayerStatsController {
       const page = req.query.page || 1;
       const limit = req.query.limit || 10;
       const dimension = req.query.dimension;
-      const datasource = req.query.datasource;
+      const datasource = req.query.datasource === 'all' ? null : req.query.datasource;
       
       let stats, total;
       

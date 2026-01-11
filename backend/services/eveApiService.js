@@ -317,13 +317,29 @@ class EveApiService {
   // Get server status
   async getServerStatus(datasource = 'serenity', retries = 3) {
     try {
-      const response = await this.client.get(`/status/`, {
-        params: {
-          datasource: datasource
-        },
-        timeout: 5000 // 设置5秒超时
-      });
-      return response.data;
+      // 欧服使用不同的API端点
+      if (datasource === 'tranquility') {
+        const response = await axios.get('https://esi.evetech.net/status', {
+          headers: {
+            'Accept': 'application/json',
+            'Accept-Language': '',
+            'If-None-Match': '',
+            'X-Compatibility-Date': '2025-12-16',
+            'X-Tenant': ''
+          },
+          timeout: 5000 // 设置5秒超时
+        });
+        return response.data;
+      } else {
+        // 其他服务器使用默认的API客户端配置
+        const response = await this.client.get(`/status/`, {
+          params: {
+            datasource: datasource
+          },
+          timeout: 5000 // 设置5秒超时
+        });
+        return response.data;
+      }
     } catch (error) {
       if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
         console.log(`Timeout fetching server status, retrying (${retries} left)...`);

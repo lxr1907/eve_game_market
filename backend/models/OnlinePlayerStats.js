@@ -149,6 +149,8 @@ class OnlinePlayerStats {
     let timeFormat = '';
     let queryParams = [];
     let whereClause = '';
+    let selectColumns = '';
+    let groupByColumns = '';
     
     switch (dimension) {
       case 'month':
@@ -176,26 +178,39 @@ class OnlinePlayerStats {
         whereClause = 'WHERE datasource = ?';
       }
       queryParams.push(datasource);
+      
+      // 单数据源时，不包含datasource在结果中
+      selectColumns = `
+        DATE_FORMAT(recorded_at, '${timeFormat}') as recorded_at,
+        AVG(players) as avg_players,
+        COUNT(*) as data_points
+      `;
+      groupByColumns = `DATE_FORMAT(recorded_at, '${timeFormat}')`;
+    } else {
+      // 多数据源时，包含datasource在结果中并按其分组
+      selectColumns = `
+        DATE_FORMAT(recorded_at, '${timeFormat}') as recorded_at,
+        datasource,
+        AVG(players) as avg_players,
+        COUNT(*) as data_points
+      `;
+      groupByColumns = `DATE_FORMAT(recorded_at, '${timeFormat}'), datasource`;
     }
     
     // 查询聚合数据
     const query = `
       SELECT 
-        DATE_FORMAT(recorded_at, '${timeFormat}') as recorded_at,
-        AVG(players) as avg_players,
-        MAX(players) as max_players,
-        MIN(players) as min_players,
-        COUNT(*) as data_points
+        ${selectColumns}
       FROM online_player_stats
       ${whereClause}
-      GROUP BY DATE_FORMAT(recorded_at, '${timeFormat}')
+      GROUP BY ${groupByColumns}
       ORDER BY recorded_at DESC
       LIMIT ${limitInt} OFFSET ${offset}
     `;
     
     // 查询总记录数
     const countQuery = `
-      SELECT COUNT(DISTINCT DATE_FORMAT(recorded_at, '${timeFormat}')) as count
+      SELECT COUNT(DISTINCT ${groupByColumns}) as count
       FROM online_player_stats
       ${whereClause}
     `;
