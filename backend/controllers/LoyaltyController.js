@@ -260,7 +260,7 @@ class LoyaltyController {
           console.log(`Starting cleaning and recalculating LP profit for corporation ${corporationId} in background...`);
           
           // 确定要处理的数据源
-          const datasources =  ['serenity', 'infinity'];
+          const datasources =  ['serenity', 'infinity', 'tranquility'];
           
           // 并行处理所有数据源
           await Promise.all(datasources.map(async (ds) => {
@@ -385,8 +385,10 @@ class LoyaltyController {
           const totalProfit = totalRevenue - offer.isk_cost;
           const profitPerLp = offer.lp_cost > 0 ? totalProfit / offer.lp_cost : 0;
           
-          // 只有当每LP收益大于900时才插入或更新数据库
-          if (profitPerLp > 900) {
+          // 根据不同服务器设置不同的存储门槛
+          // 欧服(tranquility)每LP收益560以上，其他服务器900以上
+          const profitThreshold = datasource.toLowerCase() === 'tranquility' ? 560 : 900;
+          if (profitPerLp > profitThreshold) {
             // 准备数据
             const lpIskData = {
               type_id: offer.type_id,
@@ -406,7 +408,7 @@ class LoyaltyController {
               savedOffers++;
             }
           } else {
-            console.log(`Skipping offer for type ${offer.type_id} - profit per LP (${profitPerLp.toFixed(2)}) is less than 900`);
+            console.log(`Skipping offer for type ${offer.type_id} - profit per LP (${profitPerLp.toFixed(2)}) is less than threshold (${profitThreshold})`);
           }
         }
         

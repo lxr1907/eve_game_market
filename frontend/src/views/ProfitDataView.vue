@@ -38,6 +38,7 @@
                 >
                   <el-option label="晨曦(serenity)" value="serenity" />
                   <el-option label="曙光(infinity)" value="infinity" />
+                  <el-option label="欧服(tranquility)" value="tranquility" />
                 </el-select>
                 <el-button type="primary" @click="fetchProfitData">
                   <el-icon><Search /></el-icon>
@@ -121,7 +122,7 @@ watch(() => filters.value.datasource, (newDatasource) => {
   if (newDatasource === 'infinity') {
     filters.value.regionId = 10000016; // 长征区域ID
   } else {
-    filters.value.regionId = 10000002; // 加达里首星区域ID
+    filters.value.regionId = 10000002; // 加达里首星区域ID (serenity和tranquility共用)
   }
   // 在区域ID更新后查询数据
   fetchProfitData();

@@ -205,13 +205,30 @@ class EveApiService {
     this.lastRequestTime = Date.now();
 
     try {
-      console.log(`Sending request for loyalty store offers: /loyalty/stores/${corporationId}/offers/?datasource=${datasource}`);
-      const response = await this.client.get(`/loyalty/stores/${corporationId}/offers/`, {
-        params: {
-          datasource: datasource
-        },
-        timeout: 10000 // 设置10秒超时
-      });
+      let response;
+      // 欧服使用不同的API端点
+      if (datasource.toLowerCase() === 'tranquility') {
+        const fullUrl = `https://esi.evetech.net/latest/loyalty/stores/${corporationId}/offers/`;
+        console.log(`Sending request to EVE Tech API for loyalty store offers: ${fullUrl}`);
+        response = await axios.get(fullUrl, {
+          headers: {
+            'Accept': 'application/json',
+            'Accept-Language': '',
+            'If-None-Match': '',
+            'X-Compatibility-Date': '2025-12-16',
+            'X-Tenant': ''
+          },
+          timeout: 10000 // 设置10秒超时
+        });
+      } else {
+        console.log(`Sending request for loyalty store offers: /loyalty/stores/${corporationId}/offers/?datasource=${datasource}`);
+        response = await this.client.get(`/loyalty/stores/${corporationId}/offers/`, {
+          params: {
+            datasource: datasource
+          },
+          timeout: 10000 // 设置10秒超时
+        });
+      }
       
       console.log(`Received ${response.data.length} loyalty store offers for corporation ${corporationId}`);
       return response.data;
@@ -607,11 +624,33 @@ class EveApiService {
         params.buy = '0';
       }
 
-      console.log(`Sending request for market orders: /markets/${regionId}/orders/?page=${page}&type_id=${typeId}&datasource=${datasource}`);
-      const response = await this.client.get(`/markets/${regionId}/orders/`, {
-        params: params,
-        timeout: 5000 // 设置5秒超时
-      });
+      let response;
+      // 欧服使用不同的API端点
+      if (datasource.toLowerCase() === 'tranquility') {
+        const fullUrl = `https://esi.evetech.net/latest/markets/${regionId}/orders/`;
+        console.log(`Sending request to EVE Tech API for market orders: ${fullUrl}?page=${page}&type_id=${typeId}&datasource=${datasource}`);
+        response = await axios.get(fullUrl, {
+          params: {
+            page: page,
+            type_id: typeId,
+            buy: params.buy
+          },
+          headers: {
+            'Accept': 'application/json',
+            'Accept-Language': '',
+            'If-None-Match': '',
+            'X-Compatibility-Date': '2025-12-16',
+            'X-Tenant': ''
+          },
+          timeout: 5000 // 设置5秒超时
+        });
+      } else {
+        console.log(`Sending request for market orders: /markets/${regionId}/orders/?page=${page}&type_id=${typeId}&datasource=${datasource}`);
+        response = await this.client.get(`/markets/${regionId}/orders/`, {
+          params: params,
+          timeout: 5000 // 设置5秒超时
+        });
+      }
       
       console.log(`Received ${response.data.length} orders for region ID ${regionId}, type ID ${typeId}, page ${page}`);
       // Transform order data to map 'range' to 'order_range'
