@@ -28,6 +28,7 @@ const recordStats = async (datasource) => {
 const recordAllStats = async () => {
   await recordStats('serenity');
   await recordStats('infinity');
+  await recordStats('tranquility');
 };
 
 // 设置定时任务，每分钟执行一次
