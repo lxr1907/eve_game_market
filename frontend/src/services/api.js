@@ -280,4 +280,55 @@ export const onlinePlayerStatsApi = {
   }
 };
 
+// System API
+export const systemApi = {
+  // 获取所有系统数据
+  async getSystems(page = 1, limit = 10, search = '') {
+    const response = await apiClient.get(`/systems`, { params: { page, limit, search } });
+    return response;
+  },
+  
+  // 同步System IDs
+  async syncSystemIds() {
+    const response = await apiClient.get(`/systems/sync-ids`);
+    return response;
+  },
+  
+  // 同步System详情
+  async syncSystemDetails() {
+    const response = await apiClient.get(`/systems/sync-details`);
+    return response;
+  },
+  
+  // 同步所有System数据
+  async syncAllSystems() {
+    const response = await apiClient.get(`/systems/sync-all`);
+    return response;
+  },
+  
+  // 获取单个系统数据
+  async getSystemById(id) {
+    const response = await apiClient.get(`/systems/${id}`);
+    return response;
+  },
+  
+  // 创建新系统
+  async createSystem(data) {
+    const response = await apiClient.post(`/systems`, data);
+    return response;
+  },
+  
+  // 更新系统
+  async updateSystem(id, data) {
+    const response = await apiClient.put(`/systems/${id}`, data);
+    return response;
+  },
+  
+  // 删除系统
+  async deleteSystem(id) {
+    const response = await apiClient.delete(`/systems/${id}`);
+    return response;
+  }
+};
+
 export default apiClient

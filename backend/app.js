@@ -9,6 +9,7 @@ const loyaltyRoutes = require('./routes/loyaltyRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const onlinePlayerStatsRoutes = require('./routes/onlinePlayerStatsRoutes');
+const systemRoutes = require('./routes/systemRoutes');
 const Type = require('./models/Type');
 const Region = require('./models/Region');
 const RegionType = require('./models/RegionType');
@@ -18,6 +19,7 @@ const LoyaltyTypeLpIsk = require('./models/LoyaltyTypeLpIsk');
 const Group = require('./models/Group');
 const Category = require('./models/Category');
 const OnlinePlayerStats = require('./models/OnlinePlayerStats');
+const System = require('./models/System');
 const { syncDatabaseStructure } = require('./utils/syncDatabaseStructure');
 
 const app = express();
@@ -47,6 +49,7 @@ app.use('/api', loyaltyRoutes);
 app.use('/api', groupRoutes);
 app.use('/api', categoryRoutes);
 app.use('/api', onlinePlayerStatsRoutes);
+app.use('/api', systemRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

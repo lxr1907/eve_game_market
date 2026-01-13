@@ -159,7 +159,23 @@ async function syncDatabaseStructure() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
     
+    // 11. 创建或更新 systems 表
+    await createOrUpdateTable('systems', `
+      CREATE TABLE IF NOT EXISTS systems (
+        system_id INT PRIMARY KEY,
+        constellation_id INT,
+        name VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+        position_x DOUBLE,
+        position_y DOUBLE,
+        position_z DOUBLE,
+        security_status DOUBLE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    
     console.log('所有表结构同步完成！');
+
   } catch (error) {
     console.error('同步表结构时出错:', error);
     // 只有作为独立脚本运行时才退出进程

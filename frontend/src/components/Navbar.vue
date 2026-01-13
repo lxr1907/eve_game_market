@@ -14,6 +14,10 @@
           <el-icon><MapLocation /></el-icon>
           Region列表
         </el-menu-item>
+        <el-menu-item index="8">
+          <el-icon><MapLocation /></el-icon>
+          System列表
+        </el-menu-item>
         <el-menu-item index="4">
           <el-icon><Document /></el-icon>
           订单查询
@@ -49,6 +53,7 @@ const activeIndex = computed(() => {
   if (path === '/') return '1'
   if (path === '/types') return '2'
   if (path === '/regions') return '3'
+  if (path === '/systems') return '8'
   if (path === '/orders') return '4'
   if (path === '/loyalty') return '5'
   if (path === '/profit-data') return '6'
@@ -65,6 +70,8 @@ const handleSelect = (key, keyPath) => {
     router.push('/types')
   } else if (key === '3') {
     router.push('/regions')
+  } else if (key === '8') {
+    router.push('/systems')
   } else if (key === '4') {
     router.push('/orders')
   } else if (key === '5') {

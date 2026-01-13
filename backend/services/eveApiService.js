@@ -599,6 +599,149 @@ class EveApiService {
     }
   }
 
+  // System-related methods
+  async getSystemIds(page = 1, datasource = 'serenity', retries = 3) {
+    try {
+      console.log(`Sending request to /universe/systems/?page=${page}&datasource=${datasource}`);
+      const response = await this.client.get(`/universe/systems/`, {
+        params: {
+          page: page,
+          datasource: datasource
+        },
+        timeout: 10000 // 设置10秒超时
+      });
+      console.log(`Received ${response.data.length} system IDs from page ${page}`);
+      return response.data;
+    } catch (error) {
+      // 检查是否是页码超出范围的错误（API返回500并提示"Requested page does not exist!"）
+      if (error.response?.status === 500 && error.response?.data?.error?.includes('Requested page does not exist')) {
+        console.log(`Page ${page} does not exist, stopping pagination`);
+        return []; // 返回空数组表示没有更多数据
+      }
+      
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        // 如果是超时或连接重置错误，进行重试
+        console.log(`Error fetching system IDs for page ${page}, retrying (${retries} left)...`);
+        // 指数退避策略，每次重试等待时间增加
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getSystemIds(page, retries - 1);
+      } else {
+        console.error('Error fetching system IDs:', error.message);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+        throw error;
+      }
+    }
+  }
+
+  async getSystemDetails(systemId, datasource = 'serenity', retries = 3) {
+    // 节流控制：确保每1秒只请求1次
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.throttleInterval) {
+      const waitTime = this.throttleInterval - timeSinceLastRequest;
+      console.log(`Throttling request for system ID ${systemId}, waiting ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastRequestTime = Date.now();
+
+    try {
+      console.log(`Sending request for system details: /universe/systems/${systemId}/?datasource=${datasource}`);
+      const response = await this.client.get(`/universe/systems/${systemId}/`, {
+        params: {
+          datasource: datasource
+        },
+        timeout: 5000 // 设置5秒超时
+      });
+      
+      console.log(`Received details for system ID ${systemId}: ${response.data.name || 'Unknown'}`);
+      return response.data;
+    } catch (error) {
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        // 如果是超时或连接重置错误，进行重试
+        console.log(`Timeout fetching system details for ID ${systemId}, retrying (${retries} left)...`);
+        // 指数退避策略，每次重试等待时间增加
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getSystemDetails(systemId, retries - 1);
+      } else {
+        console.error(`Error fetching system details for ID ${systemId}: ${error.message}`);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+        // 不再重试，返回null表示获取失败，但不中断整个同步过程
+        return null;
+      }
+    }
+  }
+
+  async getAllSystemsRecursively(startPage = 1, callback, idsOnly = false, datasource = 'serenity') {
+    try {
+      let page = startPage;
+      let hasMoreData = true;
+      
+      console.log('Starting recursive fetch of systems from page', startPage);
+      
+      while (hasMoreData) {
+        console.log(`Fetching systems from page ${page}...`);
+        const systemIds = await this.getSystemIds(page, datasource);
+        
+        console.log(`System IDs for page ${page}:`, systemIds.slice(0, 10), systemIds.length > 10 ? '...' : '');
+        
+        if (systemIds.length === 0) {
+          hasMoreData = false;
+          break;
+        }
+        
+        let processedData = [];
+        
+        if (idsOnly) {
+          // 如果只需要ID，直接使用systemIds
+          processedData = systemIds;
+          console.log(`Retrieved ${systemIds.length} system IDs from page ${page}`);
+        } else {
+          // 否则请求详细信息
+          // 不再使用Promise.all并发请求，而是串行请求以配合节流控制
+          const systemDetails = [];
+          console.log(`Starting to fetch details for ${systemIds.length} system IDs from page ${page}`);
+          let processedIds = 0;
+          for (const id of systemIds) {
+            processedIds++;
+            if (processedIds % 10 === 0) {
+              console.log(`Processed ${processedIds} out of ${systemIds.length} system IDs from page ${page}`);
+            }
+            const details = await this.getSystemDetails(id, datasource);
+            if (details) {
+              systemDetails.push(details);
+            } else {
+              console.log(`Skipping system ID ${id} due to null details`);
+            }
+          }
+          
+          processedData = systemDetails;
+          console.log(`Fetched ${systemDetails.length} valid systems from page ${page}`);
+        }
+        
+        // 调用回调函数处理当前页的数据
+        if (callback && typeof callback === 'function') {
+          console.log(`Calling callback with ${processedData.length} items from page ${page}`);
+          await callback(processedData, page);
+        }
+        
+        page++;
+      }
+      
+      console.log('Finished fetching all systems');
+      return page - 1; // 返回总页数
+    } catch (error) {
+      console.error('Error in recursive fetching of systems:', error.message);
+      console.error('Error stack:', error.stack);
+      throw error;
+    }
+  }
+
   async getMarketOrdersByRegionAndType(regionId, typeId, orderType = 'all', page = 1, datasource = 'serenity', retries = 3) {
     // 节流控制：确保每1秒只请求1次
     const now = Date.now();

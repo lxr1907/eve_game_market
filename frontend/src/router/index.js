@@ -8,6 +8,8 @@ import OrderQueryView from '../views/OrderQueryView.vue'
 import LoyaltyOfferView from '../views/LoyaltyOfferView.vue'
 import ProfitDataView from '../views/ProfitDataView.vue'
 import OnlinePlayerStatsView from '../views/OnlinePlayerStatsView.vue'
+import SystemListView from '../views/SystemListView.vue'
+import SystemDetailView from '../views/SystemDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -56,6 +58,16 @@ const router = createRouter({
       path: '/online-player-stats',
       name: 'online-player-stats',
       component: OnlinePlayerStatsView
+    },
+    {
+      path: '/systems',
+      name: 'systems',
+      component: SystemListView
+    },
+    {
+      path: '/systems/:id',
+      name: 'system-detail',
+      component: SystemDetailView
     }
   ]
 })
