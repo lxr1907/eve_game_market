@@ -40,6 +40,10 @@
           <el-icon><UserFilled /></el-icon>
           在线玩家统计
         </el-menu-item>
+        <el-menu-item index="8">
+          <el-icon><MapLocation /></el-icon>
+          星系击毁统计
+        </el-menu-item>
       </el-menu>
     </el-header>
   </el-container>
@@ -64,6 +68,7 @@ const activeIndex = computed(() => {
   if (path === '/loyalty') return '5'
   if (path === '/profit-data') return '6'
   if (path === '/online-player-stats') return '7'
+  if (path === '/system-kills') return '8'
   return '1'
 })
 
@@ -86,6 +91,8 @@ const handleSelect = (key, keyPath) => {
     router.push('/profit-data')
   } else if (key === '7') {
     router.push('/online-player-stats')
+  } else if (key === '8') {
+    router.push('/system-kills')
   }
 }
 </script>

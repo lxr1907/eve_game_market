@@ -99,7 +99,7 @@ class System {
     return rows[0] ? rows[0] : null;
   }
 
-  static async findAll(page = 1, limit = 10, search = '') {
+  static async findAll(page = 1, limit = 10, search = '', onlyEmptyName = false) {
     // 将page和limit转换为整数
     const pageInt = parseInt(page) || 1;
     const limitInt = parseInt(limit) || 10;
@@ -109,10 +109,19 @@ class System {
       SELECT * FROM systems
     `;
     let params = [];
+    let whereClause = [];
     
     if (search) {
-      query += ` WHERE name LIKE ?`;
+      whereClause.push(`name LIKE ?`);
       params.push(`%${search}%`);
+    }
+    
+    if (onlyEmptyName) {
+      whereClause.push(`(name IS NULL OR name = '')`);
+    }
+    
+    if (whereClause.length > 0) {
+      query += ` WHERE ${whereClause.join(' AND ')}`;
     }
     
     query += ` ORDER BY system_id LIMIT ${limitInt} OFFSET ${offset}`;
@@ -121,13 +130,22 @@ class System {
     return rows;
   }
 
-  static async count(search = '') {
+  static async count(search = '', onlyEmptyName = false) {
     let query = `SELECT COUNT(*) as count FROM systems`;
     let params = [];
+    let whereClause = [];
     
     if (search) {
-      query += ` WHERE name LIKE ?`;
+      whereClause.push(`name LIKE ?`);
       params.push(`%${search}%`);
+    }
+    
+    if (onlyEmptyName) {
+      whereClause.push(`(name IS NULL OR name = '')`);
+    }
+    
+    if (whereClause.length > 0) {
+      query += ` WHERE ${whereClause.join(' AND ')}`;
     }
     
     const [rows] = await pool.execute(query, params);

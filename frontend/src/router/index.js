@@ -10,6 +10,7 @@ import ProfitDataView from '../views/ProfitDataView.vue'
 import OnlinePlayerStatsView from '../views/OnlinePlayerStatsView.vue'
 import SystemListView from '../views/SystemListView.vue'
 import SystemDetailView from '../views/SystemDetailView.vue'
+import SystemKillView from '../views/SystemKillView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -68,6 +69,11 @@ const router = createRouter({
       path: '/systems/:id',
       name: 'system-detail',
       component: SystemDetailView
+    },
+    {
+      path: '/system-kills',
+      name: 'system-kills',
+      component: SystemKillView
     }
   ]
 })

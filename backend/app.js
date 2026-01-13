@@ -10,6 +10,7 @@ const groupRoutes = require('./routes/groupRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const onlinePlayerStatsRoutes = require('./routes/onlinePlayerStatsRoutes');
 const systemRoutes = require('./routes/systemRoutes');
+const systemKillRoutes = require('./routes/systemKillRoutes');
 const Type = require('./models/Type');
 const Region = require('./models/Region');
 const RegionType = require('./models/RegionType');
@@ -50,6 +51,7 @@ app.use('/api', groupRoutes);
 app.use('/api', categoryRoutes);
 app.use('/api', onlinePlayerStatsRoutes);
 app.use('/api', systemRoutes);
+app.use('/api', systemKillRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

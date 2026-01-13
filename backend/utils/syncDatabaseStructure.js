@@ -174,6 +174,23 @@ async function syncDatabaseStructure() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
     
+    // 12. 创建或更新 system_kills 表
+    await createOrUpdateTable('system_kills', `
+      CREATE TABLE IF NOT EXISTS system_kills (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        system_id INT,
+        npc_kills INT,
+        pod_kills INT,
+        ship_kills INT,
+        total_kills INT,
+        datasource VARCHAR(20) NOT NULL DEFAULT 'infinity',
+        timestamp DATETIME,
+        system_name VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    
     console.log('所有表结构同步完成！');
 
   } catch (error) {

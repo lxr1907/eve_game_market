@@ -79,7 +79,7 @@ class SystemController {
         while (hasMore) {
           try {
             // 分页查询数据库中的系统ID，只查询name为空的记录
-            const systems = await System.findAll(currentPage, pageSize, '');
+            const systems = await System.findAll(currentPage, pageSize, '', true);
             
             if (systems.length === 0) {
               hasMore = false;

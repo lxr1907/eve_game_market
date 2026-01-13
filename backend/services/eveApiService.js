@@ -69,7 +69,7 @@ class EveApiService {
         params: {
           datasource: datasource
         },
-        timeout: 5000 // 设置5秒超时
+        timeout: 10000 // 设置10秒超时
       });
       
       return response.data;
@@ -648,12 +648,13 @@ class EveApiService {
     this.lastRequestTime = Date.now();
 
     try {
-      console.log(`Sending request for system details: /universe/systems/${systemId}/?datasource=${datasource}`);
+      console.log(`Sending request for system details: /universe/systems/${systemId}/?datasource=${datasource}&language=zh`);
       const response = await this.client.get(`/universe/systems/${systemId}/`, {
         params: {
-          datasource: datasource
+          datasource: datasource,
+          language: process.env.EVE_API_LANGUAGE
         },
-        timeout: 5000 // 设置5秒超时
+        timeout: 15000 // 增加超时时间到15秒
       });
       
       console.log(`Received details for system ID ${systemId}: ${response.data.name || 'Unknown'}`);
@@ -877,6 +878,57 @@ class EveApiService {
       console.error(`Error in fetching all market orders for region ${regionId}, type ${typeId}:`, error.message);
       console.error('Error stack:', error.stack);
       throw error;
+    }
+  }
+
+  // 获取所有星系击毁统计数据
+  async getSystemKills(datasource = 'serenity', retries = 3) {
+    try {
+      let response;
+      
+      // 为不同数据源使用正确的基础URL
+      let apiBaseUrl;
+      let headers = {};
+      
+      if (datasource.toLowerCase() === 'tranquility') {
+        // 欧服使用官方API
+        apiBaseUrl = 'https://esi.evetech.net';
+        headers = {
+          'Accept': 'application/json',
+          'X-Compatibility-Date': '2025-12-16'
+        };
+      } else {
+        // 晨曦和曙光使用ALI ESI API
+        apiBaseUrl = process.env.EVE_API_BASE_URL || 'https://ali-esi.evepc.163.com';
+      }
+      
+      // 构建完整URL，包含API版本
+      const fullUrl = `${apiBaseUrl}/${process.env.EVE_API_VERSION || 'latest'}/universe/system_kills/?datasource=${datasource}`;
+      console.log(`Sending request for system kills: ${fullUrl}`);
+      
+      // 统一使用axios进行请求，确保一致的错误处理
+      response = await axios.get(fullUrl, {
+        headers: { ...headers, ...this.client.defaults.headers },
+        timeout: 20000 // 增加超时时间到20秒
+      });
+      
+      console.log(`Received ${response.data.length} system kills data`);
+      return response.data;
+    } catch (error) {
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        // 如果是超时或连接重置错误，进行重试
+        console.log(`Error fetching system kills, retrying (${retries} left)...`);
+        // 指数退避策略，每次重试等待时间增加
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getSystemKills(datasource, retries - 1);
+      } else {
+        console.error('Error fetching system kills:', error.message);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+        throw error;
+      }
     }
   }
 }

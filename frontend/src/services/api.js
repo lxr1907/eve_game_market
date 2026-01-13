@@ -331,4 +331,37 @@ export const systemApi = {
   }
 };
 
+// System Kill API
+export const systemKillApi = {
+  // 获取所有星系击毁统计数据
+  async getSystemKills(page = 1, limit = 10, datasource = 'infinity', search = '', sortBy = 'ship_kills', sortOrder = 'descending') {
+    const response = await apiClient.get(`/system-kills`, { 
+      params: { page, limit, datasource, search, sortBy, sortOrder } 
+    });
+    return response;
+  },
+  
+  // 同步星系击毁统计数据
+  async syncSystemKills() {
+    const response = await apiClient.get(`/system-kills/sync`);
+    return response;
+  },
+  
+  // 获取最新更新时间
+  async getLatestUpdate(datasource = 'infinity') {
+    const response = await apiClient.get(`/system-kills/latest-update`, { 
+      params: { datasource } 
+    });
+    return response;
+  },
+  
+  // 获取单个星系的击毁统计数据
+  async getSystemKillById(id, datasource = 'infinity') {
+    const response = await apiClient.get(`/system-kills/${id}`, { 
+      params: { datasource } 
+    });
+    return response;
+  }
+};
+
 export default apiClient
