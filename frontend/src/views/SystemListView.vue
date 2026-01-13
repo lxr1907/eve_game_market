@@ -238,4 +238,13 @@ onMounted(() => {
   margin-top: 20px;
   text-align: right;
 }
+
+/* 移除表格行的悬浮特殊样式 */
+:deep(.el-table__row) {
+  transition: none;
+}
+
+:deep(.el-table__row:hover) {
+  background-color: transparent !important;
+}
 </style>

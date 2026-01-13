@@ -74,3 +74,84 @@ button:focus-visible {
 }
 
 /* 移除浅色主题的媒体查询，始终使用暗色主题 */
+
+/* 全局移除Element Plus表格行悬浮样式 */
+/* 重置表格行悬浮CSS变量 */
+.el-table {
+  --el-table-row-hover-bg-color: transparent !important;
+  --el-fill-color-light: transparent !important;
+}
+
+/* 移除表格行的过渡动画 */
+.el-table__row {
+  transition: none !important;
+  --el-table-row-hover-bg-color: transparent !important;
+}
+
+/* 移除表格行悬浮效果 */
+.el-table__row:hover,
+.el-table__row.hover-row {
+  background-color: transparent !important;
+  --el-table-row-hover-bg-color: transparent !important;
+}
+
+/* 确保表格单元格也没有悬浮样式 */
+.el-table__row:hover > .el-table__cell,
+.el-table__row.hover-row > .el-table__cell {
+  background-color: transparent !important;
+  --el-table-row-hover-bg-color: transparent !important;
+}
+
+/* 确保选中行样式不受影响 */
+.el-table__row.el-table__row--current {
+  background-color: var(--el-table-tr-current-bg-color) !important;
+  --el-table-row-hover-bg-color: var(--el-table-tr-current-bg-color) !important;
+}
+
+.el-table__row.el-table__row--current > .el-table__cell {
+  background-color: var(--el-table-tr-current-bg-color) !important;
+  --el-table-row-hover-bg-color: var(--el-table-tr-current-bg-color) !important;
+}
+
+/* 确保斑马纹样式不受影响 */
+.el-table__row.el-table__row--striped {
+  background-color: var(--el-table-tr-bg-color) !important;
+}
+
+.el-table__row.el-table__row--striped > .el-table__cell {
+  background-color: var(--el-table-tr-bg-color) !important;
+}
+
+/* 确保表格头部没有悬浮样式 */
+.el-table__header-wrapper:hover {
+  background-color: transparent !important;
+}
+
+.el-table__header-wrapper .el-table__header {
+  background-color: transparent !important;
+}
+
+.el-table__header-wrapper .el-table__header .el-table__row {
+  background-color: transparent !important;
+}
+
+.el-table__header-wrapper .el-table__header .el-table__row:hover {
+  background-color: transparent !important;
+}
+
+/* 深层选择器确保覆盖Element Plus默认样式 */
+.el-table :deep(.el-table__row) {
+  transition: none !important;
+}
+
+.el-table :deep(.el-table__row:hover),
+.el-table :deep(.el-table__row.hover-row) {
+  background-color: transparent !important;
+  --el-table-row-hover-bg-color: transparent !important;
+}
+
+.el-table :deep(.el-table__row:hover > .el-table__cell),
+.el-table :deep(.el-table__row.hover-row > .el-table__cell) {
+  background-color: transparent !important;
+  --el-table-row-hover-bg-color: transparent !important;
+}
