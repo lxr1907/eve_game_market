@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const SystemKill = require('../models/SystemKill');
 
 /**
  * 数据库表结构同步工具
@@ -185,11 +186,13 @@ async function syncDatabaseStructure() {
         total_kills INT,
         datasource VARCHAR(20) NOT NULL DEFAULT 'infinity',
         timestamp DATETIME,
-        system_name VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+    
+    // 增量式删除system_name字段（如果存在）
+    await SystemKill.removeSystemNameField();
     
     console.log('所有表结构同步完成！');
 

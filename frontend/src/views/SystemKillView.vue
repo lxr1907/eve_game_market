@@ -24,6 +24,17 @@
               <el-option label="曙光 (Infinity)" value="infinity" />
               <el-option label="欧服 (Tranquility)" value="tranquility" />
             </el-select>
+            <el-select
+              v-model="securityStatusFilter"
+              placeholder="安全状态过滤"
+              style="width: 150px; margin-right: 10px"
+              @change="handleSearch"
+              clearable
+            >
+              <el-option label="高安 (>0.5)" value="high" />
+              <el-option label="低安 (0~0.5)" value="low" />
+              <el-option label="00 (<=0)" value="nullsec" />
+            </el-select>
             <el-input
               v-model="searchQuery"
               placeholder="搜索星系ID或名称"
@@ -46,6 +57,14 @@
           >
             <el-table-column prop="system_id" label="星系ID" width="120" />
             <el-table-column prop="system_name" label="星系名称" min-width="200" />
+            <el-table-column prop="security_status" label="安全状态" width="100" sortable="custom">
+              <template #header>
+                <span>安全状态 <el-icon v-if="sortBy === 'security_status'" :class="{ 'sort-desc': sortOrder === 'descending', 'sort-asc': sortOrder === 'ascending' }"><ArrowDown /></el-icon></span>
+              </template>
+              <template #default="scope">
+                {{ scope.row.security_status !== null ? scope.row.security_status.toFixed(2) : '-' }}
+              </template>
+            </el-table-column>
             <el-table-column prop="npc_kills" label="NPC击杀" width="100" align="right" sortable="custom">
               <template #header>
                 <span>NPC击杀 <el-icon v-if="sortBy === 'npc_kills'" :class="{ 'sort-desc': sortOrder === 'descending', 'sort-asc': sortOrder === 'ascending' }"><ArrowDown /></el-icon></span>
@@ -103,6 +122,7 @@ const pageSize = ref(10)
 // 搜索和筛选
 const searchQuery = ref('')
 const selectedDatasource = ref('serenity')
+const securityStatusFilter = ref('')
 
 // 排序
 const sortBy = ref('ship_kills')
@@ -118,7 +138,8 @@ const loadSystemKills = async () => {
       selectedDatasource.value, 
       searchQuery.value,
       sortBy.value,
-      sortOrder.value
+      sortOrder.value,
+      securityStatusFilter.value
     )
     systemKills.value = response.system_kills
     total.value = response.pagination.total

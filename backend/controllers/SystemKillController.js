@@ -65,8 +65,7 @@ class SystemKillController {
         pod_kills: kill.pod_kills || 0,
         ship_kills: kill.ship_kills || 0,
         datasource: datasource,
-        timestamp: new Date(),
-        system_name: systemMap[kill.system_id] || null
+        timestamp: new Date()
       }));
       
       // 批量插入或更新
@@ -110,9 +109,9 @@ class SystemKillController {
   // 获取System Kills数据列表
   static async getSystemKills(req, res) {
     try {
-      const { page = 1, limit = 10, search = '', datasource = 'infinity', sortBy = 'ship_kills', sortOrder = 'descending' } = req.query;
-      const systemKills = await SystemKill.findAll(parseInt(page), parseInt(limit), datasource, search, sortBy, sortOrder);
-      const total = await SystemKill.count(datasource, search);
+      const { page = 1, limit = 10, search = '', datasource = 'infinity', sortBy = 'ship_kills', sortOrder = 'descending', securityStatus = '' } = req.query;
+      const systemKills = await SystemKill.findAll(parseInt(page), parseInt(limit), datasource, search, sortBy, sortOrder, securityStatus);
+      const total = await SystemKill.count(datasource, search, securityStatus);
 
       res.status(200).json({
         system_kills: systemKills,
