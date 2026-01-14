@@ -87,141 +87,49 @@ const getNextSystem = async () => {
   try {
     // 如果当前页的系统列表为空或已处理完所有系统，获取下一页
     if (currentSystems.length === 0 || currentIndex >= currentSystems.length) {
-      console.log(`Fetching systems page ${currentPage} with page size ${pageSize}...`);
+      console.log(`Fetching systems to sync stargates...`);
       
-      // 从数据库获取系统列表
-      const systems = await System.findAll(currentPage, pageSize);
+      // 1. 首先查询前10个在system表存在但stargate表不存在的系统
+      const sqlNoStargates = `
+        SELECT s.*, 0 AS existing_stargates
+        FROM systems s
+        LEFT JOIN stargates g ON s.system_id = g.system_id
+        WHERE g.stargate_id IS NULL
+        LIMIT 10
+      `;
       
-      // 为每个系统获取已存在的星门数量
-      const systemsWithStargateCount = await Promise.all(systems.map(async (system) => {
-        const existingStargates = await Stargate.findBySystemId(system.system_id);
-        return {
-          ...system,
-          existing_stargates: existingStargates.length
-        };
-      }));
+      const [systemsWithoutStargates] = await pool.execute(sqlNoStargates);
       
-      // 排序系统：优先处理没有星门记录的系统，然后处理星门记录不足的系统
-      currentSystems = systemsWithStargateCount.sort((a, b) => {
-        // 解析stargates字段（可能是JSON字符串）
-        let aStargates = [];
-        let bStargates = [];
+      if (systemsWithoutStargates.length > 0) {
+        // 如果有系统没有星门记录，优先处理这些系统
+        console.log(`Found ${systemsWithoutStargates.length} systems without any stargate records`);
+        currentSystems = systemsWithoutStargates;
+      } else {
+        // 2. 如果所有系统都有星门记录，查询stargate数组数量大于stargate表记录数的系统
+        const sqlIncomplete = `
+          SELECT s.*, COUNT(g.stargate_id) AS existing_stargates
+          FROM systems s
+          JOIN stargates g ON s.system_id = g.system_id
+          WHERE JSON_LENGTH(s.stargates) > COUNT(g.stargate_id)
+          GROUP BY s.system_id
+          LIMIT 10
+        `;
         
-        if (a.stargates) {
-          if (typeof a.stargates === 'string') {
-            try {
-              aStargates = JSON.parse(a.stargates);
-            } catch (e) {
-              console.error(`Error parsing stargates for system ${a.system_id}:`, e);
-            }
-          } else {
-            aStargates = a.stargates;
-          }
-        }
+        const [incompleteSystems] = await pool.execute(sqlIncomplete);
         
-        if (b.stargates) {
-          if (typeof b.stargates === 'string') {
-            try {
-              bStargates = JSON.parse(b.stargates);
-            } catch (e) {
-              console.error(`Error parsing stargates for system ${b.system_id}:`, e);
-            }
-          } else {
-            bStargates = b.stargates;
-          }
-        }
-        
-        // 优先处理没有星门记录的系统
-        if (a.existing_stargates === 0 && b.existing_stargates !== 0) {
-          return -1;
-        }
-        if (a.existing_stargates !== 0 && b.existing_stargates === 0) {
-          return 1;
-        }
-        
-        // 然后处理星门记录不足的系统
-        const aHasEnough = Array.isArray(aStargates) && aStargates.length <= a.existing_stargates;
-        const bHasEnough = Array.isArray(bStargates) && bStargates.length <= b.existing_stargates;
-        
-        if (!aHasEnough && bHasEnough) {
-          return -1;
-        }
-        if (aHasEnough && !bHasEnough) {
-          return 1;
-        }
-        
-        // 最后按系统ID排序
-        return a.system_id - b.system_id;
-      });
-      
-      currentIndex = 0;
-      
-      if (currentSystems.length === 0) {
-        // 如果没有更多系统，重置到第一页
-        console.log('No more systems found, resetting to page 1');
-        currentPage = 1;
-        const resetSystems = await System.findAll(currentPage, pageSize);
-        
-        const resetSystemsWithCount = await Promise.all(resetSystems.map(async (system) => {
-          const existingStargates = await Stargate.findBySystemId(system.system_id);
-          return {
-            ...system,
-            existing_stargates: existingStargates.length
-          };
-        }));
-        
-        currentSystems = resetSystemsWithCount.sort((a, b) => {
-          // 同样的排序逻辑
-          let aStargates = [];
-          let bStargates = [];
-          
-          if (a.stargates) {
-            if (typeof a.stargates === 'string') {
-              try {
-                aStargates = JSON.parse(a.stargates);
-              } catch (e) {
-                console.error(`Error parsing stargates for system ${a.system_id}:`, e);
-              }
-            } else {
-              aStargates = a.stargates;
-            }
-          }
-          
-          if (b.stargates) {
-            if (typeof b.stargates === 'string') {
-              try {
-                bStargates = JSON.parse(b.stargates);
-              } catch (e) {
-                console.error(`Error parsing stargates for system ${b.system_id}:`, e);
-              }
-            } else {
-              bStargates = b.stargates;
-            }
-          }
-          
-          if (a.existing_stargates === 0 && b.existing_stargates !== 0) return -1;
-          if (a.existing_stargates !== 0 && b.existing_stargates === 0) return 1;
-          
-          const aHasEnough = Array.isArray(aStargates) && aStargates.length <= a.existing_stargates;
-          const bHasEnough = Array.isArray(bStargates) && bStargates.length <= b.existing_stargates;
-          
-          if (!aHasEnough && bHasEnough) return -1;
-          if (aHasEnough && !bHasEnough) return 1;
-          
-          return a.system_id - b.system_id;
-        });
-        
-        if (currentSystems.length === 0) {
-          // 如果仍然没有系统，返回null
-          console.error('No systems found in database');
+        if (incompleteSystems.length > 0) {
+          // 如果有系统星门记录不足，处理这些系统
+          console.log(`Found ${incompleteSystems.length} systems with incomplete stargate records`);
+          currentSystems = incompleteSystems;
+        } else {
+          // 3. 如果所有系统星门记录都完整，返回null
+          console.log('All systems have complete stargate records');
           return null;
         }
-      } else {
-        // 否则，准备获取下一页
-        currentPage++;
       }
       
-      console.log(`Fetched ${currentSystems.length} systems from page ${currentPage - 1}`);
+      currentIndex = 0;
+      console.log(`Fetched ${currentSystems.length} systems to sync`);
     }
     
     // 获取当前系统并增加索引
@@ -258,8 +166,8 @@ const startScheduler = () => {
   // 立即执行一次
   syncStargates();
   
-  // 然后每3秒执行一次
-  setInterval(syncStargates, 3000);
+  // 然后每5秒执行一次
+  setInterval(syncStargates, 5000);
 };
 
 // 如果直接运行这个文件，启动调度器
