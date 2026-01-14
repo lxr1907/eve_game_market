@@ -1,6 +1,8 @@
 const pool = require('../config/database');
 const SystemKill = require('../models/SystemKill');
 const System = require('../models/System');
+const Stargate = require('../models/Stargate');
+
 
 /**
  * 数据库表结构同步工具
@@ -183,6 +185,9 @@ async function syncDatabaseStructure() {
     
     // 增量式删除system_name字段（如果存在）
     await SystemKill.removeSystemNameField();
+    
+    // 13. 创建或更新 stargates 表
+    await Stargate.createTable();
     
     console.log('所有表结构同步完成！');
 

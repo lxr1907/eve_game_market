@@ -3,6 +3,7 @@ require('dotenv').config();
 const onlinePlayerStatsScheduler = require('./utils/onlinePlayerStatsScheduler');
 const systemKillScheduler = require('./utils/systemKillScheduler');
 const systemDetailsScheduler = require('./utils/systemDetailsScheduler');
+const stargateScheduler = require('./utils/stargateScheduler');
 
 
 console.log('Starting server...');
@@ -24,6 +25,9 @@ const server = app.listen(PORT, '127.0.0.1', () => {
   
   // Start the system details scheduler
   systemDetailsScheduler.startScheduler();
+  
+  // Start the stargate sync scheduler
+  stargateScheduler.startScheduler();
 });
 
 server.on('error', (err) => {

@@ -931,6 +931,65 @@ class EveApiService {
       }
     }
   }
+
+  // 获取星门详情
+  async getStargateDetails(stargateId, datasource = 'infinity', retries = 3) {
+    // 节流控制：确保每1秒只请求1次
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.throttleInterval) {
+      const waitTime = this.throttleInterval - timeSinceLastRequest;
+      console.log(`Throttling request for stargate ID ${stargateId}, waiting ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastRequestTime = Date.now();
+
+    try {
+      let apiBaseUrl;
+      let headers = {};
+      
+      if (datasource.toLowerCase() === 'tranquility') {
+        // 欧服使用官方API
+        apiBaseUrl = 'https://esi.evetech.net';
+        headers = {
+          'Accept': 'application/json',
+          'X-Compatibility-Date': '2025-12-16'
+        };
+      } else {
+        // 晨曦和曙光使用ALI ESI API
+        apiBaseUrl = process.env.EVE_API_BASE_URL || 'https://ali-esi.evepc.163.com';
+      }
+      
+      // 构建完整URL，包含API版本
+      const fullUrl = `${apiBaseUrl}/${process.env.EVE_API_VERSION || 'latest'}/universe/stargates/${stargateId}/?datasource=${datasource}`;
+      console.log(`Sending request for stargate details: ${fullUrl}`);
+      
+      // 统一使用axios进行请求，确保一致的错误处理
+      const response = await axios.get(fullUrl, {
+        headers: { ...headers, ...this.client.defaults.headers },
+        timeout: 10000 // 设置10秒超时
+      });
+      
+      console.log(`Received details for stargate ID ${stargateId}: ${response.data.name || 'Unknown'}`);
+      return response.data;
+    } catch (error) {
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        // 如果是超时或连接重置错误，进行重试
+        console.log(`Timeout fetching stargate details for ID ${stargateId}, retrying (${retries} left)...`);
+        // 指数退避策略，每次重试等待时间增加
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getStargateDetails(stargateId, datasource, retries - 1);
+      } else {
+        console.error(`Error fetching stargate details for ID ${stargateId}: ${error.message}`);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+        // 返回null表示获取失败，但不中断整个同步过程
+        return null;
+      }
+    }
+  }
 }
 
 module.exports = new EveApiService();
