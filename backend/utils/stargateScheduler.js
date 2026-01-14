@@ -21,7 +21,7 @@ const syncSingleStargate = async (stargateId, systemId, datasource = 'infinity')
     }
     
     // 获取stargate详情
-    const stargateDetails = await eveApiService.getStargateDetails(stargateId, datasource);
+      const stargateDetails = await eveApiService.getStargateDetails(stargateId, systemId, datasource);
     
     if (stargateDetails) {
       // 处理destination字段，将其展开到外层

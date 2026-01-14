@@ -46,8 +46,8 @@ class EveApiService {
       } else {
         console.error('Error fetching type IDs:', error.message);
         if (error.response) {
-          console.error('Response status:', error.response.status);
-          console.error('Response data:', error.response.data);
+          console.error(`Response status for stargate ID ${stargateId} in system ${systemId}:`, error.response.status);
+          console.error(`Response data for stargate ID ${stargateId} in system ${systemId}:`, error.response.data);
         }
         throw error;
       }
@@ -242,8 +242,8 @@ class EveApiService {
       } else {
         console.error(`Error fetching loyalty store offers for corporation ${corporationId}: ${error.message}`);
         if (error.response) {
-          console.error('Response status:', error.response.status);
-          console.error('Response data:', error.response.data);
+          console.error(`Response status for stargate ID ${stargateId} in system ${systemId}:`, error.response.status);
+          console.error(`Response data for stargate ID ${stargateId} in system ${systemId}:`, error.response.data);
         }
         throw error;
       }
@@ -933,13 +933,13 @@ class EveApiService {
   }
 
   // 获取星门详情
-  async getStargateDetails(stargateId, datasource = 'infinity', retries = 3) {
+  async getStargateDetails(stargateId, systemId, datasource = 'infinity', retries = 3) {
     // 节流控制：确保每1秒只请求1次
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
     if (timeSinceLastRequest < this.throttleInterval) {
       const waitTime = this.throttleInterval - timeSinceLastRequest;
-      console.log(`Throttling request for stargate ID ${stargateId}, waiting ${waitTime}ms...`);
+      console.log(`Throttling request for stargate ID ${stargateId} in system ${systemId}, waiting ${waitTime}ms...`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
     this.lastRequestTime = Date.now();
@@ -970,17 +970,17 @@ class EveApiService {
         timeout: 10000 // 设置10秒超时
       });
       
-      console.log(`Received details for stargate ID ${stargateId}: ${response.data.name || 'Unknown'}`);
+      console.log(`Received details for stargate ID ${stargateId} in system ${systemId}: ${response.data.name || 'Unknown'}`);
       return response.data;
     } catch (error) {
       if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
         // 如果是超时或连接重置错误，进行重试
-        console.log(`Timeout fetching stargate details for ID ${stargateId}, retrying (${retries} left)...`);
+        console.log(`Timeout fetching stargate details for ID ${stargateId} in system ${systemId}, retrying (${retries} left)...`);
         // 指数退避策略，每次重试等待时间增加
         await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
-        return this.getStargateDetails(stargateId, datasource, retries - 1);
+        return this.getStargateDetails(stargateId, systemId, datasource, retries - 1);
       } else {
-        console.error(`Error fetching stargate details for ID ${stargateId}: ${error.message}`);
+        console.error(`Error fetching stargate details for ID ${stargateId} in system ${systemId}: ${error.message}`);
         if (error.response) {
           console.error('Response status:', error.response.status);
           console.error('Response data:', error.response.data);
