@@ -1,6 +1,7 @@
 const System = require('../models/System');
 const Stargate = require('../models/Stargate');
 const eveApiService = require('../services/eveApiService');
+const pool = require('../config/database');
 
 // 全局变量，用于分页获取系统
 let currentPage = 1;
@@ -81,22 +82,134 @@ const syncSystemStargates = async (system) => {
   }
 };
 
-// 获取下一个系统的函数，使用分页从systems表获取
+// 获取下一个系统的函数，优先处理没有星门记录的系统，然后处理星门记录不足的系统
 const getNextSystem = async () => {
   try {
     // 如果当前页的系统列表为空或已处理完所有系统，获取下一页
     if (currentSystems.length === 0 || currentIndex >= currentSystems.length) {
       console.log(`Fetching systems page ${currentPage} with page size ${pageSize}...`);
       
-      // 从数据库获取系统列表，分页查询
-      currentSystems = await System.findAll(currentPage, pageSize);
+      // 从数据库获取系统列表
+      const systems = await System.findAll(currentPage, pageSize);
+      
+      // 为每个系统获取已存在的星门数量
+      const systemsWithStargateCount = await Promise.all(systems.map(async (system) => {
+        const existingStargates = await Stargate.findBySystemId(system.system_id);
+        return {
+          ...system,
+          existing_stargates: existingStargates.length
+        };
+      }));
+      
+      // 排序系统：优先处理没有星门记录的系统，然后处理星门记录不足的系统
+      currentSystems = systemsWithStargateCount.sort((a, b) => {
+        // 解析stargates字段（可能是JSON字符串）
+        let aStargates = [];
+        let bStargates = [];
+        
+        if (a.stargates) {
+          if (typeof a.stargates === 'string') {
+            try {
+              aStargates = JSON.parse(a.stargates);
+            } catch (e) {
+              console.error(`Error parsing stargates for system ${a.system_id}:`, e);
+            }
+          } else {
+            aStargates = a.stargates;
+          }
+        }
+        
+        if (b.stargates) {
+          if (typeof b.stargates === 'string') {
+            try {
+              bStargates = JSON.parse(b.stargates);
+            } catch (e) {
+              console.error(`Error parsing stargates for system ${b.system_id}:`, e);
+            }
+          } else {
+            bStargates = b.stargates;
+          }
+        }
+        
+        // 优先处理没有星门记录的系统
+        if (a.existing_stargates === 0 && b.existing_stargates !== 0) {
+          return -1;
+        }
+        if (a.existing_stargates !== 0 && b.existing_stargates === 0) {
+          return 1;
+        }
+        
+        // 然后处理星门记录不足的系统
+        const aHasEnough = Array.isArray(aStargates) && aStargates.length <= a.existing_stargates;
+        const bHasEnough = Array.isArray(bStargates) && bStargates.length <= b.existing_stargates;
+        
+        if (!aHasEnough && bHasEnough) {
+          return -1;
+        }
+        if (aHasEnough && !bHasEnough) {
+          return 1;
+        }
+        
+        // 最后按系统ID排序
+        return a.system_id - b.system_id;
+      });
+      
       currentIndex = 0;
       
       if (currentSystems.length === 0) {
         // 如果没有更多系统，重置到第一页
         console.log('No more systems found, resetting to page 1');
         currentPage = 1;
-        currentSystems = await System.findAll(currentPage, pageSize);
+        const resetSystems = await System.findAll(currentPage, pageSize);
+        
+        const resetSystemsWithCount = await Promise.all(resetSystems.map(async (system) => {
+          const existingStargates = await Stargate.findBySystemId(system.system_id);
+          return {
+            ...system,
+            existing_stargates: existingStargates.length
+          };
+        }));
+        
+        currentSystems = resetSystemsWithCount.sort((a, b) => {
+          // 同样的排序逻辑
+          let aStargates = [];
+          let bStargates = [];
+          
+          if (a.stargates) {
+            if (typeof a.stargates === 'string') {
+              try {
+                aStargates = JSON.parse(a.stargates);
+              } catch (e) {
+                console.error(`Error parsing stargates for system ${a.system_id}:`, e);
+              }
+            } else {
+              aStargates = a.stargates;
+            }
+          }
+          
+          if (b.stargates) {
+            if (typeof b.stargates === 'string') {
+              try {
+                bStargates = JSON.parse(b.stargates);
+              } catch (e) {
+                console.error(`Error parsing stargates for system ${b.system_id}:`, e);
+              }
+            } else {
+              bStargates = b.stargates;
+            }
+          }
+          
+          if (a.existing_stargates === 0 && b.existing_stargates !== 0) return -1;
+          if (a.existing_stargates !== 0 && b.existing_stargates === 0) return 1;
+          
+          const aHasEnough = Array.isArray(aStargates) && aStargates.length <= a.existing_stargates;
+          const bHasEnough = Array.isArray(bStargates) && bStargates.length <= b.existing_stargates;
+          
+          if (!aHasEnough && bHasEnough) return -1;
+          if (aHasEnough && !bHasEnough) return 1;
+          
+          return a.system_id - b.system_id;
+        });
         
         if (currentSystems.length === 0) {
           // 如果仍然没有系统，返回null
