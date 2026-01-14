@@ -121,18 +121,18 @@ class SystemKill {
     let params = [datasource];
     
     if (timeRange === '1h') {
-      // 1小时内的平均值
-      avgSelect = 'AVG(sk.npc_kills) AS npc_kills, AVG(sk.pod_kills) AS pod_kills, AVG(sk.ship_kills) AS ship_kills';
+      // 1小时内的求和
+      avgSelect = 'SUM(sk.npc_kills) AS npc_kills, SUM(sk.pod_kills) AS pod_kills, SUM(sk.ship_kills) AS ship_kills';
       timeCondition = ` AND sk.timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)`;
       groupBy = 'sk.system_id';
     } else if (timeRange === '6h') {
-      // 6小时内的平均值
-      avgSelect = 'AVG(sk.npc_kills) AS npc_kills, AVG(sk.pod_kills) AS pod_kills, AVG(sk.ship_kills) AS ship_kills';
+      // 6小时内的求和
+      avgSelect = 'SUM(sk.npc_kills) AS npc_kills, SUM(sk.pod_kills) AS pod_kills, SUM(sk.ship_kills) AS ship_kills';
       timeCondition = ` AND sk.timestamp >= DATE_SUB(NOW(), INTERVAL 6 HOUR)`;
       groupBy = 'sk.system_id';
     } else if (timeRange === '1d') {
-      // 1天内的平均值
-      avgSelect = 'AVG(sk.npc_kills) AS npc_kills, AVG(sk.pod_kills) AS pod_kills, AVG(sk.ship_kills) AS ship_kills';
+      // 1天内的求和
+      avgSelect = 'SUM(sk.npc_kills) AS npc_kills, SUM(sk.pod_kills) AS pod_kills, SUM(sk.ship_kills) AS ship_kills';
       timeCondition = ` AND sk.timestamp >= DATE_SUB(NOW(), INTERVAL 1 DAY)`;
       groupBy = 'sk.system_id';
     } else {
