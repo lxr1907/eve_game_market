@@ -334,9 +334,9 @@ export const systemApi = {
 // System Kill API
 export const systemKillApi = {
   // 获取所有星系击毁统计数据
-  async getSystemKills(page = 1, limit = 10, datasource = 'infinity', search = '', sortBy = 'ship_kills', sortOrder = 'descending', securityStatusFilter = '') {
+  async getSystemKills(page = 1, limit = 10, datasource = 'infinity', search = '', sortBy = 'ship_kills', sortOrder = 'descending', securityStatusFilter = '', timeRange = 'realtime') {
     const response = await apiClient.get(`/system-kills`, { 
-      params: { page, limit, datasource, search, sortBy, sortOrder, securityStatus: securityStatusFilter } 
+      params: { page, limit, datasource, search, sortBy, sortOrder, securityStatus: securityStatusFilter, timeRange } 
     });
     return response;
   },

@@ -35,6 +35,17 @@
               <el-option label="低安 (0~0.5)" value="low" />
               <el-option label="00 (<=0)" value="nullsec" />
             </el-select>
+            <el-select
+              v-model="timeRange"
+              placeholder="时间范围"
+              style="width: 150px; margin-right: 10px"
+              @change="handleSearch"
+            >
+              <el-option label="实时" value="realtime" />
+              <el-option label="1小时" value="1h" />
+              <el-option label="6小时" value="6h" />
+              <el-option label="1天" value="1d" />
+            </el-select>
             <el-input
               v-model="searchQuery"
               placeholder="搜索星系ID或名称"
@@ -123,6 +134,7 @@ const pageSize = ref(10)
 const searchQuery = ref('')
 const selectedDatasource = ref('serenity')
 const securityStatusFilter = ref('')
+const timeRange = ref('realtime')
 
 // 排序
 const sortBy = ref('ship_kills')
@@ -139,7 +151,8 @@ const loadSystemKills = async () => {
       searchQuery.value,
       sortBy.value,
       sortOrder.value,
-      securityStatusFilter.value
+      securityStatusFilter.value,
+      timeRange.value
     )
     systemKills.value = response.system_kills
     total.value = response.pagination.total

@@ -101,7 +101,7 @@ class SystemKill {
     }
   }
 
-  static async findAll(page = 1, limit = 10, datasource = 'infinity', search = '', sortBy = 'ship_kills', sortOrder = 'descending', securityStatus = '') {
+  static async findAll(page = 1, limit = 10, datasource = 'infinity', search = '', sortBy = 'ship_kills', sortOrder = 'descending', securityStatus = '', timeRange = 'realtime') {
     const pageInt = parseInt(page) || 1;
     const limitInt = parseInt(limit) || 10;
     const offset = (pageInt - 1) * limitInt;
@@ -112,22 +112,49 @@ class SystemKill {
     // 转换排序方向为MySQL支持的格式（ASC或DESC）
     const safeSortOrder = sortOrder.toLowerCase().includes('desc') ? 'DESC' : 'ASC';
     
-    // 使用MAX(id)获取每个system_id的最新记录，因为id是自增的，更可靠
+    // 时间范围处理
+    let timeCondition = '';
+    let avgSelect = '';
+    let groupBy = '';
+    let fromClause = 'system_kills sk';
+    let whereClause = 'sk.datasource = ?';
+    let params = [datasource];
+    
+    if (timeRange === '1h') {
+      // 1小时内的平均值
+      avgSelect = 'AVG(sk.npc_kills) AS npc_kills, AVG(sk.pod_kills) AS pod_kills, AVG(sk.ship_kills) AS ship_kills';
+      timeCondition = ` AND sk.timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)`;
+      groupBy = 'sk.system_id';
+    } else if (timeRange === '6h') {
+      // 6小时内的平均值
+      avgSelect = 'AVG(sk.npc_kills) AS npc_kills, AVG(sk.pod_kills) AS pod_kills, AVG(sk.ship_kills) AS ship_kills';
+      timeCondition = ` AND sk.timestamp >= DATE_SUB(NOW(), INTERVAL 6 HOUR)`;
+      groupBy = 'sk.system_id';
+    } else if (timeRange === '1d') {
+      // 1天内的平均值
+      avgSelect = 'AVG(sk.npc_kills) AS npc_kills, AVG(sk.pod_kills) AS pod_kills, AVG(sk.ship_kills) AS ship_kills';
+      timeCondition = ` AND sk.timestamp >= DATE_SUB(NOW(), INTERVAL 1 DAY)`;
+      groupBy = 'sk.system_id';
+    } else {
+      // 实时（默认）：获取最新记录
+      avgSelect = 'sk.npc_kills, sk.pod_kills, sk.ship_kills';
+      // 使用MAX(id)获取每个system_id的最新记录
+      fromClause = `(SELECT * FROM system_kills WHERE id IN (
+        SELECT MAX(id) FROM system_kills WHERE datasource = ? GROUP BY system_id
+      )) sk`;
+      params.unshift(datasource);
+    }
+    
+    // 主查询
     let query = `
-      SELECT sk.*, 
+      SELECT sk.system_id, 
+             ${avgSelect},
              s.name AS system_name,
              ROUND(s.security_status, 2) AS security_status
-      FROM system_kills sk
+      FROM ${fromClause}
       LEFT JOIN systems s ON sk.system_id = s.system_id
-      WHERE sk.id IN (
-        SELECT MAX(id)
-        FROM system_kills
-        WHERE datasource = ?
-        GROUP BY system_id
-      )
-      AND sk.datasource = ?
+      WHERE ${whereClause}${timeCondition}
     `;
-    let params = [datasource, datasource];
     
     // 添加安全状态过滤
     if (securityStatus === 'high') {
@@ -143,29 +170,65 @@ class SystemKill {
       params.push(search, `%${search}%`);
     }
     
+    // 添加分组（仅用于时间范围查询）
+    if (groupBy) {
+      query += ` GROUP BY ${groupBy}`;
+    }
+    
     // 构建排序语句，注意表别名的使用
-    const sortTableAlias = safeSortBy === 'system_name' || safeSortBy === 'security_status' ? 's' : 'sk';
-    query += ` ORDER BY ${sortTableAlias}.${safeSortBy} ${safeSortOrder.toUpperCase()} LIMIT ${limitInt} OFFSET ${offset}`;
+    let sortTableAlias = safeSortBy === 'system_name' || safeSortBy === 'security_status' ? 's' : 'sk';
+    
+    // 对于时间范围查询（使用GROUP BY），确保排序字段是聚合函数或GROUP BY中的列
+    if (groupBy) {
+      // 如果排序字段是聚合列（npc_kills, pod_kills, ship_kills），不需要表别名
+      if (['npc_kills', 'pod_kills', 'ship_kills'].includes(safeSortBy)) {
+        sortTableAlias = '';
+      }
+    }
+    
+    const sortField = sortTableAlias ? `${sortTableAlias}.${safeSortBy}` : safeSortBy;
+    query += ` ORDER BY ${sortField} ${safeSortOrder.toUpperCase()} LIMIT ${limitInt} OFFSET ${offset}`;
     
     const [rows] = await pool.execute(query, params);
     return rows;
   }
 
-  static async count(datasource = 'infinity', search = '', securityStatus = '') {
+  static async count(datasource = 'infinity', search = '', securityStatus = '', timeRange = 'realtime') {
     // 使用与findAll相同的查询结构来确保计数一致
-    let query = `
-      SELECT COUNT(*) as count FROM (
-        SELECT sk.system_id FROM system_kills sk
+    let query, params;
+    
+    if (timeRange === '1h' || timeRange === '6h' || timeRange === '1d') {
+      // 时间范围查询计数
+      query = `
+        SELECT COUNT(DISTINCT sk.system_id) as count FROM system_kills sk
         LEFT JOIN systems s ON sk.system_id = s.system_id
-        WHERE sk.id IN (
-          SELECT MAX(id)
-          FROM system_kills
-          WHERE datasource = ?
-          GROUP BY system_id
-        )
-        AND sk.datasource = ?
-    `;
-    let params = [datasource, datasource];
+        WHERE sk.datasource = ?
+      `;
+      params = [datasource];
+      
+      if (timeRange === '1h') {
+        query += ` AND sk.timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)`;
+      } else if (timeRange === '6h') {
+        query += ` AND sk.timestamp >= DATE_SUB(NOW(), INTERVAL 6 HOUR)`;
+      } else if (timeRange === '1d') {
+        query += ` AND sk.timestamp >= DATE_SUB(NOW(), INTERVAL 1 DAY)`;
+      }
+    } else {
+      // 实时查询计数
+      query = `
+        SELECT COUNT(*) as count FROM (
+          SELECT sk.system_id FROM system_kills sk
+          LEFT JOIN systems s ON sk.system_id = s.system_id
+          WHERE sk.id IN (
+            SELECT MAX(id)
+            FROM system_kills
+            WHERE datasource = ?
+            GROUP BY system_id
+          )
+          AND sk.datasource = ?
+      `;
+      params = [datasource, datasource];
+    }
     
     // 添加安全状态过滤
     if (securityStatus === 'high') {
@@ -181,10 +244,13 @@ class SystemKill {
       params.push(search, `%${search}%`);
     }
     
-    query += `
-        GROUP BY sk.system_id
-      ) as distinct_systems
-    `;
+    // 对于实时查询，需要闭合子查询
+    if (timeRange !== '1h' && timeRange !== '6h' && timeRange !== '1d') {
+      query += `
+          GROUP BY sk.system_id
+        ) as distinct_systems
+      `;
+    }
     
     const [rows] = await pool.execute(query, params);
     return rows[0].count;

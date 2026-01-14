@@ -109,9 +109,9 @@ class SystemKillController {
   // 获取System Kills数据列表
   static async getSystemKills(req, res) {
     try {
-      const { page = 1, limit = 10, search = '', datasource = 'infinity', sortBy = 'ship_kills', sortOrder = 'descending', securityStatus = '' } = req.query;
-      const systemKills = await SystemKill.findAll(parseInt(page), parseInt(limit), datasource, search, sortBy, sortOrder, securityStatus);
-      const total = await SystemKill.count(datasource, search, securityStatus);
+      const { page = 1, limit = 10, search = '', datasource = 'infinity', sortBy = 'ship_kills', sortOrder = 'descending', securityStatus = '', timeRange = 'realtime' } = req.query;
+      const systemKills = await SystemKill.findAll(parseInt(page), parseInt(limit), datasource, search, sortBy, sortOrder, securityStatus, timeRange);
+      const total = await SystemKill.count(datasource, search, securityStatus, timeRange);
 
       res.status(200).json({
         system_kills: systemKills,
