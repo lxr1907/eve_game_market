@@ -982,8 +982,8 @@ class EveApiService {
       } else {
         console.error(`Error fetching stargate details for ID ${stargateId} in system ${systemId}: ${error.message}`);
         if (error.response) {
-          console.error('Response status:', error.response.status);
-          console.error('Response data:', error.response.data);
+          console.error(`Response status for stargate ID ${stargateId} in system ${systemId}:`, error.response.status);
+          console.error(`Response data for stargate ID ${stargateId} in system ${systemId}:`, error.response.data);
         }
         // 返回null表示获取失败，但不中断整个同步过程
         return null;
