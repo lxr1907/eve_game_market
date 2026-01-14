@@ -110,8 +110,8 @@ class System {
     
     if (systemData.stargates !== undefined) {
       fields.push('stargates');
-      // 将数组转换为JSON字符串
-      values.push(JSON.stringify(systemData.stargates));
+      // 正确处理null值，保存为MySQL的NULL而不是字符串"null"
+      values.push(systemData.stargates === null ? null : JSON.stringify(systemData.stargates));
       updateClauses.push('stargates = VALUES(stargates)');
     }
     

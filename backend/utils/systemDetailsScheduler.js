@@ -23,6 +23,9 @@ const syncSystemDetails = async () => {
         const systemDetails = await eveApiService.getSystemDetails(systemId);
         
         if (systemDetails !== null) {
+          // 确保当API不返回stargates字段时，将其设置为null
+          const stargatesValue = systemDetails.stargates === undefined ? null : systemDetails.stargates;
+          
           // 使用详情更新数据库
           await System.insertOrUpdate({
             system_id: systemDetails.system_id,
@@ -30,7 +33,7 @@ const syncSystemDetails = async () => {
             name: systemDetails.name || '',
             position: systemDetails.position,
             security_status: systemDetails.security_status,
-            stargates: systemDetails.stargates
+            stargates: stargatesValue
           });
           
           console.log(`System ${systemId} (${systemDetails.name}) updated with details.`);
