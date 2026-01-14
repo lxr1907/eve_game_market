@@ -40,7 +40,7 @@ const syncSingleStargate = async (stargateId, systemId, datasource = 'infinity')
       console.log(`✓ Stargate ${stargateId} (${processedData.name}) synced successfully.`);
     }
   } catch (error) {
-    console.error(`✗ Error syncing stargate ${stargateId}:`, error.message);
+    console.error(`✗ Error syncing stargate ${stargateId} in system ${systemId}:`, error.message);
   }
 };
 
