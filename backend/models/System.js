@@ -175,6 +175,19 @@ class System {
     const [rows] = await pool.query(query, params);
     return rows;
   }
+  
+  // 查询没有name或stargates的系统
+  static async findSystemsMissingDetails(limit = 5) {
+    const limitInt = parseInt(limit);
+    const query = `
+      SELECT * FROM systems
+      WHERE (name IS NULL OR name = '' OR stargates IS NULL)
+      ORDER BY system_id
+      LIMIT ${limitInt}
+    `;
+    const [rows] = await pool.query(query);
+    return rows;
+  }
 
   static async count(search = '', onlyEmptyName = false) {
     let query = `SELECT COUNT(*) as count FROM systems`;
