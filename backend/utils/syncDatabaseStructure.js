@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const SystemKill = require('../models/SystemKill');
+const System = require('../models/System');
 
 /**
  * 数据库表结构同步工具
@@ -161,19 +162,8 @@ async function syncDatabaseStructure() {
     `);
     
     // 11. 创建或更新 systems 表
-    await createOrUpdateTable('systems', `
-      CREATE TABLE IF NOT EXISTS systems (
-        system_id INT PRIMARY KEY,
-        constellation_id INT,
-        name VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-        position_x DOUBLE,
-        position_y DOUBLE,
-        position_z DOUBLE,
-        security_status DOUBLE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
+    await System.createTable();
+    console.log(`✓ 表 systems 创建或验证成功`);
     
     // 12. 创建或更新 system_kills 表
     await createOrUpdateTable('system_kills', `

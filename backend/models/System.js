@@ -11,11 +11,50 @@ class System {
         position_y DOUBLE,
         position_z DOUBLE,
         security_status DOUBLE,
+        stargates JSON,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query);
+    
+    // 增量添加stargates字段
+    await this.addStargatesField();
+  }
+  
+  // 增量添加stargates字段，确保多次执行不报错
+  static async addStargatesField() {
+    try {
+      // 检查字段是否存在
+      const checkQuery = `
+        SELECT column_name
+        FROM information_schema.COLUMNS
+        WHERE table_name = 'systems'
+        AND column_name = 'stargates'
+        AND table_schema = DATABASE()
+      `;
+      
+      const [columns] = await pool.execute(checkQuery);
+      
+      // 如果字段不存在，则添加
+      if (columns.length === 0) {
+        const addFieldQuery = `ALTER TABLE systems ADD COLUMN stargates JSON`;
+        await pool.execute(addFieldQuery);
+        console.log('Successfully added stargates column to systems table');
+        return true;
+      } else {
+        console.log('stargates column already exists in systems table');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error adding stargates column:', error.message);
+      // 如果是因为字段已经存在导致的错误，忽略它
+      if (!error.message.includes('Duplicate column name')) {
+        throw error;
+      }
+      console.log('stargates column already exists in systems table (error caught)');
+      return false;
+    }
   }
 
   static async insertOrUpdate(systemData) {
@@ -67,6 +106,13 @@ class System {
       fields.push('security_status');
       values.push(systemData.security_status);
       updateClauses.push('security_status = VALUES(security_status)');
+    }
+    
+    if (systemData.stargates !== undefined) {
+      fields.push('stargates');
+      // 将数组转换为JSON字符串
+      values.push(JSON.stringify(systemData.stargates));
+      updateClauses.push('stargates = VALUES(stargates)');
     }
     
     // 添加updated_at字段
@@ -169,6 +215,7 @@ class System {
       if (system.position?.y !== undefined) allFields.add('position_y');
       if (system.position?.z !== undefined) allFields.add('position_z');
       if (system.security_status !== undefined) allFields.add('security_status');
+      if (system.stargates !== undefined) allFields.add('stargates');
     });
     
     // 转换为数组并确保system_id在首位
@@ -195,6 +242,8 @@ class System {
           case 'position_z':
             return '?';
           case 'security_status':
+            return '?';
+          case 'stargates':
             return '?';
           default:
             return 'null';
@@ -227,6 +276,10 @@ class System {
             break;
           case 'security_status':
             params.push(system.security_status);
+            break;
+          case 'stargates':
+            // 将星门数组转换为JSON字符串
+            params.push(system.stargates ? JSON.stringify(system.stargates) : null);
             break;
           default:
             params.push(null);

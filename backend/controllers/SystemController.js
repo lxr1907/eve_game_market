@@ -103,7 +103,8 @@ class SystemController {
                     constellation_id: systemDetails.constellation_id,
                     name: systemDetails.name || '',
                     position: systemDetails.position,
-                    security_status: systemDetails.security_status
+                    security_status: systemDetails.security_status,
+                    stargates: systemDetails.stargates
                   });
                   
                   updatedSystems++;
@@ -163,7 +164,8 @@ class SystemController {
                 constellation_id: system.constellation_id,
                 name: system.name || '',
                 position: system.position,
-                security_status: system.security_status
+                security_status: system.security_status,
+                stargates: system.stargates
               });
               insertedSystems++;
             } catch (dbError) {
