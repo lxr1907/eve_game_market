@@ -4,7 +4,7 @@ class Stargate {
   static async createTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS stargates (
-        stargate_id BIGINT PRIMARY KEY,
+        stargate_id BIGINT,
         name VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
         position_x DOUBLE,
         position_y DOUBLE,
@@ -13,9 +13,10 @@ class Stargate {
         type_id INT,
         destination_stargate_id BIGINT,
         destination_system_id INT,
-        datasource VARCHAR(20),
+        datasource VARCHAR(20) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (stargate_id, datasource)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query);
@@ -151,9 +152,9 @@ class Stargate {
     }
   }
 
-  static async findById(stargateId) {
-    const query = `SELECT * FROM stargates WHERE stargate_id = ?`;
-    const [rows] = await pool.execute(query, [stargateId]);
+  static async findById(stargateId, datasource = 'infinity') {
+    const query = `SELECT * FROM stargates WHERE stargate_id = ? AND datasource = ?`;
+    const [rows] = await pool.execute(query, [stargateId, datasource]);
     return rows[0] ? rows[0] : null;
   }
 
@@ -185,13 +186,13 @@ class Stargate {
   }
 
   // 检查星门是否需要同步
-  static async needSync(stargateId, systemId) {
+  static async needSync(stargateId, systemId, datasource = 'infinity') {
     const query = `
       SELECT destination_stargate_id 
       FROM stargates 
-      WHERE stargate_id = ? AND system_id = ?
+      WHERE stargate_id = ? AND system_id = ? AND datasource = ?
     `;
-    const [rows] = await pool.execute(query, [stargateId, systemId]);
+    const [rows] = await pool.execute(query, [stargateId, systemId, datasource]);
     
     // 如果记录不存在，需要同步
     if (rows.length === 0) {

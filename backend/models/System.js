@@ -4,7 +4,7 @@ class System {
   static async createTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS systems (
-        system_id INT PRIMARY KEY,
+        system_id INT,
         constellation_id INT,
         name VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
         position_x DOUBLE,
@@ -12,9 +12,10 @@ class System {
         position_z DOUBLE,
         security_status DOUBLE,
         stargates JSON,
-        datasource VARCHAR(20),
+        datasource VARCHAR(20) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (system_id, datasource)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query);
@@ -183,9 +184,9 @@ class System {
     }
   }
 
-  static async findById(systemId) {
-    const query = `SELECT * FROM systems WHERE system_id = ?`;
-    const [rows] = await pool.execute(query, [systemId]);
+  static async findById(systemId, datasource = 'infinity') {
+    const query = `SELECT * FROM systems WHERE system_id = ? AND datasource = ?`;
+    const [rows] = await pool.execute(query, [systemId, datasource]);
     return rows[0] ? rows[0] : null;
   }
 
@@ -252,6 +253,13 @@ class System {
     }
     
     const [rows] = await pool.execute(query, params);
+    return rows[0].count;
+  }
+  
+  // 按datasource统计系统数量
+  static async countByDatasource(datasource) {
+    const query = `SELECT COUNT(*) as count FROM systems WHERE datasource = ?`;
+    const [rows] = await pool.execute(query, [datasource]);
     return rows[0].count;
   }
 

@@ -6,48 +6,49 @@ const syncAllSystemIds = async (datasource = 'infinity') => {
   try {
     console.log(`开始同步${datasource}数据源的所有系统ID...`);
     
-    let page = 1;
-    let hasMoreData = true;
-    let totalSystems = 0;
+    // 1. 先查询数据库中该数据源的系统数量
+    const dbCount = await System.countByDatasource(datasource);
+    console.log(`数据库中${datasource}数据源已有${dbCount}个系统`);
     
-    while (hasMoreData) {
-      try {
-        // 获取当前页的系统ID列表
-        const systemIds = await eveApiService.getSystemIds(page, datasource);
-        
-        if (systemIds.length === 0) {
-          hasMoreData = false;
-          break;
-        }
-        
-        // 将系统ID批量插入数据库
-        const systemDataArray = systemIds.map(systemId => ({
-          system_id: systemId,
-          datasource: datasource
-        }));
-        
-        await System.batchInsertOrUpdate(systemDataArray);
-        
-        totalSystems += systemIds.length;
-        console.log(`已同步${datasource}数据源第${page}页的系统ID，共${systemIds.length}个系统`);
-        
-        page++;
-        
-        // 每获取一页后等待一下，避免请求过于频繁
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-      } catch (pageError) {
-        console.error(`同步${datasource}数据源第${page}页系统ID失败:`, pageError.message);
-        // 遇到错误仍继续尝试下一页
-        page++;
-        
-        // 错误后等待更长时间
-        await new Promise(resolve => setTimeout(resolve, 3000));
-      }
+    // 2. 获取API中的所有系统ID并计算总数
+    console.log(`正在获取${datasource}数据源的所有系统ID...`);
+    
+    // 直接获取所有系统ID（该接口不需要分页）
+    const allSystemIds = await eveApiService.getSystemIds(null, datasource);
+    const apiTotal = allSystemIds.length;
+    
+    console.log(`已获取${datasource}数据源的所有系统ID，共${apiTotal}个系统`);
+    
+    console.log(`API中${datasource}数据源共有${apiTotal}个系统`);
+    
+    // 3. 比较数据库数量和API总数
+    if (dbCount === apiTotal) {
+      console.log(`数据库中${datasource}数据源的系统数量(${dbCount})与API总数(${apiTotal})相等，跳过同步`);
+      return apiTotal;
     }
     
-    console.log(`成功同步${datasource}数据源的所有系统ID，共${totalSystems}个系统`);
-    return totalSystems;
+    // 4. 如果数量不相等，同步所有系统ID到数据库
+    console.log(`数据库中${datasource}数据源的系统数量(${dbCount})与API总数(${apiTotal})不相等，开始同步...`);
+    
+    // 将系统ID批量插入数据库
+    const systemDataArray = allSystemIds.map(systemId => ({
+      system_id: systemId,
+      datasource: datasource
+    }));
+    
+    // 分块插入，避免一次性插入过多数据
+    const chunkSize = 1000;
+    for (let i = 0; i < systemDataArray.length; i += chunkSize) {
+      const chunk = systemDataArray.slice(i, i + chunkSize);
+      await System.batchInsertOrUpdate(chunk);
+      console.log(`已同步${datasource}数据源第${Math.floor(i/chunkSize)+1}批次的系统ID，共${chunk.length}个系统`);
+      
+      // 每批次后等待一下
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    console.log(`成功同步${datasource}数据源的所有系统ID，共${apiTotal}个系统`);
+    return apiTotal;
     
   } catch (error) {
     console.error(`同步${datasource}数据源的系统ID失败:`, error.message);

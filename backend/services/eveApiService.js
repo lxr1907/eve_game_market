@@ -600,7 +600,7 @@ class EveApiService {
   }
 
   // System-related methods
-  async getSystemIds(page = 1, datasource = 'serenity', retries = 3) {
+  async getSystemIds(page = null, datasource = 'serenity', retries = 3) {
     try {
       let apiBaseUrl;
       let headers = {};
@@ -619,20 +619,21 @@ class EveApiService {
       
       // 构建基础URL，不包含参数
       const baseUrl = `${apiBaseUrl}/${process.env.EVE_API_VERSION || 'latest'}/universe/systems/`;
-      console.log(`Sending request to: ${baseUrl} (page=${page}, datasource=${datasource})`);
+      console.log(`Sending request to: ${baseUrl} (datasource=${datasource})`);
       
       // 统一使用axios进行请求，确保一致的错误处理
-      // 只在params中设置参数，避免重复
+      // 只在params中设置必要的参数，该接口不需要分页
+      const params = {
+        datasource: datasource
+      };
+      
       const response = await axios.get(baseUrl, {
-        params: {
-          page: page,
-          datasource: datasource
-        },
+        params: params,
         headers: { ...headers, ...this.client.defaults.headers },
         timeout: 10000 // 设置10秒超时
       });
       
-      console.log(`Received ${response.data.length} system IDs from page ${page}`);
+      console.log(`Received ${response.data.length} system IDs`);
       return response.data;
     } catch (error) {
       // 检查是否是页码超出范围的错误（API返回500并提示"Requested page does not exist!"）
