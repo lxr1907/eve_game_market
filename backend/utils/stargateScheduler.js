@@ -128,63 +128,44 @@ const syncSystemStargates = async (system) => {
   }
 };
 
-// 获取下一个系统的函数，优先处理没有星门记录的系统，然后处理星门记录不足的系统
-const getNextSystem = async () => {
+// 获取下一个需要同步的stargate的函数
+const getNextStargate = async () => {
   try {
-    // 如果当前页的系统列表为空或已处理完所有系统，获取下一页
+    // 如果当前页的stargate列表为空或已处理完所有stargate，获取下一批
     if (currentSystems.length === 0 || currentIndex >= currentSystems.length) {
-      console.log(`Fetching systems to sync stargates...`);
+      console.log(`Fetching stargates to sync...`);
       
-      // 1. 首先查询前10个在system表存在但stargate表不存在的系统
-      const sqlNoStargates = `
-        SELECT s.*, 0 AS existing_stargates
-        FROM systems s
-        LEFT JOIN stargates g ON s.system_id = g.system_id AND s.datasource = g.datasource
-        WHERE g.stargate_id IS NULL
+      // 查询stargate表中destination_system_id为空的数据
+      const sqlStargatesWithNullDestination = `
+        SELECT g.*
+        FROM stargates g
+        WHERE g.destination_system_id IS NULL
         LIMIT 10
       `;
       
-      const [systemsWithoutStargates] = await pool.execute(sqlNoStargates);
+      const [stargatesWithNullDestination] = await pool.execute(sqlStargatesWithNullDestination);
       
-      if (systemsWithoutStargates.length > 0) {
-        // 如果有系统没有星门记录，优先处理这些系统
-        console.log(`Found ${systemsWithoutStargates.length} systems without any stargate records`);
-        currentSystems = systemsWithoutStargates;
+      if (stargatesWithNullDestination.length > 0) {
+        // 如果有需要同步的stargate，处理这些stargate
+        console.log(`Found ${stargatesWithNullDestination.length} stargates with null destination_system_id`);
+        currentSystems = stargatesWithNullDestination;
       } else {
-        // 2. 如果所有系统都有星门记录，查询stargate数组数量大于stargate表记录数的系统
-        const sqlIncomplete = `
-          SELECT s.*, COUNT(g.stargate_id) AS existing_stargates
-          FROM systems s
-          JOIN stargates g ON s.system_id = g.system_id AND s.datasource = g.datasource
-          WHERE JSON_LENGTH(s.stargates) > COUNT(g.stargate_id)
-          GROUP BY s.system_id, s.datasource
-          LIMIT 10
-        `;
-        
-        const [incompleteSystems] = await pool.execute(sqlIncomplete);
-        
-        if (incompleteSystems.length > 0) {
-          // 如果有系统星门记录不足，处理这些系统
-          console.log(`Found ${incompleteSystems.length} systems with incomplete stargate records`);
-          currentSystems = incompleteSystems;
-        } else {
-          // 3. 如果所有系统星门记录都完整，返回null
-          console.log('All systems have complete stargate records');
-          return null;
-        }
+        // 如果没有需要同步的stargate，返回null
+        console.log('All stargates have complete destination information');
+        return null;
       }
       
       currentIndex = 0;
-      console.log(`Fetched ${currentSystems.length} systems to sync`);
+      console.log(`Fetched ${currentSystems.length} stargates to sync`);
     }
     
-    // 获取当前系统并增加索引
-    const system = currentSystems[currentIndex];
+    // 获取当前stargate并增加索引
+    const stargate = currentSystems[currentIndex];
     currentIndex++;
     
-    return system;
+    return stargate;
   } catch (error) {
-    console.error('Error getting next system:', error.message);
+    console.error('Error getting next stargate:', error.message);
     return null;
   }
 };
@@ -192,12 +173,12 @@ const getNextSystem = async () => {
 // 定时任务主函数
 const syncStargates = async () => {
   try {
-    // 获取下一个系统
-    const system = await getNextSystem();
+    // 获取下一个需要同步的stargate
+    const stargate = await getNextStargate();
     
-    if (system) {
-      // 同步该系统的stargates
-      await syncSystemStargates(system);
+    if (stargate) {
+      // 同步单个stargate的详情
+      await syncSingleStargate(stargate.stargate_id, stargate.system_id, stargate.datasource);
     }
   } catch (error) {
     console.error('Error in stargate sync task:', error.message);

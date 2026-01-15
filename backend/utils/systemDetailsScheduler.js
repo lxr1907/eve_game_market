@@ -1,4 +1,5 @@
 const System = require('../models/System');
+const Stargate = require('../models/Stargate');
 const eveApiService = require('../services/eveApiService');
 
 // 同步所有系统ID的函数
@@ -94,6 +95,31 @@ const syncSystemDetails = async (datasource = 'infinity') => {
           });
           
           console.log(`System ${systemId} (${systemDetails.name}) updated with details from ${datasource}. Stargates:`, stargatesValue);
+          
+          // 如果有stargates，先将基本信息插入到stargate表中
+          if (stargatesValue && stargatesValue.length > 0) {
+            console.log(`Inserting basic stargate info for ${stargatesValue.length} stargates in system ${systemId}`);
+            for (const stargateId of stargatesValue) {
+              try {
+                await Stargate.insertOrUpdate({
+                  stargate_id: stargateId,
+                  system_id: systemId,
+                  datasource: datasource
+                });
+                console.log(`✓ Basic stargate info inserted for ${stargateId} in system ${systemId}`);
+              } catch (stargateError) {
+                console.error(`✗ Error inserting basic stargate info for ${stargateId}:`, stargateError.message);
+              }
+              // 添加小延迟，避免并发请求过多
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          } else if (stargatesValue === null || stargatesValue.length === 0) {
+            // 如果系统没有星门，删除该系统的所有星门记录
+            const deleteResult = await Stargate.deleteBySystemId(systemId, datasource);
+            if (deleteResult > 0) {
+              console.log(`🗑️  Deleted ${deleteResult} invalid stargate records for system ${systemId}`);
+            }
+          }
         } else {
           console.log(`No details returned for system ${systemId} from ${datasource}`);
         }
