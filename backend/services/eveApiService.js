@@ -17,10 +17,9 @@ class EveApiService {
 
   async getTypeIds(page = 1, datasource = 'serenity', retries = 3) {
     try {
-      // 构建完整URL以便调试
-      const fullUrl = `${process.env.EVE_API_BASE_URL}/${process.env.EVE_API_VERSION}/universe/types/?page=${page}&datasource=${datasource}`;
-      console.log(`Sending request to full URL: ${fullUrl}`);
-      console.log(`Sending request to /universe/types/?page=${page}&datasource=${datasource}`);
+      // 构建基础URL以便调试
+      const baseUrl = `${process.env.EVE_API_BASE_URL}/${process.env.EVE_API_VERSION}/universe/types/`;
+      console.log(`Sending request to: ${baseUrl} (page=${page}, datasource=${datasource})`);
       const response = await this.client.get(`/universe/types/`, {
         params: {
           page: page,
@@ -686,13 +685,12 @@ class EveApiService {
         apiBaseUrl = process.env.EVE_API_BASE_URL || 'https://ali-esi.evepc.163.com';
       }
       
-      // 构建完整URL，包含API版本
-      const fullUrl = `${apiBaseUrl}/${process.env.EVE_API_VERSION || 'latest'}/universe/systems/${systemId}/?datasource=${datasource}`;
-      console.log(`Sending request for system details: ${fullUrl}`);
+      // 构建基础URL，不包含参数
+      const baseUrl = `${apiBaseUrl}/${process.env.EVE_API_VERSION || 'latest'}/universe/systems/${systemId}/`;
+      console.log(`Sending request for system details: ${baseUrl} (datasource=${datasource})`);
       
       // 统一使用axios进行请求，确保一致的错误处理
-      // 只在params中设置datasource，语言参数已在headers中设置
-      const response = await axios.get(fullUrl, {
+      const response = await axios.get(baseUrl, {
         params: {
           datasource: datasource
         },
@@ -1003,12 +1001,15 @@ class EveApiService {
         apiBaseUrl = process.env.EVE_API_BASE_URL || 'https://ali-esi.evepc.163.com';
       }
       
-      // 构建完整URL，包含API版本
-      const fullUrl = `${apiBaseUrl}/${process.env.EVE_API_VERSION || 'latest'}/universe/stargates/${stargateId}/?datasource=${datasource}`;
-      console.log(`Sending request for stargate details: ${fullUrl}`);
+      // 构建基础URL，不包含参数
+      const baseUrl = `${apiBaseUrl}/${process.env.EVE_API_VERSION || 'latest'}/universe/stargates/${stargateId}/`;
+      console.log(`Sending request for stargate details: ${baseUrl} (datasource=${datasource})`);
       
       // 统一使用axios进行请求，确保一致的错误处理
-      const response = await axios.get(fullUrl, {
+      const response = await axios.get(baseUrl, {
+        params: {
+          datasource: datasource
+        },
         headers: { ...headers, ...this.client.defaults.headers },
         timeout: 10000 // 设置10秒超时
       });
