@@ -13,7 +13,7 @@ let currentIndex = 0; // 当前处理的系统索引
 const syncSingleStargate = async (stargateId, systemId, datasource = 'infinity') => {
   try {
     // 检查该星门是否需要同步
-    const needsSync = await Stargate.needSync(stargateId, systemId);
+    const needsSync = await Stargate.needSync(stargateId, systemId, datasource);
     
     if (!needsSync) {
       console.log(`ℹ️  Stargate ${stargateId} in system ${systemId} already has complete data, skipping sync.`);
@@ -52,8 +52,8 @@ const syncSingleStargate = async (stargateId, systemId, datasource = 'infinity')
       console.log(`⚠️  Stargate ${stargateId} not found (404 error), re-syncing system ${systemId} details...`);
       
       try {
-        // 重新获取系统详情，使用infinity数据源与星门同步保持一致
-        const systemDetails = await eveApiService.getSystemDetails(systemId, 'infinity');
+        // 重新获取系统详情，使用当前数据源
+        const systemDetails = await eveApiService.getSystemDetails(systemId, datasource);
         
         if (systemDetails !== null) {
           // 确保当API不返回stargates字段时，将其设置为null
@@ -66,7 +66,8 @@ const syncSingleStargate = async (stargateId, systemId, datasource = 'infinity')
             name: systemDetails.name || '',
             position: systemDetails.position,
             security_status: systemDetails.security_status,
-            stargates: stargatesValue
+            stargates: stargatesValue,
+            datasource: datasource
           });
           
           console.log(`✅ System ${systemId} details re-synced, stargates updated to:`, stargatesValue);
@@ -74,11 +75,11 @@ const syncSingleStargate = async (stargateId, systemId, datasource = 'infinity')
           // 清理stargates表中不再有效的星门记录
           if (stargatesValue === null || stargatesValue.length === 0) {
             // 如果系统没有星门，删除该系统的所有星门记录
-            const deleteResult = await Stargate.deleteBySystemId(systemId);
+            const deleteResult = await Stargate.deleteBySystemId(systemId, datasource);
             console.log(`🗑️  Deleted ${deleteResult} invalid stargate records for system ${systemId}`);
           } else {
             // 如果系统有星门，只保留有效的星门记录
-            const deleteResult = await Stargate.deleteBySystemIdExcluding(systemId, stargatesValue);
+            const deleteResult = await Stargate.deleteBySystemIdExcluding(systemId, stargatesValue, datasource);
             console.log(`🗑️  Deleted ${deleteResult} invalid stargate records for system ${systemId}`);
           }
         }
@@ -117,7 +118,7 @@ const syncSystemStargates = async (system) => {
     
     // 处理系统中的所有星门
     for (const stargateId of stargates) {
-      await syncSingleStargate(stargateId, system.system_id);
+      await syncSingleStargate(stargateId, system.system_id, system.datasource || 'infinity');
       // 每处理一个星门后等待1秒，确保API请求不超过限制
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
@@ -138,7 +139,7 @@ const getNextSystem = async () => {
       const sqlNoStargates = `
         SELECT s.*, 0 AS existing_stargates
         FROM systems s
-        LEFT JOIN stargates g ON s.system_id = g.system_id
+        LEFT JOIN stargates g ON s.system_id = g.system_id AND s.datasource = g.datasource
         WHERE g.stargate_id IS NULL
         LIMIT 10
       `;
@@ -154,9 +155,9 @@ const getNextSystem = async () => {
         const sqlIncomplete = `
           SELECT s.*, COUNT(g.stargate_id) AS existing_stargates
           FROM systems s
-          JOIN stargates g ON s.system_id = g.system_id
+          JOIN stargates g ON s.system_id = g.system_id AND s.datasource = g.datasource
           WHERE JSON_LENGTH(s.stargates) > COUNT(g.stargate_id)
-          GROUP BY s.system_id
+          GROUP BY s.system_id, s.datasource
           LIMIT 10
         `;
         

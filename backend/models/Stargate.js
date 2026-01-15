@@ -205,25 +205,26 @@ class Stargate {
   }
   
   // 删除指定系统的所有星门记录
-  static async deleteBySystemId(systemId) {
-    const query = `DELETE FROM stargates WHERE system_id = ?`;
-    const [result] = await pool.execute(query, [systemId]);
+  static async deleteBySystemId(systemId, datasource = 'infinity') {
+    const query = `DELETE FROM stargates WHERE system_id = ? AND datasource = ?`;
+    const [result] = await pool.execute(query, [systemId, datasource]);
     return result.affectedRows;
   }
   
   // 删除指定系统中除了有效星门ID列表之外的所有星门记录
-  static async deleteBySystemIdExcluding(systemId, validStargateIds) {
+  static async deleteBySystemIdExcluding(systemId, validStargateIds, datasource = 'infinity') {
     if (!validStargateIds || validStargateIds.length === 0) {
-      return this.deleteBySystemId(systemId);
+      return this.deleteBySystemId(systemId, datasource);
     }
     
     const query = `
       DELETE FROM stargates 
       WHERE system_id = ? 
+      AND datasource = ?
       AND stargate_id NOT IN (${validStargateIds.map(() => '?').join(', ')})
     `;
     
-    const values = [systemId, ...validStargateIds];
+    const values = [systemId, datasource, ...validStargateIds];
     const [result] = await pool.execute(query, values);
     return result.affectedRows;
   }
