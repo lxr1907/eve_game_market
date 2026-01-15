@@ -621,16 +621,19 @@ class EveApiService {
       console.log(`Sending request to: ${baseUrl} (datasource=${datasource})`);
       
       // 统一使用axios进行请求，确保一致的错误处理
-      // 只在params中设置必要的参数，该接口不需要分页
-      const params = {
-        datasource: datasource
-      };
-      
-      const response = await axios.get(baseUrl, {
-        params: params,
+      const requestConfig = {
         headers: { ...headers, ...this.client.defaults.headers },
         timeout: 10000 // 设置10秒超时
-      });
+      };
+      
+      // 欧服API不需要datasource参数
+      if (datasource.toLowerCase() !== 'tranquility') {
+        requestConfig.params = {
+          datasource: datasource
+        };
+      }
+      
+      const response = await axios.get(baseUrl, requestConfig);
       
       console.log(`Received ${response.data.length} system IDs`);
       return response.data;
@@ -646,7 +649,7 @@ class EveApiService {
         console.log(`Error fetching system IDs for page ${page}, retrying (${retries} left)...`);
         // 指数退避策略，每次重试等待时间增加
         await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
-        return this.getSystemIds(page, retries - 1);
+        return this.getSystemIds(page, datasource, retries - 1);
       } else {
         console.error('Error fetching system IDs:', error.message);
         if (error.response) {
@@ -690,13 +693,19 @@ class EveApiService {
       console.log(`Sending request for system details: ${baseUrl} (datasource=${datasource})`);
       
       // 统一使用axios进行请求，确保一致的错误处理
-      const response = await axios.get(baseUrl, {
-        params: {
-          datasource: datasource
-        },
+      const requestConfig = {
         headers: { ...headers, ...this.client.defaults.headers },
         timeout: 15000 // 增加超时时间到15秒
-      });
+      };
+      
+      // 欧服API不需要datasource参数
+      if (datasource.toLowerCase() !== 'tranquility') {
+        requestConfig.params = {
+          datasource: datasource
+        };
+      }
+      
+      const response = await axios.get(baseUrl, requestConfig);
       
       console.log(`Received details for system ID ${systemId}: ${response.data.name || 'Unknown'}`);
       return response.data;
@@ -1006,13 +1015,19 @@ class EveApiService {
       console.log(`Sending request for stargate details: ${baseUrl} (datasource=${datasource})`);
       
       // 统一使用axios进行请求，确保一致的错误处理
-      const response = await axios.get(baseUrl, {
-        params: {
-          datasource: datasource
-        },
+      const requestConfig = {
         headers: { ...headers, ...this.client.defaults.headers },
         timeout: 10000 // 设置10秒超时
-      });
+      };
+      
+      // 欧服API不需要datasource参数
+      if (datasource.toLowerCase() !== 'tranquility') {
+        requestConfig.params = {
+          datasource: datasource
+        };
+      }
+      
+      const response = await axios.get(baseUrl, requestConfig);
       
       console.log(`Received details for stargate ID ${stargateId} in system ${systemId}: ${response.data.name || 'Unknown'}`);
       return response.data;
