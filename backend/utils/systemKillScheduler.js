@@ -37,15 +37,15 @@ const syncAllSystemKills = async () => {
   console.log('All datasources system kills sync completed.');
 };
 
-// 设置定时任务，每5分钟执行一次
+// 设置定时任务，每10分钟执行一次
 const startScheduler = () => {
   console.log('Starting system kills scheduler...');
   
   // 立即执行一次
   syncAllSystemKills();
   
-  // 然后每3分钟执行一次 (3 * 60 * 1000 ms)
-  setInterval(syncAllSystemKills, 3 * 60 * 1000);
+  // 然后每3分钟执行一次 (10 * 60 * 1000 ms)
+  setInterval(syncAllSystemKills, 10 * 60 * 1000);
 };
 
 // 如果直接运行这个文件，启动调度器
