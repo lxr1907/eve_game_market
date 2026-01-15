@@ -602,14 +602,36 @@ class EveApiService {
   // System-related methods
   async getSystemIds(page = 1, datasource = 'serenity', retries = 3) {
     try {
-      console.log(`Sending request to /universe/systems/?page=${page}&datasource=${datasource}`);
-      const response = await this.client.get(`/universe/systems/`, {
+      let apiBaseUrl;
+      let headers = {};
+      
+      if (datasource.toLowerCase() === 'tranquility') {
+        // 欧服使用官方API
+        apiBaseUrl = 'https://esi.evetech.net';
+        headers = {
+          'Accept': 'application/json',
+          'X-Compatibility-Date': '2025-12-16'
+        };
+      } else {
+        // 晨曦和曙光使用ALI ESI API
+        apiBaseUrl = process.env.EVE_API_BASE_URL || 'https://ali-esi.evepc.163.com';
+      }
+      
+      // 构建基础URL，不包含参数
+      const baseUrl = `${apiBaseUrl}/${process.env.EVE_API_VERSION || 'latest'}/universe/systems/`;
+      console.log(`Sending request to: ${baseUrl} (page=${page}, datasource=${datasource})`);
+      
+      // 统一使用axios进行请求，确保一致的错误处理
+      // 只在params中设置参数，避免重复
+      const response = await axios.get(baseUrl, {
         params: {
           page: page,
           datasource: datasource
         },
+        headers: { ...headers, ...this.client.defaults.headers },
         timeout: 10000 // 设置10秒超时
       });
+      
       console.log(`Received ${response.data.length} system IDs from page ${page}`);
       return response.data;
     } catch (error) {
@@ -648,12 +670,32 @@ class EveApiService {
     this.lastRequestTime = Date.now();
 
     try {
-      console.log(`Sending request for system details: /universe/systems/${systemId}/?datasource=${datasource}&language=zh`);
-      const response = await this.client.get(`/universe/systems/${systemId}/`, {
+      let apiBaseUrl;
+      let headers = {};
+      
+      if (datasource.toLowerCase() === 'tranquility') {
+        // 欧服使用官方API
+        apiBaseUrl = 'https://esi.evetech.net';
+        headers = {
+          'Accept': 'application/json',
+          'X-Compatibility-Date': '2025-12-16'
+        };
+      } else {
+        // 晨曦和曙光使用ALI ESI API
+        apiBaseUrl = process.env.EVE_API_BASE_URL || 'https://ali-esi.evepc.163.com';
+      }
+      
+      // 构建完整URL，包含API版本
+      const fullUrl = `${apiBaseUrl}/${process.env.EVE_API_VERSION || 'latest'}/universe/systems/${systemId}/?datasource=${datasource}`;
+      console.log(`Sending request for system details: ${fullUrl}`);
+      
+      // 统一使用axios进行请求，确保一致的错误处理
+      // 只在params中设置datasource，语言参数已在headers中设置
+      const response = await axios.get(fullUrl, {
         params: {
-          datasource: datasource,
-          language: process.env.EVE_API_LANGUAGE
+          datasource: datasource
         },
+        headers: { ...headers, ...this.client.defaults.headers },
         timeout: 15000 // 增加超时时间到15秒
       });
       

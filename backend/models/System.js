@@ -12,6 +12,7 @@ class System {
         position_z DOUBLE,
         security_status DOUBLE,
         stargates JSON,
+        datasource VARCHAR(20),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -20,6 +21,8 @@ class System {
     
     // 增量添加stargates字段
     await this.addStargatesField();
+    // 增量添加datasource字段
+    await this.addDatasourceField();
   }
   
   // 增量添加stargates字段，确保多次执行不报错
@@ -53,6 +56,41 @@ class System {
         throw error;
       }
       console.log('stargates column already exists in systems table (error caught)');
+      return false;
+    }
+  }
+  
+  // 增量添加datasource字段，确保多次执行不报错
+  static async addDatasourceField() {
+    try {
+      // 检查字段是否存在
+      const checkQuery = `
+        SELECT column_name
+        FROM information_schema.COLUMNS
+        WHERE table_name = 'systems'
+        AND column_name = 'datasource'
+        AND table_schema = DATABASE()
+      `;
+      
+      const [columns] = await pool.execute(checkQuery);
+      
+      // 如果字段不存在，则添加
+      if (columns.length === 0) {
+        const addFieldQuery = `ALTER TABLE systems ADD COLUMN datasource VARCHAR(20)`;
+        await pool.execute(addFieldQuery);
+        console.log('Successfully added datasource column to systems table');
+        return true;
+      } else {
+        console.log('datasource column already exists in systems table');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error adding datasource column:', error.message);
+      // 如果是因为字段已经存在导致的错误，忽略它
+      if (!error.message.includes('Duplicate column name')) {
+        throw error;
+      }
+      console.log('datasource column already exists in systems table (error caught)');
       return false;
     }
   }
@@ -113,6 +151,12 @@ class System {
       // 正确处理null值，保存为MySQL的NULL而不是字符串"null"
       values.push(systemData.stargates === null ? null : JSON.stringify(systemData.stargates));
       updateClauses.push('stargates = VALUES(stargates)');
+    }
+    
+    if (systemData.datasource !== undefined) {
+      fields.push('datasource');
+      values.push(systemData.datasource || null);
+      updateClauses.push('datasource = VALUES(datasource)');
     }
     
     // 添加updated_at字段
@@ -229,6 +273,7 @@ class System {
       if (system.position?.z !== undefined) allFields.add('position_z');
       if (system.security_status !== undefined) allFields.add('security_status');
       if (system.stargates !== undefined) allFields.add('stargates');
+      if (system.datasource !== undefined) allFields.add('datasource');
     });
     
     // 转换为数组并确保system_id在首位
@@ -257,6 +302,8 @@ class System {
           case 'security_status':
             return '?';
           case 'stargates':
+            return '?';
+          case 'datasource':
             return '?';
           default:
             return 'null';
@@ -293,6 +340,9 @@ class System {
           case 'stargates':
             // 将星门数组转换为JSON字符串
             params.push(system.stargates ? JSON.stringify(system.stargates) : null);
+            break;
+          case 'datasource':
+            params.push(system.datasource || null);
             break;
           default:
             params.push(null);

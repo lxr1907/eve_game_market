@@ -32,7 +32,8 @@ const syncSingleStargate = async (stargateId, systemId, datasource = 'infinity')
         system_id: systemId,
         type_id: stargateDetails.type_id,
         destination_stargate_id: stargateDetails.destination?.stargate_id,
-        destination_system_id: stargateDetails.destination?.system_id
+        destination_system_id: stargateDetails.destination?.system_id,
+        datasource: datasource
       };
       
       // 插入或更新到数据库
@@ -51,8 +52,8 @@ const syncSingleStargate = async (stargateId, systemId, datasource = 'infinity')
       console.log(`⚠️  Stargate ${stargateId} not found (404 error), re-syncing system ${systemId} details...`);
       
       try {
-        // 重新获取系统详情
-        const systemDetails = await eveApiService.getSystemDetails(systemId);
+        // 重新获取系统详情，使用infinity数据源与星门同步保持一致
+        const systemDetails = await eveApiService.getSystemDetails(systemId, 'infinity');
         
         if (systemDetails !== null) {
           // 确保当API不返回stargates字段时，将其设置为null
@@ -69,6 +70,17 @@ const syncSingleStargate = async (stargateId, systemId, datasource = 'infinity')
           });
           
           console.log(`✅ System ${systemId} details re-synced, stargates updated to:`, stargatesValue);
+          
+          // 清理stargates表中不再有效的星门记录
+          if (stargatesValue === null || stargatesValue.length === 0) {
+            // 如果系统没有星门，删除该系统的所有星门记录
+            const deleteResult = await Stargate.deleteBySystemId(systemId);
+            console.log(`🗑️  Deleted ${deleteResult} invalid stargate records for system ${systemId}`);
+          } else {
+            // 如果系统有星门，只保留有效的星门记录
+            const deleteResult = await Stargate.deleteBySystemIdExcluding(systemId, stargatesValue);
+            console.log(`🗑️  Deleted ${deleteResult} invalid stargate records for system ${systemId}`);
+          }
         }
       } catch (systemError) {
         console.error(`✗ Error re-syncing system ${systemId} details:`, systemError.message);
