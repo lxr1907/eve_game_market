@@ -985,7 +985,13 @@ class EveApiService {
           console.error(`Response status for stargate ID ${stargateId} in system ${systemId}:`, error.response.status);
           console.error(`Response data for stargate ID ${stargateId} in system ${systemId}:`, error.response.data);
         }
-        // 返回null表示获取失败，但不中断整个同步过程
+        
+        // 对于404错误，抛出错误以便上层处理
+        if (error.response && error.response.status === 404) {
+          throw error;
+        }
+        
+        // 对于其他错误，返回null表示获取失败，但不中断整个同步过程
         return null;
       }
     }

@@ -41,6 +41,39 @@ const syncSingleStargate = async (stargateId, systemId, datasource = 'infinity')
     }
   } catch (error) {
     console.error(`✗ Error syncing stargate ${stargateId} in system ${systemId}:`, error.message);
+    
+    // 输出错误对象的详细结构以便调试
+    console.log('Error object structure:', error);
+    console.log('Error response:', error.response);
+    
+    // 如果是404错误，重新同步系统详情
+    if ((error.response && error.response.status === 404) || error.message.includes('404')) {
+      console.log(`⚠️  Stargate ${stargateId} not found (404 error), re-syncing system ${systemId} details...`);
+      
+      try {
+        // 重新获取系统详情
+        const systemDetails = await eveApiService.getSystemDetails(systemId);
+        
+        if (systemDetails !== null) {
+          // 确保当API不返回stargates字段时，将其设置为null
+          const stargatesValue = systemDetails.stargates === undefined ? null : systemDetails.stargates;
+          
+          // 更新系统信息到数据库
+          await System.insertOrUpdate({
+            system_id: systemDetails.system_id,
+            constellation_id: systemDetails.constellation_id,
+            name: systemDetails.name || '',
+            position: systemDetails.position,
+            security_status: systemDetails.security_status,
+            stargates: stargatesValue
+          });
+          
+          console.log(`✅ System ${systemId} details re-synced, stargates updated to:`, stargatesValue);
+        }
+      } catch (systemError) {
+        console.error(`✗ Error re-syncing system ${systemId} details:`, systemError.message);
+      }
+    }
   }
 };
 
