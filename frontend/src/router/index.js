@@ -11,6 +11,7 @@ import OnlinePlayerStatsView from '../views/OnlinePlayerStatsView.vue'
 import SystemListView from '../views/SystemListView.vue'
 import SystemDetailView from '../views/SystemDetailView.vue'
 import SystemKillView from '../views/SystemKillView.vue'
+import StarMapView from '../views/StarMapView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -74,6 +75,11 @@ const router = createRouter({
       path: '/system-kills',
       name: 'system-kills',
       component: SystemKillView
+    },
+    {
+      path: '/star-map',
+      name: 'star-map',
+      component: StarMapView
     }
   ]
 })

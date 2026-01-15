@@ -262,6 +262,25 @@ class System {
     const [rows] = await pool.execute(query, [datasource]);
     return rows[0].count;
   }
+  
+  // 根据系统ID列表获取系统信息
+  static async getSystemsByIds(systemIds, datasource) {
+    if (!systemIds || systemIds.length === 0) {
+      return [];
+    }
+    
+    const placeholders = systemIds.map(() => '?').join(', ');
+    const query = `
+      SELECT system_id, name 
+      FROM systems 
+      WHERE system_id IN (${placeholders}) 
+      AND datasource = ?
+    `;
+    
+    const values = [...systemIds, datasource];
+    const [rows] = await pool.execute(query, values);
+    return rows;
+  }
 
   static async batchInsertOrUpdate(systemsData) {
     if (!systemsData || systemsData.length === 0) {

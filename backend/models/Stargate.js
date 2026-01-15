@@ -228,6 +228,19 @@ class Stargate {
     const [result] = await pool.execute(query, values);
     return result.affectedRows;
   }
+  
+  // 获取星图连接数据
+  static async getStarMapConnections(datasource = 'infinity') {
+    const query = `
+      SELECT system_id, destination_system_id 
+      FROM stargates 
+      WHERE datasource = ?
+      AND destination_system_id IS NOT NULL
+    `;
+    
+    const [rows] = await pool.execute(query, [datasource]);
+    return rows;
+  }
 }
 
 module.exports = Stargate;

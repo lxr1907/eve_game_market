@@ -364,4 +364,13 @@ export const systemKillApi = {
   }
 };
 
+// Star Map API
+export const starMapApi = {
+  // 获取星图数据
+  async getStarMapData(datasource = 'infinity') {
+    const response = await apiClient.get(`/star-map`, { params: { datasource } });
+    return response;
+  }
+};
+
 export default apiClient
