@@ -20,7 +20,7 @@ import * as echarts from 'echarts';
 import { starMapApi } from '../services/api';
 
 let chart = null;
-const selectedDatasource = ref('infinity');
+const selectedDatasource = ref('serenity');
 
 // 初始化图表
 const initChart = () => {
