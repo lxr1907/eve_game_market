@@ -36,7 +36,7 @@ const initChart = () => {
       trigger: 'item',
       formatter: (params) => {
         if (params.dataType === 'node') {
-          return `系统: ${params.name || params.data.system_id}`;
+          return `系统: ${params.name || params.data.system_id}<br/>安全状态: ${params.data.security_status.toFixed(2)}`;
         } else {
           return `连接: ${params.data.source} -> ${params.data.target}`;
         }
@@ -49,15 +49,25 @@ const initChart = () => {
         type: 'graph',
         layout: 'force',
         force: {
-          repulsion: 100,
-          edgeLength: 50
+          repulsion: 150,
+          edgeLength: 60
         },
         data: [],
         links: [],
         roam: true,
+        symbolSize: 30,
         label: {
           show: true,
-          formatter: '{b}'
+          formatter: (params) => {
+            return `${params.name}\n${params.data.security_status.toFixed(2)}`;
+          },
+          fontSize: 10,
+          lineHeight: 12,
+          position: 'top',
+          color: '#ffffff',
+          borderWidth: 0,
+          shadowColor: 'rgba(0, 0, 0, 0.5)',
+          shadowBlur: 3
         },
         lineStyle: {
           color: '#aaa',
@@ -92,11 +102,29 @@ const updateChart = (data) => {
   const links = Array.isArray(data.links) ? data.links : [];
   
   // 确保每个节点都有id和name字段，并且id是字符串类型
-  const validNodes = nodes.map(node => ({
-    id: String(node.id || node.system_id),
-    name: node.name || node.id || node.system_id,
-    system_id: node.system_id || node.id
-  }));
+  // 根据security_status设置节点颜色
+  const validNodes = nodes.map(node => {
+    const securityStatus = node.security_status || 0;
+    let color;
+    
+    if (securityStatus >= 0.5) {
+      color = '#52c41a'; // 绿色
+    } else if (securityStatus > 0) {
+      color = '#fa8c16'; // 橘色
+    } else {
+      color = '#f5222d'; // 红色
+    }
+    
+    return {
+      id: String(node.id || node.system_id),
+      name: node.name || node.id || node.system_id,
+      system_id: node.system_id || node.id,
+      security_status: securityStatus,
+      itemStyle: {
+        color: color
+      }
+    };
+  });
   
   // 确保每个link都有source和target字段，并且都是字符串类型
   const validLinks = links.filter(link => link.source && link.target).map(link => ({

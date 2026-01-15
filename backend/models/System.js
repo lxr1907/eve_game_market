@@ -271,7 +271,7 @@ class System {
     
     const placeholders = systemIds.map(() => '?').join(', ');
     const query = `
-      SELECT system_id, name 
+      SELECT system_id, name, security_status 
       FROM systems 
       WHERE system_id IN (${placeholders}) 
       AND datasource = ?

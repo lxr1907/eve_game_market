@@ -30,12 +30,22 @@ async function getStarMapData(req, res) {
     const systems = await System.getSystemsByIds(Array.from(systemIds), datasource);
     const systemNames = new Map(systems.map(system => [system.system_id, system.name]));
     
+    // 构建系统信息映射，包含name和security_status
+    const systemInfoMap = new Map(systems.map(system => [
+      system.system_id, 
+      { name: system.name, security_status: system.security_status }
+    ]));
+    
     // 构建节点和连接数据
-    const nodes = Array.from(systemIds).map(systemId => ({
-      id: systemId,
-      name: systemNames.get(systemId) || systemId,
-      system_id: systemId
-    }));
+    const nodes = Array.from(systemIds).map(systemId => {
+      const systemInfo = systemInfoMap.get(systemId) || {};
+      return {
+        id: systemId,
+        name: systemInfo.name || systemId,
+        system_id: systemId,
+        security_status: systemInfo.security_status || 0
+      };
+    });
     
     const links = stargates
       .filter(stargate => stargate.destination_system_id) // 只包含有目标系统的连接
