@@ -220,12 +220,12 @@ class System {
     return rows;
   }
   
-  // 查询没有name或stargates的系统
+  // 查询name为空的系统
   static async findSystemsMissingDetails(limit = 5) {
     const limitInt = parseInt(limit);
     const query = `
       SELECT * FROM systems
-      WHERE (name IS NULL OR name = '' OR stargates IS NULL)
+      WHERE (name IS NULL OR name = '')
       ORDER BY system_id
       LIMIT ${limitInt}
     `;
