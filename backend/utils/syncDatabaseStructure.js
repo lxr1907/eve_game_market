@@ -186,7 +186,27 @@ async function syncDatabaseStructure() {
     // 增量式删除system_name字段（如果存在）
     await SystemKill.removeSystemNameField();
     
-    // 13. 创建或更新 stargates 表
+    // 13. 创建或更新 system_kills_aggregated 聚合表
+    await createOrUpdateTable('system_kills_aggregated', `
+      CREATE TABLE IF NOT EXISTS system_kills_aggregated (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        time_bucket DATETIME NOT NULL,
+        system_id INT NOT NULL,
+        datasource VARCHAR(20) NOT NULL DEFAULT 'infinity',
+        npc_kills_sum INT NOT NULL,
+        pod_kills_sum INT NOT NULL,
+        ship_kills_sum INT NOT NULL,
+        total_kills_sum INT NOT NULL,
+        record_count INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_time_bucket (time_bucket),
+        INDEX idx_system_datasource (system_id, datasource),
+        INDEX idx_datasource_time (datasource, time_bucket)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log(`✓ 表 system_kills_aggregated 创建或验证成功`);
+    
+    // 14. 创建或更新 stargates 表
     await Stargate.createTable();
     
     console.log('所有表结构同步完成！');

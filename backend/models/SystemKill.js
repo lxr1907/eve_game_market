@@ -61,6 +61,9 @@ class SystemKill {
       return;
     }
 
+    // 在插入新数据前检查并处理旧数据
+    await this.checkAndProcessOldData(datasource);
+
     // 构建批量插入语句
     const placeholders = systemKillsData.map(() => `(?, ?, ?, ?, ?, ?, ?)`).join(', ');
     const params = [];
@@ -312,6 +315,72 @@ class SystemKill {
         throw error;
       }
       console.log('system_name column already removed from system_kills table (error caught)');
+      return false;
+    }
+  }
+
+  // 检查并处理超过1小时的旧数据
+  static async checkAndProcessOldData(datasource = 'infinity') {
+    try {
+      // 1. 检查是否有超过1小时的旧数据
+      const checkOldDataQuery = `
+        SELECT COUNT(*) as count 
+        FROM system_kills 
+        WHERE datasource = ? AND timestamp < DATE_SUB(NOW(), INTERVAL 1 HOUR)
+      `;
+      
+      const [countResult] = await pool.execute(checkOldDataQuery, [datasource]);
+      const oldDataCount = countResult[0].count;
+      
+      if (oldDataCount === 0) {
+        console.log(`No old data found for datasource ${datasource} (less than 1 hour)`);
+        return true;
+      }
+      
+      console.log(`Found ${oldDataCount} records older than 1 hour for datasource ${datasource}, starting aggregation...`);
+      
+      // 2. 将旧数据聚合到新表中
+      const aggregateQuery = `
+        INSERT INTO system_kills_aggregated (
+          time_bucket, system_id, datasource, 
+          npc_kills_sum, pod_kills_sum, ship_kills_sum, total_kills_sum, record_count
+        )
+        SELECT 
+          DATE_FORMAT(timestamp, '%Y-%m-%d %H:00:00') as time_bucket,
+          system_id,
+          datasource,
+          SUM(npc_kills) as npc_kills_sum,
+          SUM(pod_kills) as pod_kills_sum,
+          SUM(ship_kills) as ship_kills_sum,
+          SUM(total_kills) as total_kills_sum,
+          COUNT(*) as record_count
+        FROM system_kills
+        WHERE datasource = ? AND timestamp < DATE_SUB(NOW(), INTERVAL 1 HOUR)
+        GROUP BY time_bucket, system_id, datasource
+        ON DUPLICATE KEY UPDATE
+          npc_kills_sum = VALUES(npc_kills_sum),
+          pod_kills_sum = VALUES(pod_kills_sum),
+          ship_kills_sum = VALUES(ship_kills_sum),
+          total_kills_sum = VALUES(total_kills_sum),
+          record_count = VALUES(record_count)
+      `;
+      
+      await pool.execute(aggregateQuery, [datasource]);
+      console.log(`Successfully aggregated ${oldDataCount} records to system_kills_aggregated table`);
+      
+      // 3. 删除已聚合的旧数据
+      const deleteQuery = `
+        DELETE FROM system_kills 
+        WHERE datasource = ? AND timestamp < DATE_SUB(NOW(), INTERVAL 1 HOUR)
+      `;
+      
+      const [deleteResult] = await pool.execute(deleteQuery, [datasource]);
+      console.log(`Successfully deleted ${deleteResult.affectedRows} old records from system_kills table`);
+      
+      return true;
+    } catch (error) {
+      console.error('Error processing old system kills data:', error);
+      // 不抛出错误，避免影响新数据的插入
       return false;
     }
   }
