@@ -155,7 +155,7 @@ class SystemKill {
              s.name AS system_name,
              ROUND(s.security_status, 2) AS security_status
       FROM ${fromClause}
-      LEFT JOIN systems s ON sk.system_id = s.system_id
+      LEFT JOIN systems s ON sk.system_id = s.system_id AND sk.datasource = s.datasource
       WHERE ${whereClause}${timeCondition}
     `;
     
@@ -265,7 +265,7 @@ class SystemKill {
              s.name AS system_name,
              ROUND(s.security_status, 2) AS security_status
       FROM system_kills sk
-      LEFT JOIN systems s ON sk.system_id = s.system_id
+      LEFT JOIN systems s ON sk.system_id = s.system_id AND sk.datasource = s.datasource
       WHERE sk.id IN (
         SELECT MAX(id)
         FROM system_kills
