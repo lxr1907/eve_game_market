@@ -3,14 +3,19 @@
     <h1>星图</h1>
     <div id="starMapChart" style="width: 100%; height: 800px;"></div>
     <div class="controls">
-      <label for="datasource">数据源：</label>
-      <select id="datasource" v-model="selectedDatasource" @change="loadData">
-        <option value="infinity">曙光</option>
-        <option value="serenity">晨曦</option>
-        <option value="tranquility">欧服</option>
-      </select>
-      <button @click="resetView">重置视图</button>
-    </div>
+    <label for="datasource">数据源：</label>
+    <select id="datasource" v-model="selectedDatasource" @change="loadData">
+      <option value="infinity">曙光</option>
+      <option value="serenity">晨曦</option>
+      <option value="tranquility">欧服</option>
+    </select>
+    <label for="systemFilter">过滤：</label>
+    <select id="systemFilter" v-model="systemFilter" @change="loadData">
+      <option value="active">活跃</option>
+      <option value="all">全部</option>
+    </select>
+    <button @click="resetView">重置视图</button>
+  </div>
   </div>
 </template>
 
@@ -21,6 +26,7 @@ import { starMapApi } from '../services/api';
 
 let chart = null;
 const selectedDatasource = ref('serenity');
+const systemFilter = ref('active'); // 默认选择活跃
 
 // 初始化图表
 const initChart = () => {
@@ -84,7 +90,7 @@ const initChart = () => {
 // 加载数据
 const loadData = async () => {
   try {
-    const data = await starMapApi.getStarMapData(selectedDatasource.value);
+    const data = await starMapApi.getStarMapData(selectedDatasource.value, systemFilter.value);
     updateChart(data);
   } catch (error) {
     console.error('Failed to load star map data:', error);

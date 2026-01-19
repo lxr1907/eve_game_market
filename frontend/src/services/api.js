@@ -367,8 +367,8 @@ export const systemKillApi = {
 // Star Map API
 export const starMapApi = {
   // 获取星图数据
-  async getStarMapData(datasource = 'infinity') {
-    const response = await apiClient.get(`/star-map`, { params: { datasource } });
+  async getStarMapData(datasource = 'infinity', filter = 'active') {
+    const response = await apiClient.get(`/star-map`, { params: { datasource, filter } });
     return response;
   }
 };

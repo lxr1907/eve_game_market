@@ -284,6 +284,14 @@ class SystemKill {
     return rows[0].latest_update;
   }
 
+  // 获取在system_kills表中存在的系统ID列表
+  static async getActiveSystemIds(datasource = 'infinity') {
+    const query = `SELECT DISTINCT system_id FROM system_kills WHERE datasource = ?`;
+    const [rows] = await pool.execute(query, [datasource]);
+    // 确保返回的是数字类型的system_id，与stargates表保持一致
+    return rows.map(row => parseInt(row.system_id, 10));
+  }
+
   // 增量式删除system_name字段，确保多次执行不报错
   static async removeSystemNameField() {
     try {
