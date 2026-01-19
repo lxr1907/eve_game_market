@@ -204,7 +204,7 @@ class SystemKill {
       // 时间范围查询计数
       query = `
         SELECT COUNT(DISTINCT sk.system_id) as count FROM system_kills sk
-        LEFT JOIN systems s ON sk.system_id = s.system_id
+        LEFT JOIN systems s ON sk.system_id = s.system_id AND sk.datasource = s.datasource
         WHERE sk.datasource = ?
       `;
       params = [datasource];
@@ -221,7 +221,7 @@ class SystemKill {
       query = `
         SELECT COUNT(*) as count FROM (
           SELECT sk.system_id FROM system_kills sk
-          LEFT JOIN systems s ON sk.system_id = s.system_id
+        LEFT JOIN systems s ON sk.system_id = s.system_id AND sk.datasource = s.datasource
           WHERE sk.id IN (
             SELECT MAX(id)
             FROM system_kills
