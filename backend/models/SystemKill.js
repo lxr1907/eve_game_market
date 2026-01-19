@@ -153,9 +153,13 @@ class SystemKill {
       SELECT sk.system_id, 
              ${avgSelect},
              s.name AS system_name,
-             ROUND(s.security_status, 2) AS security_status
+             ROUND(s.security_status, 2) AS security_status,
+             c.name AS constellation_name,
+             r.name AS region_name
       FROM ${fromClause}
       LEFT JOIN systems s ON sk.system_id = s.system_id AND sk.datasource = s.datasource
+      LEFT JOIN constellations c ON s.constellation_id = c.constellation_id
+      LEFT JOIN regions r ON c.region_id = r.id
       WHERE ${whereClause}${timeCondition}
     `;
     
@@ -263,9 +267,13 @@ class SystemKill {
     const query = `
       SELECT sk.*, 
              s.name AS system_name,
-             ROUND(s.security_status, 2) AS security_status
+             ROUND(s.security_status, 2) AS security_status,
+             c.name AS constellation_name,
+             r.name AS region_name
       FROM system_kills sk
       LEFT JOIN systems s ON sk.system_id = s.system_id AND sk.datasource = s.datasource
+      LEFT JOIN constellations c ON s.constellation_id = c.constellation_id
+      LEFT JOIN regions r ON c.region_id = r.id
       WHERE sk.id IN (
         SELECT MAX(id)
         FROM system_kills

@@ -76,6 +76,8 @@
                 {{ scope.row.security_status !== null ? scope.row.security_status.toFixed(2) : '-' }}
               </template>
             </el-table-column>
+            <el-table-column prop="constellation_name" label="星座" min-width="150" />
+            <el-table-column prop="region_name" label="星域" min-width="150" />
             <el-table-column prop="npc_kills" label="NPC击杀" width="100" align="right" sortable="custom">
               <template #header>
                 <span>NPC击杀 <el-icon v-if="sortBy === 'npc_kills'" :class="{ 'sort-desc': sortOrder === 'descending', 'sort-asc': sortOrder === 'ascending' }"><ArrowDown /></el-icon></span>
