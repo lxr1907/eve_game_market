@@ -1055,6 +1055,80 @@ class EveApiService {
       }
     }
   }
+
+  // 获取星座详情
+  async getConstellationDetails(constellationId, datasource = 'serenity', retries = 3) {
+    // 节流控制：确保每1秒只请求1次
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.throttleInterval) {
+      const waitTime = this.throttleInterval - timeSinceLastRequest;
+      console.log(`Throttling request for constellation ID ${constellationId}, waiting ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastRequestTime = Date.now();
+
+    try {
+      let apiBaseUrl;
+      let headers = {};
+      
+      if (datasource.toLowerCase() === 'tranquility') {
+        // 欧服使用官方API
+        apiBaseUrl = 'https://esi.evetech.net';
+        headers = {
+          'Accept': 'application/json',
+          'X-Compatibility-Date': '2025-12-16'
+        };
+      } else {
+        // 晨曦和曙光使用ALI ESI API
+        apiBaseUrl = process.env.EVE_API_BASE_URL || 'https://ali-esi.evepc.163.com';
+      }
+      
+      // 构建基础URL，不包含参数
+      const baseUrl = `${apiBaseUrl}/${process.env.EVE_API_VERSION || 'latest'}/universe/constellations/${constellationId}/`;
+      console.log(`Sending request for constellation details: ${baseUrl} (datasource=${datasource})`);
+      
+      // 统一使用axios进行请求，确保一致的错误处理
+      const requestConfig = {
+        headers: { ...headers, ...this.client.defaults.headers },
+        timeout: 10000 // 设置10秒超时
+      };
+      
+      // 欧服API不需要datasource参数
+      if (datasource.toLowerCase() !== 'tranquility') {
+        requestConfig.params = {
+          datasource: datasource
+        };
+      }
+      
+      const response = await axios.get(baseUrl, requestConfig);
+      
+      console.log(`Received details for constellation ID ${constellationId}: ${response.data.name || 'Unknown'}`);
+      return response.data;
+    } catch (error) {
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        // 如果是超时或连接重置错误，进行重试
+        console.log(`Timeout fetching constellation details for ID ${constellationId}, retrying (${retries} left)...`);
+        // 指数退避策略，每次重试等待时间增加
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getConstellationDetails(constellationId, datasource, retries - 1);
+      } else {
+        console.error(`Error fetching constellation details for ID ${constellationId}: ${error.message}`);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+        
+        // 对于404错误，抛出错误以便上层处理
+        if (error.response && error.response.status === 404) {
+          throw error;
+        }
+        
+        // 对于其他错误，返回null表示获取失败，但不中断整个同步过程
+        return null;
+      }
+    }
+  }
 }
 
 module.exports = new EveApiService();

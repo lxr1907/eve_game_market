@@ -2,6 +2,7 @@ const pool = require('../config/database');
 const SystemKill = require('../models/SystemKill');
 const System = require('../models/System');
 const Stargate = require('../models/Stargate');
+const Constellation = require('../models/Constellation');
 
 
 /**
@@ -167,7 +168,11 @@ async function syncDatabaseStructure() {
     await System.createTable();
     console.log(`✓ 表 systems 创建或验证成功`);
     
-    // 12. 创建或更新 system_kills 表
+    // 12. 创建或更新 constellations 表
+    await Constellation.createTable();
+    console.log(`✓ 表 constellations 创建或验证成功`);
+    
+    // 13. 创建或更新 system_kills 表
     await createOrUpdateTable('system_kills', `
       CREATE TABLE IF NOT EXISTS system_kills (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -186,7 +191,7 @@ async function syncDatabaseStructure() {
     // 增量式删除system_name字段（如果存在）
     await SystemKill.removeSystemNameField();
     
-    // 13. 创建或更新 system_kills_aggregated 聚合表
+    // 14. 创建或更新 system_kills_aggregated 聚合表
     await createOrUpdateTable('system_kills_aggregated', `
       CREATE TABLE IF NOT EXISTS system_kills_aggregated (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -206,7 +211,7 @@ async function syncDatabaseStructure() {
     `);
     console.log(`✓ 表 system_kills_aggregated 创建或验证成功`);
     
-    // 14. 创建或更新 stargates 表
+    // 15. 创建或更新 stargates 表
     await Stargate.createTable();
     
     console.log('所有表结构同步完成！');

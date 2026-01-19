@@ -1,5 +1,6 @@
 const SystemKill = require('../models/SystemKill');
 const System = require('../models/System');
+const Constellation = require('../models/Constellation');
 const eveApiService = require('../services/eveApiService');
 const pool = require('../config/database');
 
@@ -81,9 +82,83 @@ class SystemKillController {
       
       console.log(`Finished processing ${processedData.length} system kills records for datasource: ${datasource}`);
       
+      // 检查并同步星座信息
+      await SystemKillController.checkAndSyncConstellationInfo(systemKillsData, datasource);
+      
     } catch (error) {
       console.error(`Error syncing system kills for datasource ${datasource}:`, error.message);
       throw error;
+    }
+  }
+
+  // 检查并同步星座信息
+  static async checkAndSyncConstellationInfo(systemKillsData, datasource) {
+    try {
+      console.log(`Checking constellation information for ${systemKillsData.length} systems...`);
+      
+      // 提取所有系统ID
+      const systemIds = systemKillsData.map(kill => kill.system_id);
+      
+      // 获取这些系统对应的星座ID
+      const query = `
+        SELECT DISTINCT s.constellation_id 
+        FROM systems s 
+        WHERE s.system_id IN (${systemIds.map(() => '?').join(', ')}) 
+        AND s.constellation_id IS NOT NULL
+      `;
+      const [rows] = await pool.execute(query, systemIds);
+      
+      const constellationIds = rows.map(row => row.constellation_id);
+      
+      if (constellationIds.length === 0) {
+        console.log('No constellation IDs found for the systems.');
+        return;
+      }
+      
+      console.log(`Found ${constellationIds.length} unique constellation IDs.`);
+      
+      // 检查这些星座ID是否在本地数据库中存在
+      const missingConstellations = [];
+      for (const constellationId of constellationIds) {
+        const existing = await Constellation.findById(constellationId);
+        if (!existing) {
+          missingConstellations.push(constellationId);
+        }
+      }
+      
+      if (missingConstellations.length === 0) {
+        console.log('All constellation information already exists in the database.');
+        return;
+      }
+      
+      console.log(`Need to fetch information for ${missingConstellations.length} constellations.`);
+      
+      // 从API获取缺失的星座信息并存储
+      for (const constellationId of missingConstellations) {
+        const constellationDetails = await eveApiService.getConstellationDetails(constellationId, datasource);
+        
+        if (constellationDetails) {
+          // 处理数据格式以便存储
+          const constellationData = {
+            constellation_id: constellationDetails.constellation_id,
+            name: constellationDetails.name,
+            position: constellationDetails.position,
+            region_id: constellationDetails.region_id
+          };
+          
+          await Constellation.insertOrUpdate(constellationData);
+          console.log(`Synced constellation: ${constellationDetails.name} (ID: ${constellationId})`);
+        }
+        
+        // 添加小延迟，避免API请求过于频繁
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      console.log(`Successfully synced ${missingConstellations.length} constellations.`);
+      
+    } catch (error) {
+      console.error('Error checking and syncing constellation info:', error.message);
+      console.error('Error stack:', error.stack);
     }
   }
 
