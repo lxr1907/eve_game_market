@@ -39,15 +39,15 @@
             <h4>中槽</h4>
             <el-select v-model="selectedMidModules[0]" placeholder="选择模块">
               <el-option label="扰频器" value="warp_scrambler"></el-option>
-              <el-option label="惯性稳定器" value="stabilizer"></el-option>
               <el-option label="加力燃烧器" value="afterburner"></el-option>
               <el-option label="微型跃迁推进器" value="micro_warp_drive"></el-option>
+              <el-option label="护盾扩展装置" value="shield_extender"></el-option>
             </el-select>
             <el-select v-model="selectedMidModules[1]" placeholder="选择模块">
               <el-option label="扰频器" value="warp_scrambler"></el-option>
-              <el-option label="惯性稳定器" value="stabilizer"></el-option>
               <el-option label="加力燃烧器" value="afterburner"></el-option>
               <el-option label="微型跃迁推进器" value="micro_warp_drive"></el-option>
+              <el-option label="护盾扩展装置" value="shield_extender"></el-option>
             </el-select>
           </div>
           
@@ -55,27 +55,26 @@
             <h4>低槽</h4>
             <el-select v-model="selectedLowModules[0]" placeholder="选择模块">
               <el-option label="装甲维修器" value="armor_repairer"></el-option>
-              <el-option label="增强电容器" value="enhanced_capacitor"></el-option>
+              <el-option label="惯性稳定器" value="stabilizer"></el-option>
+              <el-option label="磁性立场稳定器" value="magnetic_field_stabilizer"></el-option>
             </el-select>
             <el-select v-model="selectedLowModules[1]" placeholder="选择模块">
               <el-option label="装甲维修器" value="armor_repairer"></el-option>
-              <el-option label="增强电容器" value="enhanced_capacitor"></el-option>
+              <el-option label="惯性稳定器" value="stabilizer"></el-option>
+              <el-option label="磁性立场稳定器" value="magnetic_field_stabilizer"></el-option>
             </el-select>
           </div>
           
           <div class="slot-group">
             <h4>改装件</h4>
             <el-select v-model="selectedRigModules[0]" placeholder="选择改装件">
-              <el-option label="速度改装件" value="speed_rig"></el-option>
-              <el-option label="伤害改装件" value="damage_rig"></el-option>
+              <el-option label="小型横贯舱壁" value="small_transverse_bulkhead"></el-option>
             </el-select>
             <el-select v-model="selectedRigModules[1]" placeholder="选择改装件">
-              <el-option label="速度改装件" value="speed_rig"></el-option>
-              <el-option label="伤害改装件" value="damage_rig"></el-option>
+              <el-option label="小型横贯舱壁" value="small_transverse_bulkhead"></el-option>
             </el-select>
             <el-select v-model="selectedRigModules[2]" placeholder="选择改装件">
-              <el-option label="速度改装件" value="speed_rig"></el-option>
-              <el-option label="伤害改装件" value="damage_rig"></el-option>
+              <el-option label="小型横贯舱壁" value="small_transverse_bulkhead"></el-option>
             </el-select>
           </div>
         </div>
@@ -84,6 +83,101 @@
       <!-- 中心游戏区域 -->
       <div class="game-area">
         <div id="gameCanvas" ref="gameCanvas"></div>
+        
+        <!-- 玩家血量显示 - 左下角 -->
+        <div class="player-health-display">
+          <div class="health-bars">
+            <div class="health-bar-container shield">
+              <div class="health-bar-label">
+                <span>护盾</span>
+                <span class="health-bar-value">{{ playerShieldValue }}/{{ playerMaxShieldValue }}</span>
+              </div>
+              <div class="health-bar-grid">
+                <div v-for="i in 10" :key="'shield-' + i" class="health-bar-segment" :class="{ active: playerShieldPercentage >= i * 10 }"></div>
+              </div>
+            </div>
+            <div class="health-bar-container armor">
+              <div class="health-bar-label">
+                <span>装甲</span>
+                <span class="health-bar-value">{{ playerArmorValue }}/{{ playerMaxArmorValue }}</span>
+              </div>
+              <div class="health-bar-grid">
+                <div v-for="i in 10" :key="'armor-' + i" class="health-bar-segment" :class="{ active: playerArmorPercentage >= i * 10 }"></div>
+              </div>
+            </div>
+            <div class="health-bar-container hull">
+              <div class="health-bar-label">
+                <span>结构</span>
+                <span class="health-bar-value">{{ playerHullValue }}/{{ playerMaxHullValue }}</span>
+              </div>
+              <div class="health-bar-grid">
+                <div v-for="i in 10" :key="'hull-' + i" class="health-bar-segment" :class="{ active: playerHullPercentage >= i * 10 }"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 目标距离显示 - 左上角 -->
+        <div class="distance-display">
+          <div class="distance-label">目标距离</div>
+          <div class="distance-value">{{ targetDistance }}米</div>
+        </div>
+        
+        <!-- 速度和角速度信息 - 左上角 -->
+        <div class="speed-info-display">
+          <div class="speed-info-label">速度信息</div>
+          <div class="speed-info-item">
+            <span>玩家速度:</span>
+            <span>{{ playerSpeed }} m/s</span>
+          </div>
+          <div class="speed-info-item">
+            <span>目标速度:</span>
+            <span>{{ targetSpeed }} m/s</span>
+          </div>
+          <div class="speed-info-item">
+            <span>角速度:</span>
+            <span>{{ angularVelocity.toFixed(2) }} rad/s</span>
+          </div>
+        </div>
+        
+        <!-- 倒计时显示 - 左上角 -->
+        <div class="countdown-display">
+          <div class="countdown-label">倒计时</div>
+          <div class="countdown-value">{{ countdownTime }}秒</div>
+        </div>
+        
+        <!-- NPC血量显示 - 右上角 -->
+        <div class="npc-health-display">
+          <div class="health-bars">
+            <div class="health-bar-container shield">
+              <div class="health-bar-label">
+                <span>护盾</span>
+                <span class="health-bar-value">{{ npcShieldValue }}/{{ npcMaxShieldValue }}</span>
+              </div>
+              <div class="health-bar-grid">
+                <div v-for="i in 10" :key="'npc-shield-' + i" class="health-bar-segment" :class="{ active: npcShieldPercentage >= i * 10 }"></div>
+              </div>
+            </div>
+            <div class="health-bar-container armor">
+              <div class="health-bar-label">
+                <span>装甲</span>
+                <span class="health-bar-value">{{ npcArmorValue }}/{{ npcMaxArmorValue }}</span>
+              </div>
+              <div class="health-bar-grid">
+                <div v-for="i in 10" :key="'npc-armor-' + i" class="health-bar-segment" :class="{ active: npcArmorPercentage >= i * 10 }"></div>
+              </div>
+            </div>
+            <div class="health-bar-container hull">
+              <div class="health-bar-label">
+                <span>结构</span>
+                <span class="health-bar-value">{{ npcHullValue }}/{{ npcMaxHullValue }}</span>
+              </div>
+              <div class="health-bar-grid">
+                <div v-for="i in 10" :key="'npc-hull-' + i" class="health-bar-segment" :class="{ active: npcHullPercentage >= i * 10 }"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -123,11 +217,29 @@
         </span>
       </template>
     </el-dialog>
+    
+    <!-- 失败对话框 -->
+    <el-dialog
+      v-model="failureDialogVisible"
+      title="失败！"
+      width="400px"
+      center
+    >
+      <div class="failure-content">
+        <h3>你的舰船被摧毁了！</h3>
+        <p>你在第{{ currentLevel }}关失败了</p>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button type="primary" @click="resetGame">重新挑战</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { SHIPS } from '../game/data/ships';
 import { WEAPONS } from '../game/data/weapons';
 import { MODULES } from '../game/data/modules';
@@ -146,7 +258,48 @@ const gameCanvas = ref(null);
 const game = ref(null);
 const levels = ref(LEVELS);
 const victoryDialogVisible = ref(false);
+const failureDialogVisible = ref(false);
 const currentLevel = ref(1);
+
+// 血量百分比
+const playerHullPercentage = ref(100);
+const playerArmorPercentage = ref(100);
+const playerShieldPercentage = ref(100);
+const npcHullPercentage = ref(100);
+const npcArmorPercentage = ref(100);
+const npcShieldPercentage = ref(100);
+
+// 实际血量值
+const playerHullValue = ref(0);
+const playerArmorValue = ref(0);
+const playerShieldValue = ref(0);
+const npcHullValue = ref(0);
+const npcArmorValue = ref(0);
+const npcShieldValue = ref(0);
+
+// 最大血量值
+const playerMaxHull = ref(SHIPS.ATRON.hull);
+const playerMaxArmor = ref(SHIPS.ATRON.armor);
+const playerMaxShield = ref(SHIPS.ATRON.shield);
+const npcMaxHull = ref(1200);
+const npcMaxArmor = ref(1000);
+const npcMaxShield = ref(800);
+
+// 计算属性用于显示
+const playerMaxHullValue = computed(() => playerMaxHull.value);
+const playerMaxArmorValue = computed(() => playerMaxArmor.value);
+const playerMaxShieldValue = computed(() => playerMaxShield.value);
+const npcMaxHullValue = computed(() => npcMaxHull.value);
+const npcMaxArmorValue = computed(() => npcMaxArmor.value);
+const npcMaxShieldValue = computed(() => npcMaxShield.value);
+
+// 目标距离
+const targetDistance = ref(0);
+
+// 速度和角速度信息
+const playerSpeed = ref(0);
+const targetSpeed = ref(0);
+const angularVelocity = ref(0);
 
 // 方法
 const onShipChange = () => {
@@ -186,11 +339,30 @@ const startLevel = (levelId) => {
 const applyShipProperties = (shipSprite, shipId) => {
   const shipData = SHIPS[shipId.toUpperCase()];
   if (shipData) {
-    // 设置最大速度
+    // 设置默认最大速度
+    shipSprite.targetSpeed = 400; // 玩家不装备加力时最高速度400
+    shipSprite.accelerationRate = 400 / 3; // 3秒加速到最大速度
+    
+    // 设置最大速度（物理引擎用）
     shipSprite.body.maxVelocity.set(shipData.maxSpeed / 100);
-    // 设置质量
-    shipSprite.body.mass = shipData.mass / 1000000;
-    // 这里可以添加更多属性的应用
+    
+    // 根据舰船类型设置不同的灵活性
+    if (shipId === 'atron') {
+      // 阿特龙级 - 更高的灵活性
+      shipSprite.body.drag.set(0.02, 0.02); // 更低的惯性
+      shipSprite.body.mass = shipData.mass / 4000000; // 更轻的质量
+    } else {
+      // 促进级 - 较低的灵活性
+      shipSprite.body.drag.set(0.07, 0.07); // 更高的惯性
+      shipSprite.body.mass = shipData.mass / 1500000; // 更重的质量
+    }
+    
+    // 添加抗性值
+    shipSprite.resistances = shipData.resistances;
+    // 添加血量值
+    shipSprite.hull = shipData.hull;
+    shipSprite.armor = shipData.armor;
+    shipSprite.shield = shipData.shield;
   }
 };
 
@@ -234,6 +406,36 @@ const createGameScene = (scene, levelId, maneuver, distance) => {
   // 存储关卡ID
   scene.levelId = levelId;
   
+  // 初始化最大血量值
+  const shipData = SHIPS[selectedShip.value.toUpperCase()];
+  if (shipData) {
+    playerMaxHull.value = shipData.hull;
+    playerMaxArmor.value = shipData.armor;
+    playerMaxShield.value = shipData.shield;
+  }
+  
+  if (level) {
+    npcMaxHull.value = level.npc.hull;
+    npcMaxArmor.value = level.npc.armor;
+    npcMaxShield.value = level.npc.shield;
+  }
+  
+  // 重置血量百分比和实际值
+  playerHullPercentage.value = 100;
+  playerArmorPercentage.value = 100;
+  playerShieldPercentage.value = 100;
+  npcHullPercentage.value = 100;
+  npcArmorPercentage.value = 100;
+  npcShieldPercentage.value = 100;
+  
+  // 重置实际血量值
+  playerHullValue.value = playerMaxHull.value;
+  playerArmorValue.value = playerMaxArmor.value;
+  playerShieldValue.value = playerMaxShield.value;
+  npcHullValue.value = npcMaxHull.value;
+  npcArmorValue.value = npcMaxArmor.value;
+  npcShieldValue.value = npcMaxShield.value;
+  
   // 创建背景
   const background = scene.add.rectangle(400, 300, 800, 600, 0x000033);
   
@@ -249,7 +451,7 @@ const createGameScene = (scene, levelId, maneuver, distance) => {
   graphics.fillStyle(0x00ff00, 1);
   graphics.fillTriangle(20, 0, -10, -10, -10, 10);
   graphics.generateTexture('atron', 30, 20);
-  graphics.fillStyle(0x0000ff, 1);
+  graphics.fillStyle(0xff0000, 1);
   graphics.fillTriangle(20, 0, -10, -10, -10, 10);
   graphics.generateTexture('prometheus', 30, 20);
   graphics.fillStyle(0xffff00, 1);
@@ -258,22 +460,45 @@ const createGameScene = (scene, levelId, maneuver, distance) => {
   graphics.destroy();
   
   // 创建玩家舰船
-  scene.player = scene.physics.add.sprite(200, 300, selectedShip.value);
+  scene.player = scene.physics.add.sprite(400, 300, selectedShip.value);
   scene.player.setCollideWorldBounds(true);
   applyShipProperties(scene.player, selectedShip.value);
   
   // 创建NPC舰船
-  scene.npc = scene.physics.add.sprite(600, 300, 'prometheus');
+  const randomX = Phaser.Math.Between(50, 750);
+  const randomY = Phaser.Math.Between(50, 550);
+  scene.npc = scene.physics.add.sprite(randomX, randomY, 'prometheus');
   scene.npc.setCollideWorldBounds(true);
   scene.npc.hull = level.npc.hull;
   scene.npc.armor = level.npc.armor;
   scene.npc.shield = level.npc.shield;
   scene.npc.maxSpeed = level.npc.maxSpeed;
+  scene.npc.currentSpeed = 0;
   scene.npc.isAttacked = false;
   
-  // 创建边界
-  scene.boundary = scene.add.circle(400, 300, 300, 0xffffff, 0.1);
-  scene.boundary.setStrokeStyle(2, 0xffffff, 0.5);
+  // 添加抗性值 - 使用促进级的抗性
+  scene.npc.resistances = {
+    shield: {
+      electrical: 0.45,
+      thermal: 0.35,
+      kinetic: 0.25,
+      explosive: 0.15
+    },
+    armor: {
+      electrical: 0.15,
+      thermal: 0.25,
+      kinetic: 0.35,
+      explosive: 0.45
+    },
+    hull: {
+      electrical: 0.1,
+      thermal: 0.1,
+      kinetic: 0.1,
+      explosive: 0.1
+    }
+  };
+  
+
   
   // 输入控制
   scene.cursors = scene.input.keyboard.createCursorKeys();
@@ -281,10 +506,34 @@ const createGameScene = (scene, levelId, maneuver, distance) => {
   // 武器系统
   scene.weapon = selectedWeapon.value || 'small_neutron';
   scene.lastFired = 0;
-  // 将武器ID转换为大写键
+  // 从WEAPONS对象中获取开火频率
   const weaponKey = scene.weapon.toUpperCase();
   const weaponData = WEAPONS[weaponKey];
-  scene.fireRate = weaponData ? weaponData.rateOfFire : WEAPONS.SMALL_NEUTRON.rateOfFire;
+  scene.fireRate = weaponData ? weaponData.rateOfFire : 1000;
+  
+  // NPC武器系统 - 固定使用小型磁轨炮
+  scene.npcWeapon = 'small_railgun';
+  // 从WEAPONS对象中获取开火频率
+  const npcWeaponKey = scene.npcWeapon.toUpperCase();
+  const npcWeaponData = WEAPONS[npcWeaponKey];
+  scene.npcFireRate = npcWeaponData ? npcWeaponData.rateOfFire : 1000;
+  scene.npcLastFired = 0;
+  
+  // 初始化游戏时间
+  scene.gameTime = scene.time.now;
+  // 初始化倒计时（100秒）
+  scene.countdown = 100;
+  
+  // 初始化速度相关变量
+  scene.player.currentSpeed = 0;
+  scene.player.targetSpeed = 400; // 默认最大速度400m/s
+  scene.player.accelerationRate = 400 / 3; // 3秒加速到最大速度
+  
+  // 初始化NPC速度相关变量
+  scene.npc.currentSpeed = 0;
+  scene.npc.targetSpeed = 600; // NPC最大速度600m/s
+  scene.npc.accelerationRate = 600 / 3; // 3秒加速到最大速度
+  scene.npc.orbitDistance = 9000; // NPC环绕距离9000米
   
   // 机动系统
   scene.maneuver = maneuver || 'approach';
@@ -311,12 +560,18 @@ const applyModulesEffects = (ship, modules, scene) => {
       // 实现模块效果
       if (module.id === 'afterburner') {
         // 加力燃烧器效果
-        ship.body.maxVelocity.set(module.effect.value / 100);
+        ship.targetSpeed = 1000; // 最大速度1000米每秒
+        ship.accelerationRate = 1000 / 3; // 3秒加速到最大速度
       } else if (module.id === 'micro_warp_drive') {
         // 微型跃迁推进器效果
         ship.body.maxVelocity.set(module.effect.value / 100);
         // 标记开启了微型跃迁推进器
         scene.isMWDActive = true;
+      } else if (module.id === 'shield_extender') {
+        // 护盾扩展装置效果
+        ship.shield += module.effect.value;
+        // 更新最大护盾值
+        playerMaxShield.value += module.effect.value;
       }
     }
   });
@@ -326,7 +581,27 @@ const applyModulesEffects = (ship, modules, scene) => {
     const module = MODULES[moduleId.toUpperCase()];
     if (module) {
       console.log('Applying module:', module.name);
-      // 这里实现模块效果的应用
+      // 实现模块效果
+      if (module.id === 'magnetic_field_stabilizer') {
+        // 磁性立场稳定器效果
+        scene.damageBonus = (scene.damageBonus || 0) + module.effect.value;
+      } else if (module.id === 'armor_repairer') {
+        // 小型装甲维修器效果 - 自动每秒维修50
+        if (!scene.repairInterval) {
+          scene.repairInterval = scene.time.addEvent({
+            delay: 1000, // 1秒
+            callback: () => {
+              if (scene.player && scene.player.armor < playerMaxArmor.value) {
+                const repairAmount = 50;
+                scene.player.armor = Math.min(playerMaxArmor.value, scene.player.armor + repairAmount);
+                // 显示维修量数值
+                createRepairPopup(scene, scene.player.x, scene.player.y, repairAmount);
+              }
+            },
+            loop: true
+          });
+        }
+      }
     }
   });
   
@@ -335,9 +610,20 @@ const applyModulesEffects = (ship, modules, scene) => {
     const module = MODULES[moduleId.toUpperCase()];
     if (module) {
       console.log('Applying module:', module.name);
-      // 这里实现模块效果的应用
+      // 实现模块效果
+      if (module.id === 'small_transverse_bulkhead') {
+        // 小型横贯舱壁效果
+        ship.hull += module.effect.value;
+        // 更新最大结构值
+        playerMaxHull.value += module.effect.value;
+      }
     }
   });
+  
+  // 确保玩家血量为满
+  ship.hull = playerMaxHull.value;
+  ship.armor = playerMaxArmor.value;
+  ship.shield = playerMaxShield.value;
 };
 
 // 生命周期
@@ -401,7 +687,7 @@ function create() {
   playerGraphics.fillStyle(0x00ff00, 1);
   playerGraphics.fillTriangle(20, 0, -10, -10, -10, 10);
   playerGraphics.generateTexture('atron', 30, 20);
-  playerGraphics.fillStyle(0x0000ff, 1);
+  playerGraphics.fillStyle(0xff0000, 1);
   playerGraphics.fillTriangle(20, 0, -10, -10, -10, 10);
   playerGraphics.generateTexture('prometheus', 30, 20);
   playerGraphics.fillStyle(0xffff00, 1);
@@ -414,15 +700,18 @@ function create() {
   this.player = this.physics.add.sprite(400, 300, 'atron');
   this.player.setCollideWorldBounds(true);
   
-  // 创建边界
-  this.boundary = this.add.circle(400, 300, 300, 0xffffff, 0.1);
-  this.boundary.setStrokeStyle(2, 0xffffff, 0.5);
+
   
   // 输入控制
   this.cursors = this.input.keyboard.createCursorKeys();
 }
 
 function update() {
+  // 检查玩家是否存在
+  if (!this.player) {
+    return;
+  }
+  
   // 游戏更新逻辑
   if (this.cursors.left.isDown) {
     this.player.setAngularVelocity(-100);
@@ -439,16 +728,44 @@ function update() {
   }
   
   // 边界检查
-  const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, 400, 300);
-  if (distance > 300) {
-    const angle = Phaser.Math.Angle.Between(400, 300, this.player.x, this.player.y);
-    this.player.x = 400 + Math.cos(angle) * 300;
-    this.player.y = 300 + Math.sin(angle) * 300;
-  }
+  checkBoundary(this.player);
 }
 
 // 游戏场景更新函数
 const updateGameScene = function() {
+  // 检查玩家是否存在
+  if (!this.player || !this.player.body) {
+    return;
+  }
+  
+  // 检查游戏时长
+  if (this.gameTime && this.time.now - this.gameTime > 100000) {
+    // 超过100秒，玩家失败
+    if (this.player) {
+      const x = this.player.x;
+      const y = this.player.y;
+      this.player.destroy();
+      createExplosion(this, x, y);
+    }
+    this.time.delayedCall(2000, () => {
+      showFailureMessage(this.levelId);
+    });
+    return;
+  }
+  
+  // 更新倒计时显示
+  if (this.gameTime) {
+    const elapsedTime = this.time.now - this.gameTime;
+    const remainingTime = Math.max(0, 100 - Math.floor(elapsedTime / 1000));
+    // 更新UI显示
+    countdownTime.value = remainingTime;
+  }
+  
+  // 检查光标是否存在
+  if (!this.cursors) {
+    this.cursors = this.input.keyboard.createCursorKeys();
+  }
+  
   // 玩家控制 - 仅在未选择自动机动时使用
   if (this.cursors.left.isDown) {
     this.player.setAngularVelocity(-100);
@@ -459,7 +776,7 @@ const updateGameScene = function() {
   }
   
   // 自动机动逻辑
-  if (this.maneuver && this.npc) {
+  if (this.maneuver && this.npc && this.npc.body) {
     if (this.maneuver === 'approach') {
       // 接近模式
       executeApproachManeuver(this, this.desiredDistance);
@@ -470,9 +787,13 @@ const updateGameScene = function() {
   } else {
     // 手动控制
     if (this.cursors.up.isDown) {
+      // 玩家加速逻辑
+      this.player.currentSpeed = Math.min(this.player.currentSpeed + this.player.accelerationRate * 0.016, this.player.targetSpeed);
+      const speed = this.player.currentSpeed / 100;
+      
       // 计算加速度方向
-      const accelerationX = 50 * Math.cos(this.player.rotation);
-      const accelerationY = 50 * Math.sin(this.player.rotation);
+      const accelerationX = speed * Math.cos(this.player.rotation);
+      const accelerationY = speed * Math.sin(this.player.rotation);
       this.player.setAcceleration(accelerationX, accelerationY);
     } else {
       // 没有加速时，逐渐减速（惯性）
@@ -480,6 +801,8 @@ const updateGameScene = function() {
         -this.player.body.velocity.x * 0.1,
         -this.player.body.velocity.y * 0.1
       );
+      // 重置当前速度
+      this.player.currentSpeed = 0;
     }
   }
   
@@ -489,14 +812,20 @@ const updateGameScene = function() {
   }
   
   // NPC AI
-  if (this.npc) {
+  if (this.npc && this.npc.body) {
     updateNPC(this);
   }
   
   // 边界检查
-  checkBoundary(this.player, 400, 300, 300);
-  if (this.npc) {
-    checkBoundary(this.npc, 400, 300, 300);
+  checkBoundary(this.player);
+  if (this.npc && this.npc.body) {
+    checkBoundary(this.npc);
+  }
+  
+  // 每300ms更新一次速度和角速度信息
+  if (!this.lastSpeedUpdate || this.time.now - this.lastSpeedUpdate > 300) {
+    updateHealthUI(this);
+    this.lastSpeedUpdate = this.time.now;
   }
 };
 
@@ -504,6 +833,11 @@ const updateGameScene = function() {
 const executeApproachManeuver = (scene, distance) => {
   const player = scene.player;
   const target = scene.npc;
+  
+  // 检查玩家和目标是否存在
+  if (!player || !target) {
+    return;
+  }
   
   // 计算距离（转换为米）
   const currentDistance = Phaser.Math.Distance.Between(player.x, player.y, target.x, target.y) * 100;
@@ -516,27 +850,38 @@ const executeApproachManeuver = (scene, distance) => {
   player.setRotation(angle);
   
   // 如果距离大于设定距离，加速接近
-  if (currentDistance > distance) {
-    const accelerationX = 100 * Math.cos(angle);
-    const accelerationY = 100 * Math.sin(angle);
-    player.setAcceleration(accelerationX, accelerationY);
-    console.log('Approaching target');
-  } else {
-    // 距离合适，减速保持
-    player.setAcceleration(
-      -player.body.velocity.x * 0.1,
-      -player.body.velocity.y * 0.1
-    );
-    console.log('Maintaining distance');
-    // 在合适距离自动开炮
-    fireWeapon(scene);
-  }
+    if (currentDistance > distance) {
+      // 玩家加速逻辑
+      player.currentSpeed = Math.min(player.currentSpeed + player.accelerationRate * 0.016, player.targetSpeed);
+      // 计算目标速度（像素/秒）
+      const targetVelocity = player.currentSpeed / 100;
+      
+      // 使用velocityFromRotation直接设置速度，而不是加速度
+      scene.physics.velocityFromRotation(angle, targetVelocity * 100, player.body.velocity);
+      console.log('Approaching target, current speed:', player.currentSpeed, 'target speed:', player.targetSpeed);
+    } else {
+      // 距离合适，减速保持
+      player.setAcceleration(
+        -player.body.velocity.x * 0.1,
+        -player.body.velocity.y * 0.1
+      );
+      // 重置当前速度
+      player.currentSpeed = 0;
+      console.log('Maintaining distance');
+      // 在合适距离自动开炮
+      fireWeapon(scene);
+    }
 };
 
 // 环绕机动执行函数
 const executeOrbitManeuver = (scene, distance) => {
   const player = scene.player;
   const target = scene.npc;
+  
+  // 检查玩家和目标是否存在
+  if (!player || !target) {
+    return;
+  }
   
   // 计算距离（转换为米）
   const currentDistance = Phaser.Math.Distance.Between(player.x, player.y, target.x, target.y) * 100;
@@ -552,135 +897,302 @@ const executeOrbitManeuver = (scene, distance) => {
   player.setRotation(orbitAngle);
   
   // 调整距离
-  if (currentDistance > distance) {
-    // 距离太远，向目标方向移动
-    const approachAngle = angleToTarget;
-    const accelerationX = 100 * Math.cos(approachAngle);
-    const accelerationY = 100 * Math.sin(approachAngle);
-    player.setAcceleration(accelerationX, accelerationY);
-    console.log('Approaching to orbit distance');
-  } else if (currentDistance < distance) {
-    // 距离太近，远离目标
-    const retreatAngle = angleToTarget + Math.PI;
-    const accelerationX = 100 * Math.cos(retreatAngle);
-    const accelerationY = 100 * Math.sin(retreatAngle);
-    player.setAcceleration(accelerationX, accelerationY);
-    console.log('Retreating to orbit distance');
-  } else {
-    // 距离合适，保持环绕
-    const accelerationX = 100 * Math.cos(orbitAngle);
-    const accelerationY = 100 * Math.sin(orbitAngle);
-    player.setAcceleration(accelerationX, accelerationY);
-    console.log('Maintaining orbit');
-    // 在合适距离自动开炮
-    fireWeapon(scene);
-  }
+    if (currentDistance > distance) {
+      // 距离太远，向目标方向移动
+      const approachAngle = angleToTarget;
+      // 玩家加速逻辑
+      player.currentSpeed = Math.min(player.currentSpeed + player.accelerationRate * 0.016, player.targetSpeed);
+      const targetVelocity = player.currentSpeed / 100;
+      
+      // 使用velocityFromRotation直接设置速度
+      scene.physics.velocityFromRotation(approachAngle, targetVelocity * 100, player.body.velocity);
+      console.log('Approaching to orbit distance');
+    } else if (currentDistance < distance * 0.8) {
+      // 距离过近，由于惯性会降低速度
+      // 远离目标并减速
+      const retreatAngle = angleToTarget + Math.PI;
+      // 玩家加速逻辑
+      player.currentSpeed = Math.min(player.currentSpeed + player.accelerationRate * 0.016, player.targetSpeed);
+      const targetVelocity = player.currentSpeed / 100;
+      
+      // 使用velocityFromRotation直接设置速度
+      scene.physics.velocityFromRotation(retreatAngle, targetVelocity * 50, player.body.velocity);
+      console.log('Retreating from too close distance');
+    } else {
+      // 距离合适，保持环绕
+      // 玩家加速逻辑
+      player.currentSpeed = Math.min(player.currentSpeed + player.accelerationRate * 0.016, player.targetSpeed);
+      const targetVelocity = player.currentSpeed / 100;
+      
+      // 使用velocityFromRotation直接设置速度
+      scene.physics.velocityFromRotation(orbitAngle, targetVelocity * 100, player.body.velocity);
+      console.log('Maintaining orbit');
+      // 在合适距离自动开炮
+      fireWeapon(scene);
+    }
 };
 
 // 开火函数
 const fireWeapon = (scene) => {
-  // 创建子弹
-  const bullet = scene.physics.add.sprite(scene.player.x, scene.player.y, 'bullet').setScale(0.1);
-  bullet.setRotation(scene.player.rotation);
-  bullet.setVelocity(1000 * Math.cos(scene.player.rotation), 1000 * Math.sin(scene.player.rotation));
-  bullet.setCollideWorldBounds(true);
-  bullet.body.onWorldBounds = true;
+  // 检查玩家是否存在
+  if (!scene.player || !scene.npc) {
+    return;
+  }
   
-  // 子弹碰撞检测
-  scene.physics.add.overlap(bullet, scene.npc, (bullet, npc) => {
-    // 计算伤害
-    const weaponKey = scene.weapon.toUpperCase();
-    const weaponData = WEAPONS[weaponKey];
-    if (weaponData) {
-      // 计算命中率
-      let hitChance = 1.0;
-      // 如果NPC开启了微型跃迁推进器，增加命中率
-      if (npc.isMWDActive) {
-        hitChance = 1.5; // 增加50%命中率
+  // 计算距离（转换为米）
+  const distance = Phaser.Math.Distance.Between(scene.player.x, scene.player.y, scene.npc.x, scene.npc.y) * 100;
+  
+  // 计算角速度（相对速度）
+  const angleToTarget = Phaser.Math.Angle.Between(scene.player.x, scene.player.y, scene.npc.x, scene.npc.y);
+  // 计算相对速度
+  const relativeVelocity = new Phaser.Math.Vector2(
+    scene.npc.body.velocity.x - scene.player.body.velocity.x,
+    scene.npc.body.velocity.y - scene.player.body.velocity.y
+  );
+  const relativeSpeed = relativeVelocity.length();
+  const angularVelocity = relativeSpeed / (distance / 100);
+  
+  // 计算命中率
+  console.log('=== FIRE DEBUG ===');
+  console.log('Weapon:', scene.weapon);
+  console.log('Distance:', distance, 'meters');
+  console.log('Angular velocity:', angularVelocity, 'rad/s');
+  
+  let hitChance = calculateHitChance(distance, angularVelocity, scene.weapon);
+  console.log('Calculated hit chance:', hitChance);
+  
+  const randomValue = Math.random();
+  console.log('Random value:', randomValue);
+  console.log('Hit condition:', randomValue < hitChance);
+  console.log('=================');
+  
+  // 只有命中时才造成伤害
+  if (randomValue < hitChance) {
+    // 创建子弹
+    const bullet = scene.physics.add.sprite(scene.player.x, scene.player.y, 'bullet').setScale(0.1);
+    bullet.setRotation(scene.player.rotation);
+    bullet.setVelocity(1000 * Math.cos(scene.player.rotation), 1000 * Math.sin(scene.player.rotation));
+    bullet.setCollideWorldBounds(true);
+    bullet.body.onWorldBounds = true;
+    
+    // 子弹碰撞检测
+    scene.physics.add.overlap(bullet, scene.npc, (bullet, npc) => {
+      // 计算伤害
+      const weaponKey = scene.weapon.toUpperCase();
+      const weaponData = WEAPONS[weaponKey];
+      if (weaponData) {
+        // 应用伤害 bonus
+        const damageBonus = scene.damageBonus || 0;
+        const finalDamage = weaponData.damage * (1 + damageBonus);
+        damageNPC(npc, finalDamage, scene);
       }
-      // 这里可以实现更复杂的命中计算
-      damageNPC(npc, weaponData.damage * hitChance, scene);
-    }
-    bullet.destroy();
-  });
-  
-  // 子弹生命周期
-  scene.time.delayedCall(2000, () => {
-    if (bullet.active) {
       bullet.destroy();
-    }
-  });
+    });
+    
+    // 子弹生命周期
+    scene.time.delayedCall(2000, () => {
+      if (bullet.active) {
+        bullet.destroy();
+      }
+    });
+  } else {
+    // 未命中提示
+    createMissPopup(scene, scene.player.x, scene.player.y);
+  }
 };
 
 // NPC更新函数
 const updateNPC = (scene) => {
   const npc = scene.npc;
   
-  // 检查NPC是否存在
-  if (!npc || !npc.body) {
+  // 检查NPC和玩家是否存在
+  if (!npc || !npc.body || !scene.player) {
     return;
   }
   
-  // 计算玩家距离
-  const distance = Phaser.Math.Distance.Between(npc.x, npc.y, scene.player.x, scene.player.y);
+  // 计算玩家距离（转换为米）
+  const distance = Phaser.Math.Distance.Between(npc.x, npc.y, scene.player.x, scene.player.y) * 100;
   
   // 转向玩家
-  const angle = Phaser.Math.Angle.Between(npc.x, npc.y, scene.player.x, scene.player.y);
-  npc.setRotation(angle);
+  const angleToPlayer = Phaser.Math.Angle.Between(npc.x, npc.y, scene.player.x, scene.player.y);
   
-  // 如果被攻击，开始接近玩家
-  if (npc.isAttacked) {
-    // 检查是否被上扰频
-    let effectiveMaxSpeed = npc.maxSpeed;
-    if (npc.isScrambled) {
-      effectiveMaxSpeed = 300; // 被上扰频后的最大速度
-    }
+  // NPC按照9000米环绕玩家
+  const orbitDistance = 9000;
+  
+  if (distance > orbitDistance * 1.2) {
+    // 距离太远，接近玩家
+    npc.setRotation(angleToPlayer);
     
-    // 实现惯性模拟的加速
-    const accelerationX = 30 * Math.cos(npc.rotation);
-    const accelerationY = 30 * Math.sin(npc.rotation);
+    // 加速逻辑
+    npc.currentSpeed = Math.min(npc.currentSpeed + npc.accelerationRate * 0.016, npc.targetSpeed);
+    const speed = npc.currentSpeed / 100;
+    
+    const accelerationX = speed * Math.cos(npc.rotation);
+    const accelerationY = speed * Math.sin(npc.rotation);
     npc.setAcceleration(accelerationX, accelerationY);
+  } else if (distance < orbitDistance * 0.8) {
+    // 距离太近，远离玩家
+    npc.setRotation(angleToPlayer + Math.PI);
     
-    // 限制最大速度
-    if (npc.body.speed > effectiveMaxSpeed / 100) {
-      npc.body.velocity.normalize().scale(effectiveMaxSpeed / 100);
-    }
+    // 加速逻辑
+    npc.currentSpeed = Math.min(npc.currentSpeed + npc.accelerationRate * 0.016, npc.targetSpeed);
+    const speed = npc.currentSpeed / 100;
     
-    // 如果距离小于武器范围，开火
-    if (distance < 500) {
+    const accelerationX = speed * Math.cos(npc.rotation);
+    const accelerationY = speed * Math.sin(npc.rotation);
+    npc.setAcceleration(accelerationX, accelerationY);
+  } else {
+    // 距离合适，环绕玩家
+    const orbitAngle = angleToPlayer + Math.PI / 2; // 顺时针环绕
+    npc.setRotation(orbitAngle);
+    
+    // 加速逻辑
+    npc.currentSpeed = Math.min(npc.currentSpeed + npc.accelerationRate * 0.016, npc.targetSpeed);
+    const speed = npc.currentSpeed / 100;
+    
+    const accelerationX = speed * Math.cos(orbitAngle);
+    const accelerationY = speed * Math.sin(orbitAngle);
+    npc.setAcceleration(accelerationX, accelerationY);
+  }
+  
+  // 如果距离在武器范围内，开火
+  // 小型磁轨炮射程：8000-12000米
+  if (distance >= 8000 && distance <= 12000) {
+    // 检查开火频率
+    if (scene.time.now > scene.npcLastFired + scene.npcFireRate) {
       // NPC开火逻辑
       npcFire(npc, scene.player, scene);
+      scene.npcLastFired = scene.time.now;
     }
-  } else {
-    // 没有被攻击时，逐渐减速（惯性）
-    npc.setAcceleration(
-      -npc.body.velocity.x * 0.1,
-      -npc.body.velocity.y * 0.1
-    );
   }
 };
 
 // NPC开火函数
 const npcFire = (npc, target, scene) => {
-  // 创建子弹
-  const bullet = scene.physics.add.sprite(npc.x, npc.y, 'bullet').setScale(0.1);
-  bullet.setRotation(npc.rotation);
-  bullet.setVelocity(800 * Math.cos(npc.rotation), 800 * Math.sin(npc.rotation));
-  bullet.setCollideWorldBounds(true);
-  bullet.body.onWorldBounds = true;
+  // 计算距离（转换为米）
+  const distance = Phaser.Math.Distance.Between(npc.x, npc.y, target.x, target.y) * 100;
   
-  // 子弹碰撞检测
-  scene.physics.add.overlap(bullet, target, (bullet, player) => {
-    // 这里可以实现玩家受伤逻辑
-    bullet.destroy();
-  });
+  // 计算角速度（相对速度）
+  // 计算目标相对于NPC的角度变化率
+  const angleToTarget = Phaser.Math.Angle.Between(npc.x, npc.y, target.x, target.y);
+  // 计算相对速度
+  const relativeVelocity = new Phaser.Math.Vector2(
+    target.body.velocity.x - npc.body.velocity.x,
+    target.body.velocity.y - npc.body.velocity.y
+  );
+  const relativeSpeed = relativeVelocity.length();
   
-  // 子弹生命周期
-  scene.time.delayedCall(2000, () => {
-    if (bullet.active) {
+  // 角速度 = 相对速度 / 距离
+  const angularVelocity = relativeSpeed / (distance / 100);
+  
+  // 计算命中率
+  let hitChance = calculateHitChance(distance, angularVelocity, scene.npcWeapon);
+  
+  // 只有命中时才造成伤害
+  if (Math.random() < hitChance) {
+    // 创建子弹
+    const bullet = scene.physics.add.sprite(npc.x, npc.y, 'bullet').setScale(0.1);
+    bullet.setRotation(npc.rotation);
+    bullet.setVelocity(800 * Math.cos(npc.rotation), 800 * Math.sin(npc.rotation));
+    bullet.setCollideWorldBounds(true);
+    bullet.body.onWorldBounds = true;
+    
+    // 子弹碰撞检测
+    scene.physics.add.overlap(bullet, target, (bullet, player) => {
+      // 计算伤害 - 使用小型磁轨炮的伤害
+      const weaponDamage = 20; // 小型磁轨炮伤害
+      damagePlayer(player, weaponDamage, scene);
       bullet.destroy();
+    });
+    
+    // 子弹生命周期
+    scene.time.delayedCall(2000, () => {
+      if (bullet.active) {
+        bullet.destroy();
+      }
+    });
+  } else {
+    // 未命中提示
+    createMissPopup(scene, npc.x, npc.y);
+  }
+};
+
+// 计算命中率
+const calculateHitChance = (distance, angularVelocity, weaponType = 'small_railgun') => {
+  // 基础命中率
+  let hitChance = 1.0;
+  
+  // 根据武器类型设置不同的射程参数
+  let maxRange, optimalRange, falloffRange;
+  
+  if (weaponType === 'small_neutron') {
+    // 中子炮：最佳射程2000以内，2000-5000命中率下降，5000以上几乎无法命中
+    maxRange = 5000;
+    optimalRange = 2000;
+    falloffRange = 3000;
+  } else {
+    // 磁轨炮：无最小射程，8000-12000命中率下降
+    maxRange = 12000;
+    optimalRange = 8000;
+    falloffRange = 4000;
+  }
+  
+  // 距离影响 - 移除最小射程检查，只检查最大射程
+  if (distance > maxRange * 1.5) { // 最大射程的1.5倍外完全无法命中
+    console.log('Range check failed:', { weaponType, distance, maxRange });
+    return 0; // 射程外，无法命中
+  }
+  
+  // 添加日志输出，调试命中率计算
+  console.log('Hit chance calculation:', { weaponType, distance, angularVelocity });
+  
+  // 距离衰减
+  if (distance <= optimalRange) {
+    // 最佳射程内，命中率100%
+    hitChance = 1.0;
+  } else if (distance > optimalRange && distance <= maxRange) {
+    // 从最佳射程到最大射程，命中率逐渐下降
+    if (weaponType === 'small_neutron') {
+      // 中子炮：2000-5000，命中率从100%下降到30%
+      const rangeFactor = (distance - optimalRange) / falloffRange;
+      hitChance = 1.0 - rangeFactor * 0.7; // 70%的衰减
+    } else {
+      // 磁轨炮：从最佳射程到最大射程，命中率逐渐下降
+      const rangeFactor = (distance - optimalRange) / falloffRange;
+      hitChance = Math.max(0.5, 1.0 - rangeFactor * 0.5);
     }
-  });
+  } else if (distance > maxRange) {
+    // 超过最大射程，命中率极低
+    if (weaponType === 'small_neutron') {
+      // 中子炮：5000以上，命中率极低，大多数时候打出50%伤害
+      const overRange = distance - maxRange;
+      const overRangeFactor = Math.min(1.0, overRange / 1000); // 每超过1000米，命中率降低
+      hitChance = Math.max(0.1, 0.3 - overRangeFactor * 0.2); // 最低10%命中率
+    } else {
+      // 磁轨炮：超过最大射程，命中率极低
+      hitChance = 0.1;
+    }
+  }
+  
+  // 角速度影响（角速度越快，命中率越低）
+  // 根据武器类型设置不同的角速度阈值和惩罚参数
+  if (weaponType === 'small_neutron') {
+    // 中子炮：极大提高角速度容忍度，在高角速度下保持较高命中率
+    const baseHitChance = hitChance;
+    // 使用指数衰减函数，确保在角速度20-40时仍有50%以上的命中率
+    const angularFactor = Math.exp(-angularVelocity / 40); // 指数衰减，角速度40时约为0.37，20时约为0.61
+    // 确保最低命中率为50%
+    hitChance = Math.max(0.5, baseHitChance * angularFactor);
+  } else {
+    // 磁轨炮：保持原有的角速度惩罚逻辑
+    const angularVelocityThreshold = 0.3;
+    if (angularVelocity > angularVelocityThreshold) {
+      const angularPenalty = 1.0 - (angularVelocity - angularVelocityThreshold) / 1.5;
+      hitChance *= Math.max(0.1, angularPenalty);
+    }
+  }
+  
+  return Math.max(0, Math.min(1, hitChance));
 };
 
 // 爆炸动画函数
@@ -693,7 +1205,6 @@ const createExplosion = (scene, x, y) => {
     
     // 随机角度和速度
     const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    const speed = Phaser.Math.FloatBetween(50, 150);
     const distance = Phaser.Math.FloatBetween(20, 80);
     
     // 计算目标位置
@@ -737,13 +1248,48 @@ const damageNPC = (npc, damage, scene) => {
   // 标记NPC被攻击
   npc.isAttacked = true;
   
+  // 伤害类型分布（简化版，实际EVE中不同武器有不同伤害分布）
+  const damageDistribution = {
+    electrical: 0.25,
+    thermal: 0.25,
+    kinetic: 0.25,
+    explosive: 0.25
+  };
+  
   // 伤害计算
   if (npc.shield > 0) {
-    npc.shield = Math.max(0, npc.shield - damage);
+    // 应用护盾抗性
+    let effectiveDamage = 0;
+    for (const [type, amount] of Object.entries(damageDistribution)) {
+      const resistance = npc.resistances?.shield?.[type] || 0;
+      effectiveDamage += damage * amount * (1 - resistance);
+    }
+    npc.shield = Math.max(0, npc.shield - effectiveDamage);
+    
+    // 显示伤害弹出
+    createDamagePopup(scene, npc.x, npc.y, Math.round(effectiveDamage), 'yellow');
   } else if (npc.armor > 0) {
-    npc.armor = Math.max(0, npc.armor - damage);
+    // 应用装甲抗性
+    let effectiveDamage = 0;
+    for (const [type, amount] of Object.entries(damageDistribution)) {
+      const resistance = npc.resistances?.armor?.[type] || 0;
+      effectiveDamage += damage * amount * (1 - resistance);
+    }
+    npc.armor = Math.max(0, npc.armor - effectiveDamage);
+    
+    // 显示伤害弹出
+    createDamagePopup(scene, npc.x, npc.y, Math.round(effectiveDamage), 'yellow');
   } else {
-    npc.hull = Math.max(0, npc.hull - damage);
+    // 应用结构抗性
+    let effectiveDamage = 0;
+    for (const [type, amount] of Object.entries(damageDistribution)) {
+      const resistance = npc.resistances?.hull?.[type] || 0;
+      effectiveDamage += damage * amount * (1 - resistance);
+    }
+    npc.hull = Math.max(0, npc.hull - effectiveDamage);
+    
+    // 显示伤害弹出
+    createDamagePopup(scene, npc.x, npc.y, Math.round(effectiveDamage), 'yellow');
   }
   
   // 检查NPC是否被摧毁
@@ -765,14 +1311,159 @@ const damageNPC = (npc, damage, scene) => {
   }
 };
 
-// 边界检查函数
-const checkBoundary = (sprite, centerX, centerY, radius) => {
-  const distance = Phaser.Math.Distance.Between(sprite.x, sprite.y, centerX, centerY);
-  if (distance > radius) {
-    const angle = Phaser.Math.Angle.Between(centerX, centerY, sprite.x, sprite.y);
-    sprite.x = centerX + Math.cos(angle) * radius;
-    sprite.y = centerY + Math.sin(angle) * radius;
+// 伤害玩家函数
+const damagePlayer = (player, damage, scene) => {
+  // 伤害类型分布（简化版，实际EVE中不同武器有不同伤害分布）
+  const damageDistribution = {
+    electrical: 0.25,
+    thermal: 0.25,
+    kinetic: 0.25,
+    explosive: 0.25
+  };
+  
+  // 伤害计算
+  if (player.shield > 0) {
+    // 应用护盾抗性
+    let effectiveDamage = 0;
+    for (const [type, amount] of Object.entries(damageDistribution)) {
+      const resistance = player.resistances?.shield?.[type] || 0;
+      effectiveDamage += damage * amount * (1 - resistance);
+    }
+    player.shield = Math.max(0, player.shield - effectiveDamage);
+    
+    // 显示伤害弹出
+    createDamagePopup(scene, player.x, player.y, Math.round(effectiveDamage), 'red');
+  } else if (player.armor > 0) {
+    // 应用装甲抗性
+    let effectiveDamage = 0;
+    for (const [type, amount] of Object.entries(damageDistribution)) {
+      const resistance = player.resistances?.armor?.[type] || 0;
+      effectiveDamage += damage * amount * (1 - resistance);
+    }
+    player.armor = Math.max(0, player.armor - effectiveDamage);
+    
+    // 显示伤害弹出
+    createDamagePopup(scene, player.x, player.y, Math.round(effectiveDamage), 'red');
+  } else {
+    // 应用结构抗性
+    let effectiveDamage = 0;
+    for (const [type, amount] of Object.entries(damageDistribution)) {
+      const resistance = player.resistances?.hull?.[type] || 0;
+      effectiveDamage += damage * amount * (1 - resistance);
+    }
+    player.hull = Math.max(0, player.hull - effectiveDamage);
+    
+    // 显示伤害弹出
+    createDamagePopup(scene, player.x, player.y, Math.round(effectiveDamage), 'red');
   }
+  
+  // 检查玩家是否被摧毁
+  if (player.hull <= 0) {
+    // 记录玩家位置用于爆炸
+    const x = player.x;
+    const y = player.y;
+    
+    // 确保结构值显示为0
+    player.hull = 0;
+    // 更新UI
+    updateHealthUI(scene);
+    
+    // 销毁玩家舰船
+    player.destroy();
+    
+    // 创建爆炸动画
+    createExplosion(scene, x, y);
+    
+    // 2秒后显示失败消息
+    scene.time.delayedCall(2000, () => {
+      showFailureMessage(scene.levelId);
+    });
+  }
+};
+
+// 边界检查函数 - 使用地图边缘
+const checkBoundary = (sprite) => {
+  // 限制在地图边界内 (0-800 x, 0-600 y)
+  sprite.x = Phaser.Math.Clamp(sprite.x, 0, 800);
+  sprite.y = Phaser.Math.Clamp(sprite.y, 0, 600);
+};
+
+// 伤害弹出函数
+const createDamagePopup = (scene, x, y, damage, color) => {
+  // 创建文本对象
+  const text = scene.add.text(x, y, '-' + damage, {
+    fontSize: '16px',
+    fontWeight: 'bold',
+    fill: color === 'yellow' ? '#FFFF00' : '#FF0000'
+  });
+  
+  // 设置文本原点为中心
+  text.setOrigin(0.5);
+  
+  // 设置不同的持续时间，红色伤害显示更久
+  const duration = color === 'red' ? 2500 : 1000;
+  
+  // 创建动画
+  scene.tweens.add({
+    targets: text,
+    y: y - 50,
+    alpha: 0,
+    duration: duration,
+    ease: 'Power1.easeOut',
+    onComplete: function() {
+      text.destroy();
+    }
+  });
+};
+
+// 维修量弹出函数
+const createRepairPopup = (scene, x, y, amount) => {
+  // 创建文本对象
+  const text = scene.add.text(x, y, '+' + amount, {
+    fontSize: '16px',
+    fontWeight: 'bold',
+    fill: '#00FF00'
+  });
+  
+  // 设置文本原点为中心
+  text.setOrigin(0.5);
+  
+  // 创建动画
+  scene.tweens.add({
+    targets: text,
+    y: y - 50,
+    alpha: 0,
+    duration: 1500,
+    ease: 'Power1.easeOut',
+    onComplete: function() {
+      text.destroy();
+    }
+  });
+};
+
+// 未命中提示函数
+const createMissPopup = (scene, x, y) => {
+  // 创建文本对象
+  const text = scene.add.text(x, y, '未命中', {
+    fontSize: '14px',
+    fontWeight: 'bold',
+    fill: '#FFFFFF'
+  });
+  
+  // 设置文本原点为中心
+  text.setOrigin(0.5);
+  
+  // 创建动画
+  scene.tweens.add({
+    targets: text,
+    y: y - 40,
+    alpha: 0,
+    duration: 1000,
+    ease: 'Power1.easeOut',
+    onComplete: function() {
+      text.destroy();
+    }
+  });
 };
 
 // 胜利消息函数
@@ -782,9 +1473,17 @@ const showVictoryMessage = (levelId) => {
   currentLevel.value = levelId;
 };
 
+// 失败消息函数
+const showFailureMessage = (levelId) => {
+  // 显示失败对话框
+  failureDialogVisible.value = true;
+  currentLevel.value = levelId;
+};
+
 // 重置游戏函数
 const resetGame = () => {
   victoryDialogVisible.value = false;
+  failureDialogVisible.value = false;
   // 重新开始当前关卡
   startLevel(currentLevel.value);
 };
@@ -797,6 +1496,73 @@ const goToNextLevel = () => {
   const nextLevel = LEVELS.find(l => l.id === nextLevelId);
   if (nextLevel) {
     startLevel(nextLevelId);
+  }
+};
+
+// 更新血量UI
+const updateHealthUI = (scene) => {
+  if (scene.player) {
+    // 更新玩家血量
+    playerHullValue.value = Math.max(0, Math.round(scene.player.hull));
+    playerArmorValue.value = Math.max(0, Math.round(scene.player.armor));
+    playerShieldValue.value = Math.max(0, Math.round(scene.player.shield));
+    playerHullPercentage.value = Math.max(0, (scene.player.hull / playerMaxHull.value) * 100);
+    playerArmorPercentage.value = Math.max(0, (scene.player.armor / playerMaxArmor.value) * 100);
+    playerShieldPercentage.value = Math.max(0, (scene.player.shield / playerMaxShield.value) * 100);
+    
+    // 更新玩家速度
+    if (scene.player.body) {
+      const speed = new Phaser.Math.Vector2(scene.player.body.velocity.x, scene.player.body.velocity.y).length() * 100;
+      // 限制显示速度，确保不超过最大速度
+      playerSpeed.value = Math.min(Math.round(speed), scene.player.targetSpeed || 400);
+    }
+  }
+  
+  if (scene.npc) {
+    // 更新NPC血量
+    npcHullValue.value = Math.max(0, Math.round(scene.npc.hull));
+    npcArmorValue.value = Math.max(0, Math.round(scene.npc.armor));
+    npcShieldValue.value = Math.max(0, Math.round(scene.npc.shield));
+    npcHullPercentage.value = Math.max(0, (scene.npc.hull / npcMaxHull.value) * 100);
+    npcArmorPercentage.value = Math.max(0, (scene.npc.armor / npcMaxArmor.value) * 100);
+    npcShieldPercentage.value = Math.max(0, (scene.npc.shield / npcMaxShield.value) * 100);
+    
+    // 更新目标速度
+    if (scene.npc.body) {
+      const speed = new Phaser.Math.Vector2(scene.npc.body.velocity.x, scene.npc.body.velocity.y).length() * 100;
+      // 限制显示速度，确保不超过最大速度600
+      targetSpeed.value = Math.min(Math.round(speed), scene.npc.targetSpeed || 600);
+    }
+  }
+  
+  // 更新目标距离
+  if (scene.player && scene.npc) {
+    const distance = Phaser.Math.Distance.Between(
+      scene.player.x, 
+      scene.player.y, 
+      scene.npc.x, 
+      scene.npc.y
+    ) * 100; // 转换为米
+    targetDistance.value = Math.round(distance);
+    
+    // 计算角速度（相对速度）
+    if (scene.player.body && scene.npc.body) {
+      // 计算相对速度
+      const relativeVelocity = new Phaser.Math.Vector2(
+        scene.npc.body.velocity.x - scene.player.body.velocity.x,
+        scene.npc.body.velocity.y - scene.player.body.velocity.y
+      );
+      const relativeSpeed = relativeVelocity.length();
+      
+      // 角速度 = 相对速度 / 距离
+      const angVelocity = relativeSpeed / (distance / 100);
+      angularVelocity.value = angVelocity;
+    }
+  } else {
+    targetDistance.value = 0;
+    playerSpeed.value = 0;
+    targetSpeed.value = 0;
+    angularVelocity.value = 0;
   }
 };
 </script>
@@ -923,5 +1689,176 @@ const goToNextLevel = () => {
   display: flex;
   justify-content: center;
   gap: 20px;
+}
+
+/* 血量显示样式 */
+.player-health-display {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 10;
+}
+
+.npc-health-display {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+}
+
+.health-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.health-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.health-bar-label {
+  font-size: 12px;
+  color: #fff;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px #000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.health-bar-value {
+  font-size: 11px;
+  color: #fff;
+  font-weight: normal;
+  text-shadow: 1px 1px 2px #000;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 0 4px;
+  border-radius: 2px;
+}
+
+/* 目标距离显示样式 */
+.distance-display {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+.distance-label {
+  font-size: 12px;
+  color: #ccc;
+  font-weight: bold;
+  margin-bottom: 5px;
+  text-align: center;
+}
+
+.distance-value {
+  font-size: 18px;
+  color: #409EFF;
+  font-weight: bold;
+  text-align: center;
+  text-shadow: 1px 1px 2px #000;
+}
+
+.speed-info-display {
+  position: absolute;
+  top: 80px;
+  left: 20px;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  min-width: 150px;
+}
+
+.speed-info-label {
+  font-size: 12px;
+  color: #ccc;
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.speed-info-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.speed-info-item span:first-child {
+  color: #ccc;
+}
+
+.speed-info-item span:last-child {
+  color: #ffffff;
+  font-weight: bold;
+}
+
+/* 倒计时显示样式 */
+.countdown-display {
+  position: absolute;
+  top: 120px;
+  left: 20px;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  min-width: 150px;
+}
+
+.countdown-label {
+  font-size: 12px;
+  color: #ccc;
+  font-weight: bold;
+  margin-bottom: 5px;
+  text-align: center;
+}
+
+.countdown-value {
+  font-size: 18px;
+  color: #ff4d4f;
+  font-weight: bold;
+  text-align: center;
+  text-shadow: 1px 1px 2px #000;
+}
+
+.health-bar-grid {
+  display: flex;
+  gap: 2px;
+}
+
+.health-bar-segment {
+  width: 12px;
+  height: 12px;
+  background-color: #333;
+  border: 1px solid #555;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.health-bar-segment.active {
+  background-color: #fff;
+}
+
+/* 不同层级的样式 */
+.health-bar-container.shield .health-bar-segment.active {
+  background-color: #fff;
+}
+
+.health-bar-container.armor .health-bar-segment.active {
+  background-color: #fff;
+}
+
+.health-bar-container.hull .health-bar-segment.active {
+  background-color: #fff;
 }
 </style>

@@ -11,15 +11,6 @@ export const MODULES = {
     range: 9000,
     cycleTime: 10000
   },
-  STABILIZER: {
-    id: 'stabilizer',
-    name: '惯性稳定器',
-    slot: 'mid',
-    effect: {
-      type: 'agility_modifier',
-      value: 0.1 // 增加10%敏捷
-    }
-  },
   AFTERBURNER: {
     id: 'afterburner',
     name: '加力燃烧器',
@@ -39,6 +30,15 @@ export const MODULES = {
       signature_penalty: 0.5 // 增加50%被命中率
     }
   },
+  SHIELD_EXTENDER: {
+    id: 'shield_extender',
+    name: '护盾扩展装置',
+    slot: 'mid',
+    effect: {
+      type: 'shield_bonus',
+      value: 500 // 增加500护盾值
+    }
+  },
   // 低槽模块
   ARMOR_REPAIRER: {
     id: 'armor_repairer',
@@ -50,32 +50,32 @@ export const MODULES = {
       cycleTime: 3000
     }
   },
-  ENHANCED_CAPACITOR: {
-    id: 'enhanced_capacitor',
-    name: '增强电容器',
+  STABILIZER: {
+    id: 'stabilizer',
+    name: '惯性稳定器',
     slot: 'low',
     effect: {
-      type: 'capacitor_bonus',
-      value: 200
+      type: 'agility_modifier',
+      value: 0.1 // 增加10%敏捷
+    }
+  },
+  MAGNETIC_FIELD_STABILIZER: {
+    id: 'magnetic_field_stabilizer',
+    name: '磁性立场稳定器',
+    slot: 'low',
+    effect: {
+      type: 'damage_modifier',
+      value: 0.2 // 增加20%伤害
     }
   },
   // 改装件
-  SPEED_RIG: {
-    id: 'speed_rig',
-    name: '速度改装件',
+  SMALL_TRANSVERSE_BULKHEAD: {
+    id: 'small_transverse_bulkhead',
+    name: '小型横贯舱壁',
     slot: 'rig',
     effect: {
-      type: 'speed_modifier',
-      value: 0.15 // 增加15%速度
-    }
-  },
-  DAMAGE_RIG: {
-    id: 'damage_rig',
-    name: '伤害改装件',
-    slot: 'rig',
-    effect: {
-      type: 'damage_modifier',
-      value: 0.1 // 增加10%伤害
+      type: 'structure_bonus',
+      value: 300 // 增加300结构值
     }
   }
 };

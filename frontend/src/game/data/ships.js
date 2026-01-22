@@ -14,7 +14,27 @@ export const SHIPS = {
     midSlots: 2,
     lowSlots: 2,
     rigSlots: 3,
-    droneBay: 10
+    droneBay: 10,
+    resistances: {
+      shield: {
+        electrical: 0.4,
+        thermal: 0.3,
+        kinetic: 0.2,
+        explosive: 0.1
+      },
+      armor: {
+        electrical: 0.1,
+        thermal: 0.2,
+        kinetic: 0.3,
+        explosive: 0.4
+      },
+      hull: {
+        electrical: 0.05,
+        thermal: 0.05,
+        kinetic: 0.05,
+        explosive: 0.05
+      }
+    }
   },
   PROMETHEUS: {
     id: 'prometheus',
@@ -31,6 +51,26 @@ export const SHIPS = {
     midSlots: 3,
     lowSlots: 2,
     rigSlots: 3,
-    droneBay: 15
+    droneBay: 15,
+    resistances: {
+      shield: {
+        electrical: 0.45,
+        thermal: 0.35,
+        kinetic: 0.25,
+        explosive: 0.15
+      },
+      armor: {
+        electrical: 0.15,
+        thermal: 0.25,
+        kinetic: 0.35,
+        explosive: 0.45
+      },
+      hull: {
+        electrical: 0.1,
+        thermal: 0.1,
+        kinetic: 0.1,
+        explosive: 0.1
+      }
+    }
   }
 };
