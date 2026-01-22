@@ -85,25 +85,44 @@
       <div class="game-area">
         <div id="gameCanvas" ref="gameCanvas"></div>
       </div>
-      
-      <!-- 右侧关卡选择 -->
-      <div class="right-panel">
-        <h2>关卡选择</h2>
-        <div class="level-selection">
-          <el-card v-for="level in levels" :key="level.id" class="level-card">
-            <template #header>
-              <div class="level-header">
-                <span>第{{ level.id }}关</span>
-              </div>
-            </template>
-            <div class="level-content">
-              <p>{{ level.description }}</p>
-              <el-button type="primary" @click="startLevel(level.id)">开始游戏</el-button>
+    </div>
+    
+    <!-- 下方关卡选择 -->
+    <div class="bottom-panel">
+      <h2>关卡选择</h2>
+      <div class="level-selection">
+        <el-card v-for="level in levels" :key="level.id" class="level-card">
+          <template #header>
+            <div class="level-header">
+              <span>第{{ level.id }}关</span>
             </div>
-          </el-card>
-        </div>
+          </template>
+          <div class="level-content">
+            <p>{{ level.description }}</p>
+            <el-button type="primary" @click="startLevel(level.id)">开始游戏</el-button>
+          </div>
+        </el-card>
       </div>
     </div>
+    
+    <!-- 胜利对话框 -->
+    <el-dialog
+      v-model="victoryDialogVisible"
+      title="胜利！"
+      width="400px"
+      center
+    >
+      <div class="victory-content">
+        <h3>恭喜你击败了敌人！</h3>
+        <p>你成功完成了第{{ currentLevel }}关</p>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="resetGame">重新挑战</el-button>
+          <el-button type="primary" @click="goToNextLevel">下一关</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -126,6 +145,8 @@ const selectedRigModules = ref(['', '', '']);
 const gameCanvas = ref(null);
 const game = ref(null);
 const levels = ref(LEVELS);
+const victoryDialogVisible = ref(false);
+const currentLevel = ref(1);
 
 // 方法
 const onShipChange = () => {
@@ -210,6 +231,9 @@ const createGameScene = (scene, levelId, maneuver, distance) => {
   const level = LEVELS.find(l => l.id === levelId);
   if (!level) return;
   
+  // 存储关卡ID
+  scene.levelId = levelId;
+  
   // 创建背景
   const background = scene.add.rectangle(400, 300, 800, 600, 0x000033);
   
@@ -248,7 +272,7 @@ const createGameScene = (scene, levelId, maneuver, distance) => {
   scene.npc.isAttacked = false;
   
   // 创建边界
-  scene.boundary = scene.add.circle(400, 300, 400, 0xffffff, 0.1);
+  scene.boundary = scene.add.circle(400, 300, 300, 0xffffff, 0.1);
   scene.boundary.setStrokeStyle(2, 0xffffff, 0.5);
   
   // 输入控制
@@ -391,7 +415,7 @@ function create() {
   this.player.setCollideWorldBounds(true);
   
   // 创建边界
-  this.boundary = this.add.circle(400, 300, 400, 0xffffff, 0.1);
+  this.boundary = this.add.circle(400, 300, 300, 0xffffff, 0.1);
   this.boundary.setStrokeStyle(2, 0xffffff, 0.5);
   
   // 输入控制
@@ -416,10 +440,10 @@ function update() {
   
   // 边界检查
   const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, 400, 300);
-  if (distance > 400) {
+  if (distance > 300) {
     const angle = Phaser.Math.Angle.Between(400, 300, this.player.x, this.player.y);
-    this.player.x = 400 + Math.cos(angle) * 400;
-    this.player.y = 300 + Math.sin(angle) * 400;
+    this.player.x = 400 + Math.cos(angle) * 300;
+    this.player.y = 300 + Math.sin(angle) * 300;
   }
 }
 
@@ -470,9 +494,9 @@ const updateGameScene = function() {
   }
   
   // 边界检查
-  checkBoundary(this.player, 400, 300, 400);
+  checkBoundary(this.player, 400, 300, 300);
   if (this.npc) {
-    checkBoundary(this.npc, 400, 300, 400);
+    checkBoundary(this.npc, 400, 300, 300);
   }
 };
 
@@ -575,7 +599,7 @@ const fireWeapon = (scene) => {
         hitChance = 1.5; // 增加50%命中率
       }
       // 这里可以实现更复杂的命中计算
-      damageNPC(npc, weaponData.damage * hitChance);
+      damageNPC(npc, weaponData.damage * hitChance, scene);
     }
     bullet.destroy();
   });
@@ -591,6 +615,11 @@ const fireWeapon = (scene) => {
 // NPC更新函数
 const updateNPC = (scene) => {
   const npc = scene.npc;
+  
+  // 检查NPC是否存在
+  if (!npc || !npc.body) {
+    return;
+  }
   
   // 计算玩家距离
   const distance = Phaser.Math.Distance.Between(npc.x, npc.y, scene.player.x, scene.player.y);
@@ -654,8 +683,57 @@ const npcFire = (npc, target, scene) => {
   });
 };
 
+// 爆炸动画函数
+const createExplosion = (scene, x, y) => {
+  // 创建多个爆炸效果精灵
+  for (let i = 0; i < 10; i++) {
+    const explosion = scene.add.sprite(x, y, 'bullet');
+    explosion.setScale(0.3);
+    explosion.setAlpha(1);
+    
+    // 随机角度和速度
+    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    const speed = Phaser.Math.FloatBetween(50, 150);
+    const distance = Phaser.Math.FloatBetween(20, 80);
+    
+    // 计算目标位置
+    const targetX = x + Math.cos(angle) * distance;
+    const targetY = y + Math.sin(angle) * distance;
+    
+    // 创建动画
+    scene.tweens.add({
+      targets: explosion,
+      x: targetX,
+      y: targetY,
+      scale: 0,
+      alpha: 0,
+      duration: 800,
+      ease: 'Power2.easeOut',
+      onComplete: function() {
+        explosion.destroy();
+      }
+    });
+  }
+  
+  // 创建中心爆炸效果
+  const centerExplosion = scene.add.sprite(x, y, 'bullet');
+  centerExplosion.setScale(0);
+  centerExplosion.setAlpha(1);
+  
+  scene.tweens.add({
+    targets: centerExplosion,
+    scale: 1.5,
+    alpha: 0,
+    duration: 600,
+    ease: 'Power2.easeOut',
+    onComplete: function() {
+      centerExplosion.destroy();
+    }
+  });
+};
+
 // 伤害NPC函数
-const damageNPC = (npc, damage) => {
+const damageNPC = (npc, damage, scene) => {
   // 标记NPC被攻击
   npc.isAttacked = true;
   
@@ -670,8 +748,20 @@ const damageNPC = (npc, damage) => {
   
   // 检查NPC是否被摧毁
   if (npc.hull <= 0) {
+    // 记录NPC位置用于爆炸
+    const x = npc.x;
+    const y = npc.y;
+    
+    // 销毁NPC
     npc.destroy();
-    // 这里可以添加胜利逻辑
+    
+    // 创建爆炸动画
+    createExplosion(scene, x, y);
+    
+    // 2秒后显示胜利消息
+    scene.time.delayedCall(2000, () => {
+      showVictoryMessage(scene.levelId);
+    });
   }
 };
 
@@ -682,6 +772,31 @@ const checkBoundary = (sprite, centerX, centerY, radius) => {
     const angle = Phaser.Math.Angle.Between(centerX, centerY, sprite.x, sprite.y);
     sprite.x = centerX + Math.cos(angle) * radius;
     sprite.y = centerY + Math.sin(angle) * radius;
+  }
+};
+
+// 胜利消息函数
+const showVictoryMessage = (levelId) => {
+  // 显示胜利对话框
+  victoryDialogVisible.value = true;
+  currentLevel.value = levelId;
+};
+
+// 重置游戏函数
+const resetGame = () => {
+  victoryDialogVisible.value = false;
+  // 重新开始当前关卡
+  startLevel(currentLevel.value);
+};
+
+// 进入下一关函数
+const goToNextLevel = () => {
+  victoryDialogVisible.value = false;
+  const nextLevelId = currentLevel.value + 1;
+  // 检查下一关是否存在
+  const nextLevel = LEVELS.find(l => l.id === nextLevelId);
+  if (nextLevel) {
+    startLevel(nextLevelId);
   }
 };
 </script>
@@ -785,5 +900,28 @@ const checkBoundary = (sprite, centerX, centerY, radius) => {
   .game-area {
     height: 600px;
   }
+}
+
+/* 胜利对话框样式 */
+.victory-content {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.victory-content h3 {
+  color: #409EFF;
+  margin-bottom: 15px;
+}
+
+.victory-content p {
+  color: #606266;
+  margin-bottom: 20px;
+}
+
+.dialog-footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
 }
 </style>
