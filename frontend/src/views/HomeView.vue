@@ -301,6 +301,9 @@ const playerSpeed = ref(0);
 const targetSpeed = ref(0);
 const angularVelocity = ref(0);
 
+// 倒计时
+const countdownTime = ref(100);
+
 // 方法
 const onShipChange = () => {
   console.log('Selected ship:', selectedShip.value);
@@ -464,10 +467,12 @@ const createGameScene = (scene, levelId, maneuver, distance) => {
   scene.player.setCollideWorldBounds(true);
   applyShipProperties(scene.player, selectedShip.value);
   
-  // 创建NPC舰船
-  const randomX = Phaser.Math.Between(50, 750);
-  const randomY = Phaser.Math.Between(50, 550);
-  scene.npc = scene.physics.add.sprite(randomX, randomY, 'prometheus');
+  // 创建NPC舰船 - 在距离中心15000米的轨道上随机位置
+  const orbitRadius = 150; // 15000米转换为像素（1像素=100米）
+  const randomAngle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+  const npcX = 400 + Math.cos(randomAngle) * orbitRadius;
+  const npcY = 300 + Math.sin(randomAngle) * orbitRadius;
+  scene.npc = scene.physics.add.sprite(npcX, npcY, 'prometheus');
   scene.npc.setCollideWorldBounds(true);
   scene.npc.hull = level.npc.hull;
   scene.npc.armor = level.npc.armor;
@@ -520,9 +525,18 @@ const createGameScene = (scene, levelId, maneuver, distance) => {
   scene.npcLastFired = 0;
   
   // 初始化游戏时间
-  scene.gameTime = scene.time.now;
+  console.log('Creating game scene, time object:', scene.time);
+  if (scene.time) {
+    scene.gameTime = scene.time.now;
+    console.log('Game time initialized:', scene.gameTime);
+  } else {
+    console.log('WARNING: scene.time is undefined!');
+    scene.gameTime = Date.now(); // 作为备用方案
+  }
   // 初始化倒计时（100秒）
   scene.countdown = 100;
+  // 重置倒计时显示
+  countdownTime.value = 100;
   
   // 初始化速度相关变量
   scene.player.currentSpeed = 0;
@@ -531,9 +545,17 @@ const createGameScene = (scene, levelId, maneuver, distance) => {
   
   // 初始化NPC速度相关变量
   scene.npc.currentSpeed = 0;
-  scene.npc.targetSpeed = 600; // NPC最大速度600m/s
-  scene.npc.accelerationRate = 600 / 3; // 3秒加速到最大速度
-  scene.npc.orbitDistance = 9000; // NPC环绕距离9000米
+  scene.npc.targetSpeed = 300; // NPC最大速度300m/s
+  scene.npc.accelerationRate = 300 / 3; // 3秒加速到最大速度
+  scene.npc.orbitDistance = 15000; // NPC环绕距离15000米
+  
+  // 创建NPC环绕轨道标记
+  const orbitMarkerRadius = scene.npc.orbitDistance / 100; // 转换为像素
+  const orbitGraphic = scene.add.graphics();
+  orbitGraphic.lineStyle(2, 0xffffff, 0.5);
+  orbitGraphic.strokeCircle(400, 300, orbitMarkerRadius);
+  orbitGraphic.setDepth(1);
+  scene.orbitGraphic = orbitGraphic;
   
   // 机动系统
   scene.maneuver = maneuver || 'approach';
@@ -628,8 +650,8 @@ const applyModulesEffects = (ship, modules, scene) => {
 
 // 生命周期
 onMounted(() => {
-  // 初始化游戏
-  initGame();
+  // 不再初始化游戏，只在用户点击开始游戏时创建游戏场景
+  console.log('HomeView mounted, ready for game start');
 });
 
 onUnmounted(() => {
@@ -733,9 +755,27 @@ function update() {
 
 // 游戏场景更新函数
 const updateGameScene = function() {
-  // 检查玩家是否存在
-  if (!this.player || !this.player.body) {
-    return;
+  // 更新倒计时显示
+  console.log('UpdateGameScene called, this:', this);
+  console.log('Game object properties:', Object.keys(this));
+  
+  // 尝试使用Date.now()作为备用方案
+  if (this.gameTime) {
+    const currentTime = this.time?.now || Date.now();
+    const elapsedTime = currentTime - this.gameTime;
+    const remainingTime = Math.max(0, 100 - Math.floor(elapsedTime / 1000));
+    // 更新UI显示
+    countdownTime.value = remainingTime;
+    // 添加日志输出，调试倒计时更新
+    console.log('Countdown update:', { 
+      currentTime, 
+      gameTime: this.gameTime, 
+      elapsedTime, 
+      remainingTime, 
+      countdownTime: countdownTime.value 
+    });
+  } else {
+    console.log('Countdown update skipped, gameTime:', this.gameTime);
   }
   
   // 检查游戏时长
@@ -753,12 +793,9 @@ const updateGameScene = function() {
     return;
   }
   
-  // 更新倒计时显示
-  if (this.gameTime) {
-    const elapsedTime = this.time.now - this.gameTime;
-    const remainingTime = Math.max(0, 100 - Math.floor(elapsedTime / 1000));
-    // 更新UI显示
-    countdownTime.value = remainingTime;
+  // 检查玩家是否存在
+  if (!this.player || !this.player.body) {
+    return;
   }
   
   // 检查光标是否存在
@@ -944,13 +981,14 @@ const fireWeapon = (scene) => {
   
   // 计算角速度（相对速度）
   const angleToTarget = Phaser.Math.Angle.Between(scene.player.x, scene.player.y, scene.npc.x, scene.npc.y);
-  // 计算相对速度
+  // 计算相对速度（转换为米/秒）
   const relativeVelocity = new Phaser.Math.Vector2(
-    scene.npc.body.velocity.x - scene.player.body.velocity.x,
-    scene.npc.body.velocity.y - scene.player.body.velocity.y
+    (scene.npc.body.velocity.x - scene.player.body.velocity.x) * 100, // 转换为米/秒
+    (scene.npc.body.velocity.y - scene.player.body.velocity.y) * 100  // 转换为米/秒
   );
   const relativeSpeed = relativeVelocity.length();
-  const angularVelocity = relativeSpeed / (distance / 100);
+  // 角速度 = 相对速度 / 距离（米）
+  const angularVelocity = relativeSpeed / distance;
   
   // 计算命中率
   console.log('=== FIRE DEBUG ===');
@@ -1010,18 +1048,27 @@ const updateNPC = (scene) => {
     return;
   }
   
-  // 计算玩家距离（转换为米）
-  const distance = Phaser.Math.Distance.Between(npc.x, npc.y, scene.player.x, scene.player.y) * 100;
+  // 地图中心点
+  const mapCenter = { x: 400, y: 300 };
   
-  // 转向玩家
+  // 计算到地图中心的距离（转换为米）
+  const distanceToCenter = Phaser.Math.Distance.Between(npc.x, npc.y, mapCenter.x, mapCenter.y) * 100;
+  
+  // 计算到玩家的距离（转换为米）
+  const distanceToPlayer = Phaser.Math.Distance.Between(npc.x, npc.y, scene.player.x, scene.player.y) * 100;
+  
+  // 计算到地图中心的角度
+  const angleToCenter = Phaser.Math.Angle.Between(npc.x, npc.y, mapCenter.x, mapCenter.y);
+  
+  // 计算到玩家的角度
   const angleToPlayer = Phaser.Math.Angle.Between(npc.x, npc.y, scene.player.x, scene.player.y);
   
-  // NPC按照9000米环绕玩家
-  const orbitDistance = 9000;
+  // NPC按照15000米环绕地图中心
+  const orbitDistance = scene.npc.orbitDistance || 15000;
   
-  if (distance > orbitDistance * 1.2) {
-    // 距离太远，接近玩家
-    npc.setRotation(angleToPlayer);
+  if (distanceToCenter > orbitDistance * 1.2) {
+    // 距离地图中心太远，接近中心
+    npc.setRotation(angleToCenter);
     
     // 加速逻辑
     npc.currentSpeed = Math.min(npc.currentSpeed + npc.accelerationRate * 0.016, npc.targetSpeed);
@@ -1030,9 +1077,9 @@ const updateNPC = (scene) => {
     const accelerationX = speed * Math.cos(npc.rotation);
     const accelerationY = speed * Math.sin(npc.rotation);
     npc.setAcceleration(accelerationX, accelerationY);
-  } else if (distance < orbitDistance * 0.8) {
-    // 距离太近，远离玩家
-    npc.setRotation(angleToPlayer + Math.PI);
+  } else if (distanceToCenter < orbitDistance * 0.8) {
+    // 距离地图中心太近，远离中心
+    npc.setRotation(angleToCenter + Math.PI);
     
     // 加速逻辑
     npc.currentSpeed = Math.min(npc.currentSpeed + npc.accelerationRate * 0.016, npc.targetSpeed);
@@ -1042,22 +1089,24 @@ const updateNPC = (scene) => {
     const accelerationY = speed * Math.sin(npc.rotation);
     npc.setAcceleration(accelerationX, accelerationY);
   } else {
-    // 距离合适，环绕玩家
-    const orbitAngle = angleToPlayer + Math.PI / 2; // 顺时针环绕
+    // 距离地图中心合适，环绕中心
+    // 计算环绕方向（垂直于指向中心的方向）
+    const orbitAngle = angleToCenter + Math.PI / 2; // 顺时针环绕
     npc.setRotation(orbitAngle);
     
-    // 加速逻辑
-    npc.currentSpeed = Math.min(npc.currentSpeed + npc.accelerationRate * 0.016, npc.targetSpeed);
-    const speed = npc.currentSpeed / 100;
+    // 直接设置速度，确保稳定环绕
+    // 使用目标速度的80%，确保稳定运行
+    const orbitSpeed = Math.min(npc.targetSpeed * 0.8, 300); // 确保不超过300m/s
+    const speedInPixels = orbitSpeed / 100; // 转换为像素/秒（1像素=100米）
     
-    const accelerationX = speed * Math.cos(orbitAngle);
-    const accelerationY = speed * Math.sin(orbitAngle);
-    npc.setAcceleration(accelerationX, accelerationY);
+    // 使用velocityFromRotation直接设置速度，确保稳定环绕
+    // 速度单位：像素/秒
+    scene.physics.velocityFromRotation(orbitAngle, speedInPixels, npc.body.velocity);
   }
   
-  // 如果距离在武器范围内，开火
+  // 如果距离玩家在武器范围内，开火
   // 小型磁轨炮射程：8000-12000米
-  if (distance >= 8000 && distance <= 12000) {
+  if (distanceToPlayer >= 8000 && distanceToPlayer <= 12000) {
     // 检查开火频率
     if (scene.time.now > scene.npcLastFired + scene.npcFireRate) {
       // NPC开火逻辑
@@ -1075,15 +1124,15 @@ const npcFire = (npc, target, scene) => {
   // 计算角速度（相对速度）
   // 计算目标相对于NPC的角度变化率
   const angleToTarget = Phaser.Math.Angle.Between(npc.x, npc.y, target.x, target.y);
-  // 计算相对速度
+  // 计算相对速度（转换为米/秒）
   const relativeVelocity = new Phaser.Math.Vector2(
-    target.body.velocity.x - npc.body.velocity.x,
-    target.body.velocity.y - npc.body.velocity.y
+    (target.body.velocity.x - npc.body.velocity.x) * 100, // 转换为米/秒
+    (target.body.velocity.y - npc.body.velocity.y) * 100  // 转换为米/秒
   );
   const relativeSpeed = relativeVelocity.length();
   
-  // 角速度 = 相对速度 / 距离
-  const angularVelocity = relativeSpeed / (distance / 100);
+  // 角速度 = 相对速度 / 距离（米）
+  const angularVelocity = relativeSpeed / distance;
   
   // 计算命中率
   let hitChance = calculateHitChance(distance, angularVelocity, scene.npcWeapon);
@@ -1178,11 +1227,8 @@ const calculateHitChance = (distance, angularVelocity, weaponType = 'small_railg
   // 根据武器类型设置不同的角速度阈值和惩罚参数
   if (weaponType === 'small_neutron') {
     // 中子炮：极大提高角速度容忍度，在高角速度下保持较高命中率
-    const baseHitChance = hitChance;
-    // 使用指数衰减函数，确保在角速度20-40时仍有50%以上的命中率
-    const angularFactor = Math.exp(-angularVelocity / 40); // 指数衰减，角速度40时约为0.37，20时约为0.61
-    // 确保最低命中率为50%
-    hitChance = Math.max(0.5, baseHitChance * angularFactor);
+    // 完全移除角速度惩罚，确保近距离100%命中
+    hitChance = Math.max(0.8, hitChance); // 最低80%命中率
   } else {
     // 磁轨炮：保持原有的角速度惩罚逻辑
     const angularVelocityThreshold = 0.3;
@@ -1191,6 +1237,9 @@ const calculateHitChance = (distance, angularVelocity, weaponType = 'small_railg
       hitChance *= Math.max(0.1, angularPenalty);
     }
   }
+  
+  // 添加最终命中率日志
+  console.log('Final hit chance:', { weaponType, distance, angularVelocity, hitChance });
   
   return Math.max(0, Math.min(1, hitChance));
 };
@@ -1806,7 +1855,7 @@ const updateHealthUI = (scene) => {
 /* 倒计时显示样式 */
 .countdown-display {
   position: absolute;
-  top: 120px;
+  top: 200px;
   left: 20px;
   z-index: 10;
   background-color: rgba(0, 0, 0, 0.7);
