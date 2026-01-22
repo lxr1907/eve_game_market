@@ -129,12 +129,30 @@ const handleSelect = (key, keyPath) => {
 }
 
 :deep(.el-menu-item) {
-  color: white;
+  color: white !important;
 }
 
 :deep(.el-menu-item:hover),
 :deep(.el-menu-item.is-active) {
-  background-color: #409eff;
-  color: white;
+  background-color: #409eff !important;
+  color: white !important;
+}
+
+:deep(.el-sub-menu__title) {
+  color: white !important;
+}
+
+:deep(.el-sub-menu__title:hover),
+:deep(.el-sub-menu__title.is-active) {
+  background-color: #409eff !important;
+  color: white !important;
+}
+
+:deep(.el-menu--horizontal > .el-menu-item:hover),
+:deep(.el-menu--horizontal > .el-menu-item.is-active),
+:deep(.el-menu--horizontal > .el-sub-menu__title:hover),
+:deep(.el-menu--horizontal > .el-sub-menu__title.is-active) {
+  background-color: #409eff !important;
+  color: white !important;
 }
 </style>
