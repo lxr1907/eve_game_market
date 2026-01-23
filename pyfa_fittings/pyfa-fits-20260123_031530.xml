@@ -1,0 +1,1812 @@
+<?xml version="1.0" ?>
+<fittings count="105">
+	<fitting name="龙骑兵级 fit">
+		<description value=""/>
+		<shipType value="龙骑兵级"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 0"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 1"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 2"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 3"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 0"/>
+		<hardware type="丹尼持久型全方位索敌连接" slot="med slot 1"/>
+		<hardware type="小型不对称持久型远程护盾回充增量器" slot="hi slot 0"/>
+		<hardware type="小型电容器控制电路 I" slot="rig slot 0"/>
+		<hardware type="小型电容器控制电路 I" slot="rig slot 1"/>
+		<hardware type="小型电容器控制电路 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 I"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 I"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 II"/>
+	</fitting>
+	<fitting name="狂怒者级 fit">
+		<description value=""/>
+		<shipType value="狂怒者级"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 0"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 1"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 2"/>
+		<hardware type="抑制型惯性稳定器 D型" slot="low slot 3"/>
+		<hardware type="IFFA紧凑型损伤控制" slot="low slot 4"/>
+		<hardware type="大型恒沸点抑制型护盾扩展装置" slot="med slot 0"/>
+		<hardware type="冷气持久型50MN微型跃迁推进器" slot="med slot 1"/>
+		<hardware type="初始紧凑型跃迁扰频器" slot="med slot 2"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 3"/>
+		<hardware type="220mm中型尖端型自动加农炮" slot="hi slot 0"/>
+		<hardware type="220mm中型尖端型自动加农炮" slot="hi slot 1"/>
+		<hardware type="220mm中型尖端型自动加农炮" slot="hi slot 2"/>
+		<hardware type="220mm中型尖端型自动加农炮" slot="hi slot 3"/>
+		<hardware type="中型热能护盾强化装置 I" slot="rig slot 0"/>
+		<hardware type="中型核心防御力场扩张装置 I" slot="rig slot 1"/>
+		<hardware type="中型动能护盾强化装置 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="帝国海军渗透者"/>
+		<hardware qty="640" slot="cargo" type="共和舰队电磁脉冲弹 M"/>
+	</fitting>
+	<fitting name="暴君级 fit">
+		<description value=""/>
+		<shipType value="暴君级"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 0"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 1"/>
+		<hardware type="散热槽 II" slot="low slot 2"/>
+		<hardware type="散热槽 II" slot="low slot 3"/>
+		<hardware type="多谱式电压薄膜 II" slot="low slot 4"/>
+		<hardware type="反应式装甲增强器" slot="low slot 5"/>
+		<hardware type="单元推进持久型10MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="X5持久型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="中型F-RX紧凑型电容注电器" slot="med slot 2"/>
+		<hardware type="重型脉冲激光器 II" slot="hi slot 0"/>
+		<hardware type="重型脉冲激光器 II" slot="hi slot 1"/>
+		<hardware type="重型脉冲激光器 II" slot="hi slot 2"/>
+		<hardware type="重型脉冲激光器 II" slot="hi slot 3"/>
+		<hardware type="重型脉冲激光器 II" slot="hi slot 4"/>
+		<hardware type="中型电磁装甲强化装置 I" slot="rig slot 0"/>
+		<hardware type="中型能量武器急转控制器 I" slot="rig slot 1"/>
+		<hardware type="中型半导体记忆电池 I" slot="rig slot 2"/>
+		<hardware qty="3" slot="drone bay" type="侍僧 I"/>
+		<hardware qty="1" slot="cargo" type="电容注电器装料 800"/>
+		<hardware qty="5" slot="cargo" type="爆燃 M"/>
+	</fitting>
+	<fitting name="狂怒者级海军型 fit">
+		<description value=""/>
+		<shipType value="狂怒者级海军型"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 1"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 2"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 3"/>
+		<hardware type="反应式装甲增强器" slot="low slot 4"/>
+		<hardware type="多谱式电压薄膜 II" slot="low slot 5"/>
+		<hardware type="单元推进持久型10MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="大型紧凑型铅酸电容器电池" slot="med slot 1"/>
+		<hardware type="大型紧凑型铅酸电容器电池" slot="med slot 2"/>
+		<hardware type="全方位索敌连接 II" slot="med slot 3"/>
+		<hardware type="250mm轻型加农炮 II" slot="hi slot 0"/>
+		<hardware type="250mm轻型加农炮 II" slot="hi slot 1"/>
+		<hardware type="250mm轻型加农炮 II" slot="hi slot 2"/>
+		<hardware type="无人机链接增效器 I" slot="hi slot 3"/>
+		<hardware type="中型电磁装甲强化装置 I" slot="rig slot 0"/>
+		<hardware type="中型辅助纳米聚合器 I" slot="rig slot 1"/>
+		<hardware type="中型辅助纳米聚合器 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="帝国海军渗透者"/>
+		<hardware qty="1" slot="drone bay" type="帝国海军侍僧"/>
+		<hardware qty="5" slot="drone bay" type="帝国海军侍僧"/>
+		<hardware qty="1" slot="drone bay" type="帝国海军渗透者"/>
+		<hardware qty="2" slot="drone bay" type="执政官 II"/>
+		<hardware qty="2" slot="drone bay" type="渗透者 II"/>
+		<hardware qty="120" slot="cargo" type="电磁脉冲弹 S"/>
+	</fitting>
+	<fitting name="狂怒者级 fit注电">
+		<description value=""/>
+		<shipType value="狂怒者级"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 0"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 1"/>
+		<hardware type="IFFA紧凑型损伤控制" slot="low slot 2"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 3"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 4"/>
+		<hardware type="中型F-RX紧凑型电容注电器" slot="med slot 0"/>
+		<hardware type="中型紧凑型铅酸电容器电池" slot="med slot 1"/>
+		<hardware type="单元推进持久型10MN加力燃烧器" slot="med slot 2"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 3"/>
+		<hardware type="增强模式电子加速器 I" slot="hi slot 0"/>
+		<hardware type="增强模式电子加速器 I" slot="hi slot 1"/>
+		<hardware type="增强模式电子加速器 I" slot="hi slot 2"/>
+		<hardware type="增强模式电子加速器 I" slot="hi slot 3"/>
+		<hardware type="中型辅助纳米聚合器 I" slot="rig slot 0"/>
+		<hardware type="中型辅助纳米聚合器 I" slot="rig slot 1"/>
+		<hardware type="中型混合武器冲击加速器 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="地精灵 II"/>
+		<hardware qty="5" slot="drone bay" type="加达里海军金星"/>
+		<hardware qty="1" slot="drone bay" type="加达里海军金星"/>
+		<hardware qty="1" slot="cargo" type="电容注电器装料 800"/>
+		<hardware qty="800" slot="cargo" type="反物质轨道弹 M"/>
+	</fitting>
+	<fitting name="托勒克斯级 fit">
+		<description value=""/>
+		<shipType value="托勒克斯级"/>
+		<hardware type="中型辅助装甲维修器" slot="low slot 0"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 1"/>
+		<hardware type="反应式装甲增强器" slot="low slot 2"/>
+		<hardware type="动能装甲增强器 II" slot="low slot 3"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 4"/>
+		<hardware type="中型F-RX紧凑型电容注电器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="单元推进持久型10MN加力燃烧器" slot="med slot 2"/>
+		<hardware type="初始紧凑型跃迁扰频器" slot="med slot 3"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 4"/>
+		<hardware type="中型纳米机器人加速器 I" slot="rig slot 0"/>
+		<hardware type="中型纳米机器人加速器 I" slot="rig slot 1"/>
+		<hardware type="中型辅助电源路由器 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="金星 I"/>
+		<hardware qty="32" slot="cargo" type="纳米体修复粘合剂"/>
+		<hardware qty="1" slot="cargo" type="电容注电器装料 800"/>
+		<hardware qty="400" slot="cargo" type="涅槃 M"/>
+	</fitting>
+	<fitting name="狂怒者级 fit注电 copy">
+		<description value=""/>
+		<shipType value="狂怒者级"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 0"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 1"/>
+		<hardware type="反应式装甲增强器" slot="low slot 2"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 3"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 4"/>
+		<hardware type="中型F-RX紧凑型电容注电器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="单元推进持久型10MN加力燃烧器" slot="med slot 2"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 3"/>
+		<hardware type="增强模式离子加速器 I" slot="hi slot 0"/>
+		<hardware type="增强模式离子加速器 I" slot="hi slot 1"/>
+		<hardware type="增强模式离子加速器 I" slot="hi slot 2"/>
+		<hardware type="小型盗墓者紧凑型掠能器" slot="hi slot 3"/>
+		<hardware type="中型辅助纳米聚合器 I" slot="rig slot 0"/>
+		<hardware type="中型辅助纳米聚合器 I" slot="rig slot 1"/>
+		<hardware type="中型纳米机器人加速器 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="地精灵 II"/>
+		<hardware qty="5" slot="drone bay" type="加达里海军金星"/>
+		<hardware qty="1" slot="drone bay" type="加达里海军金星"/>
+		<hardware qty="1" slot="cargo" type="电容注电器装料 800"/>
+		<hardware qty="360" slot="cargo" type="反物质轨道弹 M"/>
+	</fitting>
+	<fitting name="巨鸟级 fit">
+		<description value=""/>
+		<shipType value="巨鸟级"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 0"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 1"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 2"/>
+		<hardware type="损伤控制 II" slot="low slot 3"/>
+		<hardware type="冷气持久型50MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="大型护盾扩展装置 II" slot="med slot 1"/>
+		<hardware type="大型辅助护盾回充增量器" slot="med slot 2"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 3"/>
+		<hardware type="大型护盾扩展装置 II" slot="med slot 4"/>
+		<hardware type="增强模式离子加速器 I" slot="hi slot 0"/>
+		<hardware type="增强模式离子加速器 I" slot="hi slot 1"/>
+		<hardware type="增强模式离子加速器 I" slot="hi slot 2"/>
+		<hardware type="增强模式离子加速器 I" slot="hi slot 3"/>
+		<hardware type="增强模式离子加速器 I" slot="hi slot 4"/>
+		<hardware type="中型辅助电源路由器 I" slot="rig slot 0"/>
+		<hardware qty="3" slot="drone bay" type="大黄蜂 I"/>
+		<hardware qty="5" slot="cargo" type="电容注电器装料 200"/>
+		<hardware qty="240" slot="cargo" type="加达里海军反物质轨道弹 M"/>
+		<hardware qty="360" slot="cargo" type="反物质轨道弹 M"/>
+	</fitting>
+	<fitting name="挑战级 fit">
+		<description value=""/>
+		<shipType value="挑战级"/>
+	</fitting>
+	<fitting name="挑战级 fit copy">
+		<description value=""/>
+		<shipType value="挑战级"/>
+		<hardware type="弹道控制系统 II" slot="low slot 0"/>
+		<hardware type="弹道控制系统 II" slot="low slot 1"/>
+		<hardware type="专业导航紧凑型导弹制导增强器" slot="low slot 2"/>
+		<hardware type="损伤控制 II" slot="low slot 3"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 0"/>
+		<hardware type="目标标记装置 II" slot="med slot 1"/>
+		<hardware type="单元推进持久型10MN加力燃烧器" slot="med slot 2"/>
+		<hardware type="多谱式护盾增强器 II" slot="med slot 3"/>
+		<hardware type="超大型辅助护盾回充增量器" slot="med slot 4"/>
+		<hardware type="原型“劲弩”重型攻击导弹发射器I" slot="hi slot 0"/>
+		<hardware type="原型“劲弩”重型攻击导弹发射器I" slot="hi slot 1"/>
+		<hardware type="原型“劲弩”重型攻击导弹发射器I" slot="hi slot 2"/>
+		<hardware type="原型“劲弩”重型攻击导弹发射器I" slot="hi slot 3"/>
+		<hardware type="中型处理器超频组件 I" slot="rig slot 0"/>
+		<hardware type="中型处理器超频组件 I" slot="rig slot 1"/>
+		<hardware type="中型弹头爆燃辅助系统 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="加达里海军金星"/>
+		<hardware qty="3" slot="cargo" type="电容注电器装料 800"/>
+		<hardware qty="240" slot="cargo" type="鞭挞重型攻击导弹"/>
+	</fitting>
+	<fitting name="深渊">
+		<description value=""/>
+		<shipType value="阿特龙级"/>
+		<hardware type="小型I-a持久型装甲维修器" slot="low slot 0"/>
+		<hardware type="反应式装甲增强器" slot="low slot 1"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 2"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="光学紧凑型索敌计算机" slot="med slot 2"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="小型电磁装甲强化装置 I" slot="rig slot 0"/>
+		<hardware type="小型热能装甲强化装置 I" slot="rig slot 1"/>
+		<hardware type="小型爆炸装甲强化装置 I" slot="rig slot 2"/>
+		<hardware qty="1" slot="cargo" type="最佳射程提升脚本"/>
+		<hardware qty="240" slot="cargo" type="虚空 S"/>
+	</fitting>
+	<fitting name="潜龙级 fit">
+		<description value=""/>
+		<shipType value="潜龙级"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 1"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="紧凑型多谱式护盾增强器" slot="med slot 1"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 2"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 0"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 1"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 2"/>
+		<hardware type="小型核心防御力场扩张装置 I" slot="rig slot 0"/>
+		<hardware type="小型核心防御力场扩张装置 I" slot="rig slot 1"/>
+		<hardware type="小型电磁护盾强化装置 I" slot="rig slot 2"/>
+		<hardware qty="2" slot="drone bay" type="帝国海军侍僧"/>
+		<hardware qty="2" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="1" slot="drone bay" type="帝国海军侍僧"/>
+		<hardware qty="120" slot="cargo" type="雷神轻型导弹"/>
+	</fitting>
+	<fitting name="托勒克斯级 fit copy">
+		<description value=""/>
+		<shipType value="托勒克斯级"/>
+		<hardware type="损伤控制 II" slot="low slot 0"/>
+		<hardware type="强化舱隔壁 II" slot="low slot 1"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 2"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 3"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 4"/>
+		<hardware type="冷气持久型50MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="初始紧凑型跃迁扰频器" slot="med slot 3"/>
+		<hardware type="增强模式中子加速器 I" slot="hi slot 0"/>
+		<hardware type="增强模式中子加速器 I" slot="hi slot 1"/>
+		<hardware type="增强模式中子加速器 I" slot="hi slot 2"/>
+		<hardware type="增强模式中子加速器 I" slot="hi slot 3"/>
+		<hardware type="增强模式中子加速器 I" slot="hi slot 4"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="瓦尔基里 I"/>
+		<hardware qty="400" slot="cargo" type="加达里海军反物质轨道弹 M"/>
+	</fitting>
+	<fitting name="潜龙级 fit copy">
+		<description value=""/>
+		<shipType value="潜龙级"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 1"/>
+		<hardware type="Y-S8紧凑型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="紧凑型多谱式护盾增强器" slot="med slot 1"/>
+		<hardware type="皮特姆电磁护盾增效器 C型" slot="med slot 2"/>
+		<hardware type="共和舰队中型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="火箭发射器 II" slot="hi slot 0"/>
+		<hardware type="火箭发射器 II" slot="hi slot 1"/>
+		<hardware type="火箭发射器 II" slot="hi slot 2"/>
+		<hardware type="小型动能护盾强化装置 II" slot="rig slot 0"/>
+		<hardware type="小型热能护盾强化装置 II" slot="rig slot 1"/>
+		<hardware type="小型核心防御力场扩张装置 II" slot="rig slot 2"/>
+		<hardware qty="2" slot="drone bay" type="加达里海军大黄蜂"/>
+		<hardware qty="2" slot="drone bay" type="大黄蜂 II"/>
+		<hardware qty="1" slot="drone bay" type="加达里海军大黄蜂"/>
+		<hardware qty="150" slot="cargo" type="鞭挞狂乱火箭"/>
+	</fitting>
+	<fitting name="加姆级 fit">
+		<description value=""/>
+		<shipType value="加姆级"/>
+		<hardware type="交叉连接紧凑型弹道控制系统" slot="low slot 0"/>
+		<hardware type="交叉连接紧凑型弹道控制系统" slot="low slot 1"/>
+		<hardware type="专业导航紧凑型导弹制导增强器" slot="low slot 2"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="紧凑型多谱式护盾增强器" slot="med slot 1"/>
+		<hardware type="中型F-S9覆盖式紧凑型护盾扩展装置" slot="med slot 2"/>
+		<hardware type="皮特姆电磁护盾增效器 C型" slot="med slot 3"/>
+		<hardware type="火箭发射器 II" slot="hi slot 0"/>
+		<hardware type="火箭发射器 II" slot="hi slot 1"/>
+		<hardware type="火箭发射器 II" slot="hi slot 2"/>
+		<hardware type="小型热能护盾强化装置 II" slot="rig slot 0"/>
+		<hardware type="小型电磁护盾强化装置 II" slot="rig slot 1"/>
+		<hardware type="小型核心防御力场扩张装置 II" slot="rig slot 2"/>
+		<hardware qty="150" slot="cargo" type="雷神狂乱火箭"/>
+	</fitting>
+	<fitting name="德拉米尔级 fit">
+		<description value=""/>
+		<shipType value="德拉米尔级"/>
+		<hardware type="超载喷注系统 II" slot="low slot 0"/>
+		<hardware type="超载喷注系统 II" slot="low slot 1"/>
+		<hardware type="超载喷注系统 II" slot="low slot 2"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="眩晕视野型跃迁扰断器" slot="med slot 1"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 2"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="250mm轻型侦查员火炮 I" slot="hi slot 0"/>
+		<hardware type="250mm轻型侦查员火炮 I" slot="hi slot 1"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 2"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 0"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 2"/>
+		<hardware qty="3" slot="drone bay" type="武士 II"/>
+		<hardware qty="80" slot="cargo" type="电磁脉冲弹 S"/>
+		<hardware qty="53" slot="cargo" type="雷神愤怒轻型导弹"/>
+	</fitting>
+	<fitting name="魔女级 fit">
+		<description value=""/>
+		<shipType value="魔女级"/>
+		<hardware type="散热槽 II" slot="low slot 0"/>
+		<hardware type="反应式装甲增强器" slot="low slot 1"/>
+		<hardware type="小型辅助装甲维修器" slot="low slot 2"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="小型紧凑型铅酸电容器电池" slot="med slot 3"/>
+		<hardware type="小型聚焦脉冲激光器 II" slot="hi slot 0"/>
+		<hardware type="小型聚焦脉冲激光器 II" slot="hi slot 1"/>
+		<hardware type="小型能量武器冲击加速器 I" slot="rig slot 0"/>
+		<hardware type="小型辅助纳米聚合器 I" slot="rig slot 1"/>
+		<hardware type="小型电磁装甲强化装置 I" slot="rig slot 2"/>
+		<hardware qty="8" slot="cargo" type="纳米体修复粘合剂"/>
+		<hardware qty="2" slot="cargo" type="爆燃 S"/>
+	</fitting>
+	<fitting name="惩罚者级 fit">
+		<description value=""/>
+		<shipType value="惩罚者级"/>
+		<hardware type="反应式装甲增强器" slot="low slot 0"/>
+		<hardware type="小型I-a持久型装甲维修器" slot="low slot 1"/>
+		<hardware type="小型辅助装甲维修器" slot="low slot 2"/>
+		<hardware type="散热槽 II" slot="low slot 3"/>
+		<hardware type="散热槽 II" slot="low slot 4"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="小型紧凑型铅酸电容器电池" slot="med slot 1"/>
+		<hardware type="小型聚焦脉冲激光器 II" slot="hi slot 0"/>
+		<hardware type="小型聚焦脉冲激光器 II" slot="hi slot 1"/>
+		<hardware type="小型聚焦脉冲激光器 II" slot="hi slot 2"/>
+		<hardware type="小型聚焦脉冲激光器 II" slot="hi slot 3"/>
+		<hardware type="小型电磁装甲强化装置 I" slot="rig slot 0"/>
+		<hardware type="小型热能装甲强化装置 I" slot="rig slot 1"/>
+		<hardware type="小型辅助纳米聚合器 I" slot="rig slot 2"/>
+		<hardware qty="8" slot="cargo" type="纳米体修复粘合剂"/>
+		<hardware qty="4" slot="cargo" type="爆燃 S"/>
+	</fitting>
+	<fitting name="恶狼级 fit">
+		<description value=""/>
+		<shipType value="恶狼级"/>
+		<hardware type="800mm频射加农炮 II" slot="hi slot 0"/>
+		<hardware qty="120" slot="cargo" type="碳铅弹 L"/>
+	</fitting>
+	<fitting name="阿尔格斯级 pvp">
+		<description value=""/>
+		<shipType value="阿尔格斯级"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 1"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 2"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="中型恒沸点抑制型护盾扩展装置" slot="med slot 1"/>
+		<hardware type="眩晕视野型跃迁扰断器" slot="med slot 2"/>
+		<hardware type="280mm侦查员火炮 I" slot="hi slot 0"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 0"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 2"/>
+		<hardware qty="1" slot="drone bay" type="武士 II"/>
+		<hardware qty="1" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="1" slot="drone bay" type="武士 II"/>
+		<hardware qty="1" slot="drone bay" type="加强型瓦尔基里"/>
+		<hardware qty="1" slot="drone bay" type="加强型渗透者"/>
+		<hardware qty="20" slot="cargo" type="电磁脉冲弹 S"/>
+	</fitting>
+	<fitting name="导弹 深渊">
+		<description value=""/>
+		<shipType value="龙骑兵级"/>
+		<hardware type="多谱式电压薄膜 II" slot="low slot 0"/>
+		<hardware type="400mm紧凑型包金钨附甲板" slot="low slot 1"/>
+		<hardware type="小型装甲维修器 II" slot="low slot 2"/>
+		<hardware type="反应式装甲增强器" slot="low slot 3"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="共晶紧凑型电容回充器" slot="med slot 1"/>
+		<hardware type="共晶紧凑型电容回充器" slot="med slot 2"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 0"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 1"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 2"/>
+		<hardware type="小型辅助纳米聚合器 I" slot="rig slot 0"/>
+		<hardware type="小型辅助纳米聚合器 I" slot="rig slot 1"/>
+		<hardware type="小型纳米机器人加速器 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 I"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 I"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="120" slot="cargo" type="雷神轻型导弹"/>
+	</fitting>
+	<fitting name="导弹 pvp">
+		<description value=""/>
+		<shipType value="龙骑兵级"/>
+		<hardware type="多谱式电压薄膜 II" slot="low slot 0"/>
+		<hardware type="400mm紧凑型包金钨附甲板" slot="low slot 1"/>
+		<hardware type="小型装甲维修器 II" slot="low slot 2"/>
+		<hardware type="反应式装甲增强器" slot="low slot 3"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="劲弩火箭发射器 I" slot="hi slot 0"/>
+		<hardware type="劲弩火箭发射器 I" slot="hi slot 1"/>
+		<hardware type="劲弩火箭发射器 I" slot="hi slot 2"/>
+		<hardware type="200mm轻型侦查员自动加农炮 I" slot="hi slot 3"/>
+		<hardware type="200mm轻型侦查员自动加农炮 I" slot="hi slot 4"/>
+		<hardware type="小型辅助纳米聚合器 I" slot="rig slot 0"/>
+		<hardware type="小型纳米机器人加速器 I" slot="rig slot 1"/>
+		<hardware type="小型纳米机器人加速器 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 I"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 I"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="135" slot="cargo" type="加达里海军雷神火箭"/>
+		<hardware qty="240" slot="cargo" type="共和舰队电磁脉冲弹 S"/>
+	</fitting>
+	<fitting name="导弹 pvp 动能抗性">
+		<description value=""/>
+		<shipType value="龙骑兵级"/>
+		<hardware type="IFFA紧凑型损伤控制" slot="low slot 0"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 1"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 2"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 3"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="初始紧凑型跃迁扰频器" slot="med slot 2"/>
+		<hardware type="劲弩火箭发射器 I" slot="hi slot 0"/>
+		<hardware type="劲弩火箭发射器 I" slot="hi slot 1"/>
+		<hardware type="劲弩火箭发射器 I" slot="hi slot 2"/>
+		<hardware type="小型小鬼紧凑型能量中和器" slot="hi slot 3"/>
+		<hardware type="小型小鬼紧凑型能量中和器" slot="hi slot 4"/>
+		<hardware type="小型处理器超频组件 I" slot="rig slot 0"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="135" slot="cargo" type="加达里海军雷神火箭"/>
+	</fitting>
+	<fitting name="秃鹫级 pvp">
+		<description value=""/>
+		<shipType value="秃鹫级"/>
+		<hardware type="弹道控制系统 II" slot="low slot 0"/>
+		<hardware type="弹道控制系统 II" slot="low slot 1"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="眩晕视野型跃迁扰断器" slot="med slot 2"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 0"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 1"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 2"/>
+		<hardware qty="159" slot="cargo" type="雷神愤怒轻型导弹"/>
+	</fitting>
+	<fitting name="特里斯坦级 fit">
+		<description value=""/>
+		<shipType value="特里斯坦级"/>
+		<hardware type="抑制型超载喷注器 D型" slot="low slot 0"/>
+		<hardware type="抑制型惯性稳定器 D型" slot="low slot 1"/>
+		<hardware type="抑制型惯性稳定器 D型" slot="low slot 2"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="眩晕视野型跃迁扰断器" slot="med slot 2"/>
+		<hardware type="280mm侦查员火炮 I" slot="hi slot 0"/>
+		<hardware type="280mm侦查员火炮 I" slot="hi slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 0"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 1"/>
+		<hardware type="小型辅助推进器 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 I"/>
+		<hardware qty="40" slot="cargo" type="共和舰队电磁脉冲弹 S"/>
+	</fitting>
+	<fitting name="秃鹫级 pvp copy">
+		<description value=""/>
+		<shipType value="秃鹫级"/>
+		<hardware type="弹道控制系统 II" slot="low slot 0"/>
+		<hardware type="弹道控制系统 II" slot="low slot 1"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="眩晕视野型跃迁扰断器" slot="med slot 2"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 0"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 1"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 2"/>
+		<hardware qty="159" slot="cargo" type="雷神愤怒轻型导弹"/>
+	</fitting>
+	<fitting name="阿特龙级 射弹">
+		<description value=""/>
+		<shipType value="阿特龙级"/>
+		<hardware type="抑制型超载喷注器 D型" slot="low slot 0"/>
+		<hardware type="抑制型超载喷注器 D型" slot="low slot 1"/>
+		<hardware type="抑制型超载喷注器 D型" slot="low slot 2"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="Y-S8紧凑型1MN加力燃烧器" slot="med slot 1"/>
+		<hardware type="眩晕视野型跃迁扰断器" slot="med slot 2"/>
+		<hardware type="250mm轻型侦查员火炮 I" slot="hi slot 0"/>
+		<hardware type="250mm轻型侦查员火炮 I" slot="hi slot 1"/>
+		<hardware type="250mm轻型侦查员火炮 I" slot="hi slot 2"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 0"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 2"/>
+		<hardware qty="120" slot="cargo" type="共和舰队电磁脉冲弹 S"/>
+	</fitting>
+	<fitting name="pvp结构抗">
+		<description value=""/>
+		<shipType value="托勒克斯级"/>
+		<hardware type="损伤控制 II" slot="low slot 0"/>
+		<hardware type="惯性稳定器 II" slot="low slot 1"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 2"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 3"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 4"/>
+		<hardware type="冷气持久型50MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="初始紧凑型跃迁扰频器" slot="med slot 2"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 3"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 4"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="瓦尔基里 I"/>
+		<hardware qty="400" slot="cargo" type="涅槃 M"/>
+	</fitting>
+	<fitting name="阿特龙级  磁轨">
+		<description value=""/>
+		<shipType value="阿特龙级"/>
+		<hardware type="抑制型超载喷注器 D型" slot="low slot 0"/>
+		<hardware type="抑制型超载喷注器 D型" slot="low slot 1"/>
+		<hardware type="抑制型纳米纤维构架 D型" slot="low slot 2"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="Y-S8紧凑型1MN加力燃烧器" slot="med slot 1"/>
+		<hardware type="眩晕视野型跃迁扰断器" slot="med slot 2"/>
+		<hardware type="125mm尖端型高斯炮 I" slot="hi slot 0"/>
+		<hardware type="125mm尖端型高斯炮 I" slot="hi slot 1"/>
+		<hardware type="125mm尖端型高斯炮 I" slot="hi slot 2"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 0"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 2"/>
+		<hardware qty="240" slot="cargo" type="加达里海军反物质轨道弹 S"/>
+	</fitting>
+	<fitting name="托勒克斯级 深渊双修">
+		<description value=""/>
+		<shipType value="托勒克斯级"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 0"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 1"/>
+		<hardware type="反应式装甲增强器" slot="low slot 2"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 3"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 4"/>
+		<hardware type="中型F-RX紧凑型电容注电器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="冷气持久型50MN微型跃迁推进器" slot="med slot 2"/>
+		<hardware type="中型紧凑型铅酸电容器电池" slot="med slot 3"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 4"/>
+		<hardware type="中型辅助纳米聚合器 I" slot="rig slot 0"/>
+		<hardware type="中型辅助电源路由器 I" slot="rig slot 1"/>
+		<hardware type="中型辅助电源路由器 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="金星 I"/>
+		<hardware qty="1" slot="cargo" type="电容注电器装料 800"/>
+		<hardware qty="600" slot="cargo" type="涅槃 M"/>
+	</fitting>
+	<fitting name="送葬者级海军型 fit">
+		<description value=""/>
+		<shipType value="送葬者级海军型"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 0"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 1"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 2"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 3"/>
+		<hardware type="反应式装甲增强器" slot="low slot 4"/>
+		<hardware type="尖端型紧凑型动能装甲增强器 I" slot="low slot 5"/>
+		<hardware type="中型F-RX紧凑型电容注电器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="冷气持久型50MN微型跃迁推进器" slot="med slot 2"/>
+		<hardware type="大型紧凑型铅酸电容器电池" slot="med slot 3"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="中型辅助电源路由器 I" slot="rig slot 0"/>
+		<hardware type="中型辅助纳米聚合器 I" slot="rig slot 1"/>
+		<hardware type="中型辅助纳米聚合器 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="大黄蜂 I"/>
+		<hardware qty="1" slot="cargo" type="电容注电器装料 800"/>
+		<hardware qty="480" slot="cargo" type="涅槃 M"/>
+	</fitting>
+	<fitting name="伏波斯级 fit">
+		<description value=""/>
+		<shipType value="伏波斯级"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 4"/>
+		<hardware qty="600" slot="cargo" type="涅槃 M"/>
+	</fitting>
+	<fitting name="戴默斯级 fit">
+		<description value=""/>
+		<shipType value="戴默斯级"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 0"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 1"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 2"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 3"/>
+		<hardware type="反应式装甲增强器" slot="low slot 4"/>
+		<hardware type="爆炸装甲增强器 II" slot="low slot 5"/>
+		<hardware type="中型F-RX紧凑型电容注电器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="冷气持久型50MN微型跃迁推进器" slot="med slot 2"/>
+		<hardware type="中型紧凑型铅酸电容器电池" slot="med slot 3"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 4"/>
+		<hardware type="中型辅助纳米聚合器 II" slot="rig slot 0"/>
+		<hardware type="中型辅助纳米聚合器 II" slot="rig slot 1"/>
+		<hardware qty="1" slot="cargo" type="电容注电器装料 800"/>
+		<hardware qty="600" slot="cargo" type="涅槃 M"/>
+	</fitting>
+	<fitting name="警惕级 fit">
+		<description value=""/>
+		<shipType value="警惕级"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 4"/>
+		<hardware qty="600" slot="cargo" type="涅槃 M"/>
+	</fitting>
+	<fitting name="1000">
+		<description value=""/>
+		<shipType value="狂怒者级"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 0"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 1"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 2"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 3"/>
+		<hardware type="损伤控制 II" slot="low slot 4"/>
+		<hardware type="冷气持久型50MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="J5b持久型跃迁扰频器" slot="med slot 1"/>
+		<hardware type="X5持久型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="X5持久型停滞缠绕光束" slot="med slot 3"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="2" slot="drone bay" type="战锤 I"/>
+		<hardware qty="1" slot="drone bay" type="蛮妖 I"/>
+		<hardware qty="1" slot="drone bay" type="地精灵 I"/>
+		<hardware qty="5" slot="drone bay" type="地精灵 I"/>
+		<hardware qty="1" slot="drone bay" type="蛮妖 I"/>
+		<hardware qty="320" slot="cargo" type="涅槃 M"/>
+	</fitting>
+	<fitting name="夜魔侠级 fit">
+		<description value=""/>
+		<shipType value="夜魔侠级"/>
+	</fitting>
+	<fitting name="深渊">
+		<description value=""/>
+		<shipType value="托勒克斯级"/>
+		<hardware type="损伤控制 II" slot="low slot 0"/>
+		<hardware type="紧凑型强化舱隔壁 MK I" slot="low slot 1"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 2"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 3"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 4"/>
+		<hardware type="冷气持久型50MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="中型紧凑型铅酸电容器电池" slot="med slot 3"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 4"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="瓦尔基里 I"/>
+		<hardware qty="400" slot="cargo" type="涅槃 M"/>
+	</fitting>
+	<fitting name="修—抗深渊">
+		<description value=""/>
+		<shipType value="托勒克斯级"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 0"/>
+		<hardware type="反应式装甲增强器" slot="low slot 1"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 2"/>
+		<hardware type="多谱式电压薄膜 II" slot="low slot 3"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 4"/>
+		<hardware type="中型F-RX紧凑型电容注电器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="单元推进持久型10MN加力燃烧器" slot="med slot 2"/>
+		<hardware type="小型紧凑型铅酸电容器电池" slot="med slot 3"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="重型离子疾速炮 II" slot="hi slot 4"/>
+		<hardware type="中型热能装甲强化装置 I" slot="rig slot 0"/>
+		<hardware type="中型爆炸装甲强化装置 I" slot="rig slot 1"/>
+		<hardware qty="5" slot="drone bay" type="加达里海军大黄蜂"/>
+		<hardware qty="5" slot="drone bay" type="加达里海军大黄蜂"/>
+		<hardware qty="1" slot="cargo" type="电容注电器装料 800"/>
+		<hardware qty="600" slot="cargo" type="虚空 M"/>
+	</fitting>
+	<fitting name="深渊">
+		<description value=""/>
+		<shipType value="惩罚者级"/>
+		<hardware type="反应式装甲增强器" slot="low slot 0"/>
+		<hardware type="小型I-a持久型装甲维修器" slot="low slot 1"/>
+		<hardware type="小型装甲维修器 II" slot="low slot 2"/>
+		<hardware type="挤压紧凑型散热槽" slot="low slot 3"/>
+		<hardware type="紧凑型多谱式电压薄膜" slot="low slot 4"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="共和舰队小型电容器电池" slot="med slot 1"/>
+		<hardware type="小型聚焦集束激光器 II" slot="hi slot 0"/>
+		<hardware type="小型聚焦集束激光器 II" slot="hi slot 1"/>
+		<hardware type="小型聚焦集束激光器 II" slot="hi slot 2"/>
+		<hardware type="小型聚焦集束激光器 II" slot="hi slot 3"/>
+		<hardware type="小型电磁装甲强化装置 I" slot="rig slot 0"/>
+		<hardware type="小型能量武器急转控制器 I" slot="rig slot 1"/>
+		<hardware type="小型能量武器急转控制器 I" slot="rig slot 2"/>
+		<hardware qty="4" slot="cargo" type="帝国海军多频晶体 S"/>
+	</fitting>
+	<fitting name="裂谷级 fit">
+		<description value=""/>
+		<shipType value="裂谷级"/>
+		<hardware type="回转稳定器 II" slot="low slot 0"/>
+		<hardware type="紧凑型多谱式电压薄膜" slot="low slot 1"/>
+		<hardware type="小型I-a持久型装甲维修器" slot="low slot 2"/>
+		<hardware type="反应式装甲增强器" slot="low slot 3"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="小型紧凑型铅酸电容器电池" slot="med slot 2"/>
+		<hardware type="200mm自动加农炮 II" slot="hi slot 0"/>
+		<hardware type="200mm自动加农炮 II" slot="hi slot 1"/>
+		<hardware type="200mm自动加农炮 II" slot="hi slot 2"/>
+		<hardware type="小型动能装甲强化装置 I" slot="rig slot 0"/>
+		<hardware type="小型热能装甲强化装置 I" slot="rig slot 1"/>
+		<hardware type="小型爆炸装甲强化装置 I" slot="rig slot 2"/>
+		<hardware qty="360" slot="cargo" type="冰雹 S"/>
+	</fitting>
+	<fitting name="弯刀级 fit">
+		<description value=""/>
+		<shipType value="弯刀级"/>
+		<hardware type="交叉连接紧凑型弹道控制系统" slot="low slot 0"/>
+		<hardware type="交叉连接紧凑型弹道控制系统" slot="low slot 1"/>
+		<hardware type="交叉连接紧凑型弹道控制系统" slot="low slot 2"/>
+		<hardware type="小型清澈防御持久型护盾回充增量器" slot="med slot 0"/>
+		<hardware type="共晶紧凑型电容回充器" slot="med slot 1"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 2"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 0"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 1"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 2"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 3"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 4"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 5"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 6"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 0"/>
+		<hardware type="小型辅助推进器 I" slot="rig slot 1"/>
+		<hardware type="小型离子力场投射器 I" slot="rig slot 2"/>
+		<hardware qty="280" slot="cargo" type="加达里海军雷神轻型导弹"/>
+	</fitting>
+	<fitting name="深渊">
+		<description value=""/>
+		<shipType value="茶隼级"/>
+		<hardware type="弹道控制系统 II" slot="low slot 0"/>
+		<hardware type="弹道控制系统 II" slot="low slot 1"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="紧凑型多谱式护盾增强器" slot="med slot 1"/>
+		<hardware type="中型F-S9覆盖式紧凑型护盾扩展装置" slot="med slot 2"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="火箭发射器 II" slot="hi slot 0"/>
+		<hardware type="火箭发射器 II" slot="hi slot 1"/>
+		<hardware type="火箭发射器 II" slot="hi slot 2"/>
+		<hardware type="火箭发射器 II" slot="hi slot 3"/>
+		<hardware type="小型电磁护盾强化装置 I" slot="rig slot 0"/>
+		<hardware type="小型动能护盾强化装置 I" slot="rig slot 1"/>
+		<hardware type="小型热能护盾强化装置 I" slot="rig slot 2"/>
+		<hardware qty="200" slot="cargo" type="鞭挞狂乱火箭"/>
+	</fitting>
+	<fitting name="深渊">
+		<description value=""/>
+		<shipType value="特里斯坦级"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="小型I-a持久型装甲维修器" slot="low slot 1"/>
+		<hardware type="小型I-a持久型装甲维修器" slot="low slot 2"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="小型紧凑型铅酸电容器电池" slot="med slot 1"/>
+		<hardware type="X5持久型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="250mm轻型加农炮 II" slot="hi slot 0"/>
+		<hardware type="250mm轻型加农炮 II" slot="hi slot 1"/>
+		<hardware type="小型电磁装甲强化装置 I" slot="rig slot 0"/>
+		<hardware type="小型爆炸装甲强化装置 I" slot="rig slot 1"/>
+		<hardware qty="5" slot="drone bay" type="加达里海军大黄蜂"/>
+		<hardware qty="80" slot="cargo" type="战栗 S"/>
+	</fitting>
+	<fitting name="深渊">
+		<description value=""/>
+		<shipType value="狂怒者级"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 1"/>
+		<hardware type="反应式装甲增强器" slot="low slot 2"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 3"/>
+		<hardware type="中型I-a持久型装甲维修器" slot="low slot 4"/>
+		<hardware type="单元推进持久型10MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="X5持久型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="大型紧凑型铅酸电容器电池" slot="med slot 2"/>
+		<hardware type="中型紧凑型铅酸电容器电池" slot="med slot 3"/>
+		<hardware type="无人机链接增效器 I" slot="hi slot 0"/>
+		<hardware type="280mm侦查员火炮 I" slot="hi slot 1"/>
+		<hardware type="280mm侦查员火炮 I" slot="hi slot 2"/>
+		<hardware type="280mm侦查员火炮 I" slot="hi slot 3"/>
+		<hardware type="中型辅助纳米聚合器 I" slot="rig slot 0"/>
+		<hardware type="中型电磁装甲强化装置 I" slot="rig slot 1"/>
+		<hardware type="中型无人机耐用性增强装置 I" slot="rig slot 2"/>
+		<hardware qty="2" slot="drone bay" type="帝国海军渗透者"/>
+		<hardware qty="2" slot="drone bay" type="帝国海军执政官"/>
+		<hardware qty="1" slot="drone bay" type="帝国海军侍僧"/>
+		<hardware qty="4" slot="drone bay" type="帝国海军渗透者"/>
+		<hardware qty="2" slot="drone bay" type="帝国海军侍僧"/>
+		<hardware qty="60" slot="cargo" type="共和舰队电磁脉冲弹 S"/>
+	</fitting>
+	<fitting name="pvp2">
+		<description value=""/>
+		<shipType value="阿尔格斯级"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 1"/>
+		<hardware type="IFFA紧凑型损伤控制" slot="low slot 2"/>
+		<hardware type="Y-T8紧凑型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="初始紧凑型跃迁扰频器" slot="med slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="轻型离子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="轻型离子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="轻型离子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="轻型离子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="轻型离子疾速炮 II" slot="hi slot 4"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="3" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="2" slot="drone bay" type="帝国海军渗透者"/>
+		<hardware qty="600" slot="cargo" type="涅槃 S"/>
+	</fitting>
+	<fitting name="导弹 pvp 毁电">
+		<description value=""/>
+		<shipType value="龙骑兵级"/>
+		<hardware type="IFFA紧凑型损伤控制" slot="low slot 0"/>
+		<hardware type="抑制型纳米纤维构架 D型" slot="low slot 1"/>
+		<hardware type="紧凑型强化舱隔壁 MK I" slot="low slot 2"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 3"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="巴尔默序列紧凑型索敌扰断器 I" slot="med slot 1"/>
+		<hardware type="伊普西隆眩晕视野型跃迁扰频器" slot="med slot 2"/>
+		<hardware type="200mm轻型侦查员自动加农炮 I" slot="hi slot 0"/>
+		<hardware type="200mm轻型侦查员自动加农炮 I" slot="hi slot 1"/>
+		<hardware type="200mm轻型侦查员自动加农炮 I" slot="hi slot 2"/>
+		<hardware type="小型小鬼紧凑型能量中和器" slot="hi slot 3"/>
+		<hardware type="小型小鬼紧凑型能量中和器" slot="hi slot 4"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 I"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 I"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="1" slot="cargo" type="最佳射程干扰脚本"/>
+		<hardware qty="360" slot="cargo" type="共和舰队电磁脉冲弹 S"/>
+	</fitting>
+	<fitting name="深渊双开">
+		<description value=""/>
+		<shipType value="茶隼级"/>
+		<hardware type="护盾能源继电器 II" slot="low slot 0"/>
+		<hardware type="护盾能源继电器 II" slot="low slot 1"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="紧凑型电磁护盾增强器" slot="med slot 1"/>
+		<hardware type="中型F-S9覆盖式紧凑型护盾扩展装置" slot="med slot 2"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 0"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 1"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 2"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 3"/>
+		<hardware type="小型辅助电源路由器 I" slot="rig slot 0"/>
+		<hardware type="小型核心防御力场扩张装置 I" slot="rig slot 1"/>
+		<hardware type="小型热能护盾强化装置 I" slot="rig slot 2"/>
+		<hardware qty="212" slot="cargo" type="鞭挞愤怒轻型导弹"/>
+	</fitting>
+	<fitting name="强制者级海军型 fit">
+		<description value=""/>
+		<shipType value="强制者级海军型"/>
+		<hardware type="散热槽 I" slot="low slot 0"/>
+		<hardware type="散热槽 I" slot="low slot 1"/>
+		<hardware type="散热槽 I" slot="low slot 2"/>
+		<hardware type="索敌增强器 I" slot="low slot 3"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="光学紧凑型索敌计算机" slot="med slot 1"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 0"/>
+		<hardware qty="1" slot="cargo" type="跟踪速度修正脚本"/>
+		<hardware qty="1" slot="cargo" type="紫外晶体 S"/>
+	</fitting>
+	<fitting name="强制者级 fit">
+		<description value=""/>
+		<shipType value="强制者级"/>
+		<hardware type="散热槽 I" slot="low slot 0"/>
+		<hardware type="散热槽 I" slot="low slot 1"/>
+		<hardware type="散热槽 I" slot="low slot 2"/>
+		<hardware type="光学紧凑型索敌计算机" slot="med slot 0"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 0"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 1"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 2"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 3"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 4"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 5"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 6"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 7"/>
+		<hardware qty="1" slot="cargo" type="最佳射程提升脚本"/>
+		<hardware qty="8" slot="cargo" type="紫外晶体 S"/>
+	</fitting>
+	<fitting name="加达里海军霍克比尔级 fit">
+		<description value=""/>
+		<shipType value="加达里海军霍克比尔级"/>
+		<hardware type="弹道控制系统 II" slot="low slot 0"/>
+		<hardware type="弹道控制系统 II" slot="low slot 1"/>
+		<hardware type="Y-S8紧凑型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="紧凑型多谱式护盾增强器" slot="med slot 1"/>
+		<hardware type="小型紧凑型铅酸电容器电池" slot="med slot 2"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="小型清澈防御持久型护盾回充增量器" slot="med slot 4"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 0"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 1"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 2"/>
+		<hardware type="小型电磁护盾强化装置 I" slot="rig slot 0"/>
+		<hardware type="小型处理器超频组件 I" slot="rig slot 1"/>
+		<hardware type="小型处理器超频组件 I" slot="rig slot 2"/>
+		<hardware qty="159" slot="cargo" type="鞭挞愤怒轻型导弹"/>
+	</fitting>
+	<fitting name="深渊">
+		<description value=""/>
+		<shipType value="渡鸦级"/>
+		<hardware type="交叉连接紧凑型弹道控制系统" slot="low slot 0"/>
+		<hardware type="紧凑型护盾能源继电器 MKI" slot="low slot 1"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="紧凑型多谱式护盾增强器" slot="med slot 1"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 2"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 0"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 1"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 2"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 3"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 4"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 5"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 6"/>
+		<hardware type="小型核心防御力场扩张装置 I" slot="rig slot 0"/>
+		<hardware type="小型电磁护盾强化装置 I" slot="rig slot 1"/>
+		<hardware type="小型动能护盾强化装置 I" slot="rig slot 2"/>
+		<hardware qty="371" slot="cargo" type="鞭挞愤怒轻型导弹"/>
+	</fitting>
+	<fitting name="深渊 t1">
+		<description value=""/>
+		<shipType value="渡鸦级"/>
+		<hardware type="交叉连接紧凑型弹道控制系统" slot="low slot 0"/>
+		<hardware type="弹道控制系统 II" slot="low slot 1"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="紧凑型多谱式护盾增强器" slot="med slot 1"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 2"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="火箭发射器 II" slot="hi slot 0"/>
+		<hardware type="火箭发射器 II" slot="hi slot 1"/>
+		<hardware type="火箭发射器 II" slot="hi slot 2"/>
+		<hardware type="火箭发射器 II" slot="hi slot 3"/>
+		<hardware type="火箭发射器 II" slot="hi slot 4"/>
+		<hardware type="火箭发射器 II" slot="hi slot 5"/>
+		<hardware type="火箭发射器 II" slot="hi slot 6"/>
+		<hardware type="小型核心防御力场扩张装置 I" slot="rig slot 0"/>
+		<hardware type="小型电磁护盾强化装置 I" slot="rig slot 1"/>
+		<hardware type="小型动能护盾强化装置 I" slot="rig slot 2"/>
+		<hardware qty="350" slot="cargo" type="鞭挞狂乱火箭"/>
+	</fitting>
+	<fitting name="绕杆子">
+		<description value=""/>
+		<shipType value="阿特龙级"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 0"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 1"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 2"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="光学紧凑型索敌计算机" slot="med slot 2"/>
+		<hardware type="增强模式轻型中子加速器 I" slot="hi slot 0"/>
+		<hardware type="增强模式轻型中子加速器 I" slot="hi slot 1"/>
+		<hardware type="增强模式轻型中子加速器 I" slot="hi slot 2"/>
+		<hardware type="小型超空间速度调节器 I" slot="rig slot 0"/>
+		<hardware type="小型超空间速度调节器 I" slot="rig slot 1"/>
+		<hardware type="小型超空间速度调节器 I" slot="rig slot 2"/>
+		<hardware qty="1" slot="cargo" type="最佳射程提升脚本"/>
+		<hardware qty="240" slot="cargo" type="加达里海军反物质轨道弹 S"/>
+	</fitting>
+	<fitting name="深渊">
+		<description value=""/>
+		<shipType value="狞獾级海军型"/>
+		<hardware type="弹道控制系统 II" slot="low slot 0"/>
+		<hardware type="弹道控制系统 II" slot="low slot 1"/>
+		<hardware type="护盾能源继电器 II" slot="low slot 2"/>
+		<hardware type="单元推进持久型10MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="多谱式护盾增强器 II" slot="med slot 1"/>
+		<hardware type="大型护盾扩展装置 II" slot="med slot 2"/>
+		<hardware type="大型护盾扩展装置 II" slot="med slot 3"/>
+		<hardware type="大型护盾扩展装置 II" slot="med slot 4"/>
+		<hardware type="大型护盾扩展装置 II" slot="med slot 5"/>
+		<hardware type="轻型快速导弹发射器 II" slot="hi slot 0"/>
+		<hardware type="轻型快速导弹发射器 II" slot="hi slot 1"/>
+		<hardware type="轻型快速导弹发射器 II" slot="hi slot 2"/>
+		<hardware type="轻型快速导弹发射器 II" slot="hi slot 3"/>
+		<hardware type="轻型快速导弹发射器 II" slot="hi slot 4"/>
+		<hardware type="轻型快速导弹发射器 II" slot="hi slot 5"/>
+		<hardware type="中型核心防御力场扩张装置 I" slot="rig slot 0"/>
+		<hardware type="中型核心防御力场扩张装置 I" slot="rig slot 1"/>
+		<hardware type="中型核心防御力场扩张装置 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="加达里海军大黄蜂"/>
+		<hardware qty="120" slot="cargo" type="鞭挞愤怒轻型导弹"/>
+	</fitting>
+	<fitting name="深渊">
+		<description value=""/>
+		<shipType value="狞獾级"/>
+		<hardware type="弹道控制系统 II" slot="low slot 0"/>
+		<hardware type="弹道控制系统 II" slot="low slot 1"/>
+		<hardware type="护盾能源继电器 II" slot="low slot 2"/>
+		<hardware type="护盾能源继电器 II" slot="low slot 3"/>
+		<hardware type="多谱式护盾增强器 II" slot="med slot 0"/>
+		<hardware type="大型护盾扩展装置 II" slot="med slot 1"/>
+		<hardware type="大型护盾扩展装置 II" slot="med slot 2"/>
+		<hardware type="大型护盾扩展装置 II" slot="med slot 3"/>
+		<hardware type="单元推进持久型10MN加力燃烧器" slot="med slot 4"/>
+		<hardware type="轻型快速导弹发射器 II" slot="hi slot 0"/>
+		<hardware type="轻型快速导弹发射器 II" slot="hi slot 1"/>
+		<hardware type="轻型快速导弹发射器 II" slot="hi slot 2"/>
+		<hardware type="轻型快速导弹发射器 II" slot="hi slot 3"/>
+		<hardware type="轻型快速导弹发射器 II" slot="hi slot 4"/>
+		<hardware type="中型核心防御力场扩张装置 I" slot="rig slot 0"/>
+		<hardware type="中型核心防御力场扩张装置 I" slot="rig slot 1"/>
+		<hardware type="中型核心防御力场扩张装置 I" slot="rig slot 2"/>
+		<hardware qty="2" slot="drone bay" type="加达里海军大黄蜂"/>
+		<hardware qty="100" slot="cargo" type="鞭挞愤怒轻型导弹"/>
+	</fitting>
+	<fitting name="pvp">
+		<description value=""/>
+		<shipType value="特里斯坦级"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 0"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 1"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 2"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 0"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 1"/>
+		<hardware type="小型复合碳素引擎舱 I" slot="rig slot 0"/>
+		<hardware type="小型复合碳素引擎舱 I" slot="rig slot 1"/>
+		<hardware type="小型复合碳素引擎舱 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="地精灵 I"/>
+		<hardware qty="2" slot="cargo" type="多频晶体 S"/>
+	</fitting>
+	<fitting name="海盗杆子">
+		<description value=""/>
+		<shipType value="阿尔格斯级"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 1"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 2"/>
+		<hardware type="中型F-S9覆盖式紧凑型护盾扩展装置" slot="med slot 0"/>
+		<hardware type="中型F-S9覆盖式紧凑型护盾扩展装置" slot="med slot 1"/>
+		<hardware type="紧凑型电磁护盾增效器" slot="med slot 2"/>
+		<hardware type="小型不对称持久型远程护盾回充增量器" slot="hi slot 0"/>
+		<hardware type="小型电容器控制电路 I" slot="rig slot 0"/>
+		<hardware type="小型电容器控制电路 I" slot="rig slot 1"/>
+		<hardware type="小型电容器控制电路 I" slot="rig slot 2"/>
+		<hardware qty="1" slot="drone bay" type="武士 II"/>
+		<hardware qty="2" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="2" slot="drone bay" type="武士 II"/>
+	</fitting>
+	<fitting name="占星级 fit">
+		<description value=""/>
+		<shipType value="占星级"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 1"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 2"/>
+		<hardware qty="1" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="2" slot="drone bay" type="武士 II"/>
+		<hardware qty="1" slot="drone bay" type="加强型渗透者"/>
+		<hardware qty="1" slot="drone bay" type="加强型瓦尔基里"/>
+	</fitting>
+	<fitting name="赫卡特级 fit">
+		<description value=""/>
+		<shipType value="赫卡特级"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 4"/>
+		<hardware qty="400" slot="cargo" type="涅槃 S"/>
+	</fitting>
+	<fitting name="促进级 fit">
+		<description value=""/>
+		<shipType value="促进级"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 0"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 1"/>
+		<hardware type="IFFA紧凑型损伤控制" slot="low slot 2"/>
+		<hardware type="Y-T8紧凑型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 4"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 5"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 6"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 7"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="640" slot="cargo" type="涅槃 S"/>
+	</fitting>
+	<fitting name="5mn">
+		<description value=""/>
+		<shipType value="潜龙级"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 0"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 1"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 2"/>
+		<hardware type="眩晕视野型跃迁扰断器" slot="med slot 3"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 0"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 1"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 2"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 0"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 2"/>
+		<hardware qty="2" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="120" slot="cargo" type="加达里海军鞭挞轻型导弹"/>
+	</fitting>
+	<fitting name="pvp-网">
+		<description value=""/>
+		<shipType value="特里斯坦级"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="损伤控制 II" slot="low slot 1"/>
+		<hardware type="超载喷注系统 II" slot="low slot 2"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="X5持久型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="X5持久型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="280mm侦查员火炮 I" slot="hi slot 0"/>
+		<hardware type="280mm侦查员火炮 I" slot="hi slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 0"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="40" slot="cargo" type="硬钼弹 S"/>
+	</fitting>
+	<fitting name="加达里海军霍克比尔级 fit copy">
+		<description value=""/>
+		<shipType value="加达里海军霍克比尔级"/>
+		<hardware type="IFFA紧凑型损伤控制" slot="low slot 0"/>
+		<hardware type="超载喷注系统 II" slot="low slot 1"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="眩晕视野型跃迁扰断器" slot="med slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 3"/>
+		<hardware type="电容回充器 II" slot="med slot 4"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 0"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 1"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 2"/>
+		<hardware type="小型电磁护盾强化装置 I" slot="rig slot 0"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 2"/>
+		<hardware qty="159" slot="cargo" type="鞭挞愤怒轻型导弹"/>
+	</fitting>
+	<fitting name="毛鲁斯级海军型 fit">
+		<description value=""/>
+		<shipType value="毛鲁斯级海军型"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 0"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 1"/>
+		<hardware type="IFFA紧凑型损伤控制" slot="low slot 2"/>
+		<hardware type="超载喷注系统 II" slot="low slot 3"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="跃迁扰频器 II" slot="med slot 2"/>
+		<hardware type="280mm侦查员火炮 I" slot="hi slot 0"/>
+		<hardware type="280mm侦查员火炮 I" slot="hi slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 0"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="40" slot="cargo" type="电磁脉冲弹 S"/>
+	</fitting>
+	<fitting name="联邦海军彗星级 fit">
+		<description value=""/>
+		<shipType value="联邦海军彗星级"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 0"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 1"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 2"/>
+		<hardware type="IFFA紧凑型损伤控制" slot="low slot 3"/>
+		<hardware type="Y-S8紧凑型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="初始紧凑型跃迁扰频器" slot="med slot 2"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="小型小鬼紧凑型能量中和器" slot="hi slot 2"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="160" slot="cargo" type="涅槃 S"/>
+	</fitting>
+	<fitting name="探索级舰队型 fit">
+		<description value=""/>
+		<shipType value="探索级舰队型"/>
+	</fitting>
+	<fitting name="守夜者级舰队型 fit">
+		<description value=""/>
+		<shipType value="守夜者级舰队型"/>
+		<hardware type="导弹制导增强器 II" slot="low slot 0"/>
+		<hardware type="纳米纤维内部构架 II" slot="low slot 1"/>
+		<hardware type="纳米纤维内部构架 II" slot="low slot 2"/>
+		<hardware type="Y-S8紧凑型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="眩晕视野型跃迁扰断器" slot="med slot 3"/>
+		<hardware type="火箭发射器 II" slot="hi slot 0"/>
+		<hardware type="火箭发射器 II" slot="hi slot 1"/>
+		<hardware type="小型液压舱推进器 I" slot="rig slot 0"/>
+		<hardware type="小型液压舱推进器 I" slot="rig slot 1"/>
+		<hardware type="小型液压舱推进器 I" slot="rig slot 2"/>
+		<hardware qty="100" slot="cargo" type="加达里海军星爆火箭"/>
+	</fitting>
+	<fitting name="海燕级 fit">
+		<description value=""/>
+		<shipType value="海燕级"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 0"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="光学紧凑型索敌计算机" slot="med slot 2"/>
+		<hardware type="150mm尖端型高斯炮 I" slot="hi slot 0"/>
+		<hardware type="150mm尖端型高斯炮 I" slot="hi slot 1"/>
+		<hardware type="150mm尖端型高斯炮 I" slot="hi slot 2"/>
+		<hardware type="150mm尖端型高斯炮 I" slot="hi slot 3"/>
+		<hardware type="150mm尖端型高斯炮 I" slot="hi slot 4"/>
+		<hardware type="150mm尖端型高斯炮 I" slot="hi slot 5"/>
+		<hardware type="150mm尖端型高斯炮 I" slot="hi slot 6"/>
+		<hardware type="小型混合武器冲击加速器 I" slot="rig slot 0"/>
+		<hardware type="小型混合武器急转控制器 I" slot="rig slot 1"/>
+		<hardware type="小型混合武器急转控制器 I" slot="rig slot 2"/>
+		<hardware qty="1" slot="cargo" type="跟踪速度修正脚本"/>
+		<hardware qty="280" slot="cargo" type="反物质轨道弹 S"/>
+	</fitting>
+	<fitting name="绕杆子">
+		<description value=""/>
+		<shipType value="渡鸦级"/>
+		<hardware type="弹道控制系统 I" slot="low slot 0"/>
+		<hardware type="弹道控制系统 I" slot="low slot 1"/>
+		<hardware type="中型护盾扩展装置 I" slot="med slot 0"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 1"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 2"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 0"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 1"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 2"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 3"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 4"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 5"/>
+		<hardware type="劲弩紧凑型轻型导弹发射器" slot="hi slot 6"/>
+		<hardware type="小型弹头加热辅助系统 I" slot="rig slot 0"/>
+		<hardware type="小型装卸加速装置 I" slot="rig slot 1"/>
+		<hardware type="小型液压舱推进器 I" slot="rig slot 2"/>
+		<hardware qty="280" slot="cargo" type="鞭挞轻型导弹"/>
+	</fitting>
+	<fitting name="小鹰级 fit">
+		<description value=""/>
+		<shipType value="小鹰级"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 0"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 1"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 2"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="光学紧凑型索敌计算机" slot="med slot 3"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 2"/>
+		<hardware qty="1" slot="cargo" type="最佳射程提升脚本"/>
+		<hardware qty="240" slot="cargo" type="涅槃 S"/>
+	</fitting>
+	<fitting name="绕杆子 t2">
+		<description value=""/>
+		<shipType value="阿特龙级"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 0"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 1"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 2"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="光学紧凑型索敌计算机" slot="med slot 2"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 2"/>
+		<hardware qty="1" slot="cargo" type="最佳射程提升脚本"/>
+		<hardware qty="240" slot="cargo" type="涅槃 S"/>
+	</fitting>
+	<fitting name="伊什塔级 fit">
+		<description value=""/>
+		<shipType value="伊什塔级"/>
+	</fitting>
+	<fitting name="帝国海军切割机级 fit">
+		<description value=""/>
+		<shipType value="帝国海军切割机级"/>
+		<hardware type="散热槽 II" slot="low slot 0"/>
+		<hardware type="小型辅助装甲维修器" slot="low slot 1"/>
+		<hardware type="Y-S8紧凑型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="初始紧凑型跃迁扰频器" slot="med slot 1"/>
+		<hardware type="双联轻型脉冲激光器 II" slot="hi slot 0"/>
+		<hardware type="双联轻型脉冲激光器 II" slot="hi slot 1"/>
+		<hardware type="小型盗墓者紧凑型掠能器" slot="hi slot 2"/>
+		<hardware qty="8" slot="cargo" type="纳米体修复粘合剂"/>
+		<hardware qty="2" slot="cargo" type="帝国海军多频晶体 S"/>
+	</fitting>
+	<fitting name="伐木者级 fit">
+		<description value=""/>
+		<shipType value="伐木者级"/>
+		<hardware type="回转稳定器 II" slot="low slot 0"/>
+		<hardware type="反制性紧凑型回转稳定器" slot="low slot 1"/>
+		<hardware type="初始紧凑型跃迁扰频器" slot="med slot 0"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="200mm轻型侦查员自动加农炮 I" slot="hi slot 0"/>
+		<hardware type="200mm轻型侦查员自动加农炮 I" slot="hi slot 1"/>
+		<hardware type="200mm轻型侦查员自动加农炮 I" slot="hi slot 2"/>
+		<hardware type="小型盗墓者紧凑型掠能器" slot="hi slot 3"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 0"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 2"/>
+		<hardware qty="240" slot="cargo" type="电磁脉冲弹 S"/>
+		<hardware qty="120" slot="cargo" type="定相等离子弹 S"/>
+	</fitting>
+	<fitting name="廉价">
+		<description value=""/>
+		<shipType value="阿尔格斯级"/>
+		<hardware type="无人机伤害增效装置 I" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 I" slot="low slot 1"/>
+		<hardware type="无人机伤害增效装置 I" slot="low slot 2"/>
+		<hardware type="停滞缠绕光束 I" slot="med slot 0"/>
+		<hardware type="跃迁扰频器 I" slot="med slot 1"/>
+		<hardware type="1MN加力燃烧器 I" slot="med slot 2"/>
+		<hardware type="双联轻型集束激光器 I" slot="hi slot 0"/>
+		<hardware type="双联轻型集束激光器 I" slot="hi slot 1"/>
+		<hardware type="双联轻型集束激光器 I" slot="hi slot 2"/>
+		<hardware type="双联轻型集束激光器 I" slot="hi slot 3"/>
+		<hardware type="双联轻型集束激光器 I" slot="hi slot 4"/>
+		<hardware type="小型能量武器冲击加速器 I" slot="rig slot 0"/>
+		<hardware type="小型能量武器发散调节装置 I" slot="rig slot 1"/>
+		<hardware qty="2" slot="drone bay" type="侍僧 I"/>
+		<hardware qty="3" slot="drone bay" type="武士 I"/>
+		<hardware qty="5" slot="cargo" type="紫外晶体 S"/>
+	</fitting>
+	<fitting name="曼巴级 fit">
+		<description value=""/>
+		<shipType value="曼巴级"/>
+	</fitting>
+	<fitting name="廉价-任务">
+		<description value=""/>
+		<shipType value="阿尔格斯级"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 1"/>
+		<hardware type="小型I-a持久型装甲维修器" slot="low slot 2"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="共晶紧凑型电容回充器" slot="med slot 1"/>
+		<hardware type="共晶紧凑型电容回充器" slot="med slot 2"/>
+		<hardware type="150mm磁轨炮 II" slot="hi slot 0"/>
+		<hardware type="150mm磁轨炮 II" slot="hi slot 1"/>
+		<hardware type="150mm磁轨炮 II" slot="hi slot 2"/>
+		<hardware type="150mm磁轨炮 II" slot="hi slot 3"/>
+		<hardware type="150mm磁轨炮 II" slot="hi slot 4"/>
+		<hardware type="小型超空间速度调节器 I" slot="rig slot 0"/>
+		<hardware type="小型辅助纳米聚合器 I" slot="rig slot 1"/>
+		<hardware type="小型电容器控制电路 I" slot="rig slot 2"/>
+		<hardware qty="2" slot="drone bay" type="侍僧 I"/>
+		<hardware qty="3" slot="drone bay" type="武士 I"/>
+		<hardware qty="5" slot="drone bay" type="大黄蜂 II"/>
+		<hardware qty="200" slot="cargo" type="反物质轨道弹 S"/>
+	</fitting>
+	<fitting name="启示级海军型 fit">
+		<description value=""/>
+		<shipType value="启示级海军型"/>
+		<hardware type="散热槽 II" slot="low slot 0"/>
+		<hardware type="散热槽 II" slot="low slot 1"/>
+		<hardware type="散热槽 II" slot="low slot 2"/>
+		<hardware type="重型脉冲激光器 II" slot="hi slot 0"/>
+		<hardware type="重型脉冲激光器 II" slot="hi slot 1"/>
+		<hardware type="重型脉冲激光器 II" slot="hi slot 2"/>
+		<hardware type="重型脉冲激光器 II" slot="hi slot 3"/>
+		<hardware qty="4" slot="cargo" type="爆燃 M"/>
+	</fitting>
+	<fitting name="刺客级舰队型 fit">
+		<description value=""/>
+		<shipType value="刺客级舰队型"/>
+		<hardware type="回转稳定器 II" slot="low slot 0"/>
+		<hardware type="回转稳定器 II" slot="low slot 1"/>
+		<hardware type="回转稳定器 II" slot="low slot 2"/>
+		<hardware type="425mm自动加农炮 II" slot="hi slot 0"/>
+		<hardware type="425mm自动加农炮 II" slot="hi slot 1"/>
+		<hardware type="425mm自动加农炮 II" slot="hi slot 2"/>
+		<hardware type="425mm自动加农炮 II" slot="hi slot 3"/>
+		<hardware type="425mm自动加农炮 II" slot="hi slot 4"/>
+		<hardware qty="1" slot="drone bay" type="战锤 I"/>
+		<hardware qty="1" slot="drone bay" type="渗透者 I"/>
+		<hardware qty="1" slot="drone bay" type="金星 I"/>
+		<hardware qty="1" slot="drone bay" type="瓦尔基里 I"/>
+		<hardware qty="600" slot="cargo" type="冰雹 M"/>
+	</fitting>
+	<fitting name="刺客级 fit">
+		<description value=""/>
+		<shipType value="刺客级"/>
+		<hardware type="425mm自动加农炮 II" slot="hi slot 0"/>
+		<hardware type="425mm自动加农炮 II" slot="hi slot 1"/>
+		<hardware type="425mm自动加农炮 II" slot="hi slot 2"/>
+		<hardware type="425mm自动加农炮 II" slot="hi slot 3"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="480" slot="cargo" type="冰雹 M"/>
+	</fitting>
+	<fitting name="断崖级 fit">
+		<description value=""/>
+		<shipType value="断崖级"/>
+		<hardware type="反制性紧凑型回转稳定器" slot="low slot 0"/>
+		<hardware type="反制性紧凑型回转稳定器" slot="low slot 1"/>
+		<hardware type="反制性紧凑型回转稳定器" slot="low slot 2"/>
+		<hardware type="IFFA紧凑型损伤控制" slot="low slot 3"/>
+		<hardware type="抑制型惯性稳定器 D型" slot="low slot 4"/>
+		<hardware type="冷气持久型50MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="初始紧凑型跃迁扰频器" slot="med slot 2"/>
+		<hardware type="大型恒沸点抑制型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="425mm中型侦查员自动加农炮 I" slot="hi slot 0"/>
+		<hardware type="425mm中型侦查员自动加农炮 I" slot="hi slot 1"/>
+		<hardware type="425mm中型侦查员自动加农炮 I" slot="hi slot 2"/>
+		<hardware type="425mm中型侦查员自动加农炮 I" slot="hi slot 3"/>
+		<hardware type="原型“劲弩”重型攻击导弹发射器I" slot="hi slot 4"/>
+		<hardware type="中型热能护盾强化装置 I" slot="rig slot 0"/>
+		<hardware type="中型动能护盾强化装置 I" slot="rig slot 1"/>
+		<hardware type="中型核心防御力场扩张装置 I" slot="rig slot 2"/>
+		<hardware qty="1" slot="drone bay" type="渗透者 I"/>
+		<hardware qty="3" slot="drone bay" type="渗透者 I"/>
+		<hardware qty="480" slot="cargo" type="共和舰队电磁脉冲弹 M"/>
+		<hardware qty="60" slot="cargo" type="加达里海军雷神重型攻击导弹"/>
+	</fitting>
+	<fitting name="绕杆子">
+		<description value=""/>
+		<shipType value="特里斯坦级"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 0"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 1"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 2"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="初始紧凑型跃迁扰断器" slot="med slot 1"/>
+		<hardware type="小型聚焦集束激光器 I" slot="hi slot 0"/>
+		<hardware type="小型聚焦集束激光器 I" slot="hi slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 0"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 1"/>
+		<hardware type="小型低摩擦喷嘴接口 I" slot="rig slot 2"/>
+		<hardware qty="5" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="2" slot="cargo" type="红外晶体 S"/>
+	</fitting>
+	<fitting name="廉价-挂机">
+		<description value=""/>
+		<shipType value="阿尔格斯级"/>
+		<hardware type="无人机伤害增效装置 I" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 I" slot="low slot 1"/>
+		<hardware type="无人机伤害增效装置 I" slot="low slot 2"/>
+		<hardware type="全方位索敌连接 I" slot="med slot 0"/>
+		<hardware type="中型护盾扩展装置 I" slot="med slot 1"/>
+		<hardware type="中型护盾扩展装置 I" slot="med slot 2"/>
+		<hardware type="双联轻型集束激光器 I" slot="hi slot 0"/>
+		<hardware type="双联轻型集束激光器 I" slot="hi slot 1"/>
+		<hardware qty="3" slot="drone bay" type="大黄蜂 I"/>
+		<hardware qty="2" slot="drone bay" type="瓦尔基里 I"/>
+		<hardware qty="2" slot="cargo" type="标准晶体 S"/>
+	</fitting>
+	<fitting name="促进级 fit copy">
+		<description value=""/>
+		<shipType value="促进级"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 0"/>
+		<hardware type="涡流紧凑型磁场稳定器" slot="low slot 1"/>
+		<hardware type="IFFA紧凑型损伤控制" slot="low slot 2"/>
+		<hardware type="Y-T8紧凑型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 4"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 5"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 6"/>
+		<hardware type="轻型中子疾速炮 II" slot="hi slot 7"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="小型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="640" slot="cargo" type="涅槃 S"/>
+	</fitting>
+	<fitting name="打牵引">
+		<description value=""/>
+		<shipType value="伊米卡斯级"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 0"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 1"/>
+		<hardware type="AE-K紧凑型无人机伤害增效装置" slot="low slot 2"/>
+		<hardware type="延伸探针发射器 I" slot="hi slot 0"/>
+		<hardware type="加特林脉冲激光器 I" slot="hi slot 1"/>
+		<hardware type="小型超空间速度调节器 I" slot="rig slot 0"/>
+		<hardware type="小型超空间速度调节器 I" slot="rig slot 1"/>
+		<hardware type="小型超空间速度调节器 I" slot="rig slot 2"/>
+		<hardware qty="4" slot="drone bay" type="地精灵 II"/>
+		<hardware qty="8" slot="cargo" type="作战扫描探针 I"/>
+		<hardware qty="1" slot="cargo" type="多频晶体 S"/>
+	</fitting>
+	<fitting name="富豪级">
+		<description value=""/>
+		<shipType value="富豪级"/>
+		<hardware type="小型聚焦脉冲激光器 II" slot="hi slot 0"/>
+		<hardware type="小型聚焦脉冲激光器 II" slot="hi slot 1"/>
+		<hardware qty="2" slot="cargo" type="多频晶体 S"/>
+	</fitting>
+	<fitting name="富豪级海军型 fit">
+		<description value=""/>
+		<shipType value="富豪级海军型"/>
+		<hardware type="散热槽 II" slot="low slot 0"/>
+		<hardware type="散热槽 II" slot="low slot 1"/>
+		<hardware type="散热槽 II" slot="low slot 2"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="扫描定位阵列 I" slot="med slot 1"/>
+		<hardware type="扫描精准阵列 I" slot="med slot 2"/>
+		<hardware type="小型聚焦脉冲激光器 II" slot="hi slot 0"/>
+		<hardware type="小型聚焦脉冲激光器 II" slot="hi slot 1"/>
+		<hardware type="小型引力电容器升级 I" slot="rig slot 0"/>
+		<hardware type="小型引力电容器升级 I" slot="rig slot 1"/>
+		<hardware qty="2" slot="cargo" type="多频晶体 S"/>
+	</fitting>
+	<fitting name="打牵引">
+		<description value=""/>
+		<shipType value="阿尔格斯级"/>
+		<hardware type="光子改良型协处理器" slot="low slot 0"/>
+		<hardware type="光子改良型协处理器" slot="low slot 1"/>
+		<hardware type="光子改良型协处理器" slot="low slot 2"/>
+		<hardware type="延伸探针发射器 I" slot="hi slot 0"/>
+		<hardware type="小型聚焦调制型脉冲能量光束 I" slot="hi slot 1"/>
+		<hardware type="小型聚焦调制型脉冲能量光束 I" slot="hi slot 2"/>
+		<hardware type="小型聚焦调制型脉冲能量光束 I" slot="hi slot 3"/>
+		<hardware type="小型聚焦调制型脉冲能量光束 I" slot="hi slot 4"/>
+		<hardware type="小型聚焦调制型脉冲能量光束 I" slot="hi slot 5"/>
+		<hardware type="小型处理器超频组件 I" slot="rig slot 0"/>
+		<hardware type="小型处理器超频组件 I" slot="rig slot 1"/>
+		<hardware qty="2" slot="drone bay" type="战锤 I"/>
+		<hardware qty="3" slot="drone bay" type="地精灵 II"/>
+		<hardware qty="8" slot="cargo" type="作战扫描探针 I"/>
+		<hardware qty="5" slot="cargo" type="多频晶体 S"/>
+	</fitting>
+	<fitting name="强制者级 fit copy">
+		<description value=""/>
+		<shipType value="强制者级"/>
+		<hardware type="散热槽 I" slot="low slot 0"/>
+	</fitting>
+	<fitting name="短剑级 fit">
+		<description value=""/>
+		<shipType value="短剑级"/>
+	</fitting>
+	<fitting name="阿瑞斯级 fit">
+		<description value=""/>
+		<shipType value="阿瑞斯级"/>
+	</fitting>
+	<fitting name="刽子手级 fit">
+		<description value=""/>
+		<shipType value="刽子手级"/>
+		<hardware type="挤压紧凑型散热槽" slot="low slot 0"/>
+		<hardware type="挤压紧凑型散热槽" slot="low slot 1"/>
+		<hardware type="挤压紧凑型散热槽" slot="low slot 2"/>
+		<hardware type="冷气持久型5MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 0"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 1"/>
+		<hardware type="小型聚焦脉冲激光器 I" slot="hi slot 2"/>
+		<hardware qty="3" slot="cargo" type="多频晶体 S"/>
+	</fitting>
+	<fitting name="咒灭级 fit">
+		<description value=""/>
+		<shipType value="咒灭级"/>
+	</fitting>
+	<fitting name="黑鸦级 fit">
+		<description value=""/>
+		<shipType value="黑鸦级"/>
+	</fitting>
+	<fitting name="深渊">
+		<description value=""/>
+		<shipType value="加达里海军霍克比尔级"/>
+		<hardware type="交叉连接紧凑型弹道控制系统" slot="low slot 0"/>
+		<hardware type="专业导航紧凑型导弹制导增强器" slot="low slot 1"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="紧凑型多谱式护盾增强器" slot="med slot 1"/>
+		<hardware type="皮特姆电磁护盾增效器 C型" slot="med slot 2"/>
+		<hardware type="共和舰队中型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 4"/>
+		<hardware type="火箭发射器 II" slot="hi slot 0"/>
+		<hardware type="火箭发射器 II" slot="hi slot 1"/>
+		<hardware type="火箭发射器 II" slot="hi slot 2"/>
+		<hardware type="小型电磁护盾强化装置 II" slot="rig slot 0"/>
+		<hardware type="小型热能护盾强化装置 II" slot="rig slot 1"/>
+		<hardware type="小型核心防御力场扩张装置 II" slot="rig slot 2"/>
+		<hardware qty="150" slot="cargo" type="雷神狂乱火箭"/>
+	</fitting>
+	<fitting name="深渊 copy">
+		<description value=""/>
+		<shipType value="加达里海军霍克比尔级"/>
+		<hardware type="交叉连接紧凑型弹道控制系统" slot="low slot 0"/>
+		<hardware type="交叉连接紧凑型弹道控制系统" slot="low slot 1"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="紧凑型多谱式护盾增强器" slot="med slot 1"/>
+		<hardware type="共和舰队小型护盾扩展装置" slot="med slot 2"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 0"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 1"/>
+		<hardware type="轻型导弹发射器 II" slot="hi slot 2"/>
+		<hardware type="小型电磁护盾强化装置 I" slot="rig slot 0"/>
+		<hardware type="小型处理器超频组件 II" slot="rig slot 1"/>
+		<hardware type="小型热能护盾强化装置 I" slot="rig slot 2"/>
+		<hardware qty="159" slot="cargo" type="雷神愤怒轻型导弹"/>
+	</fitting>
+	<fitting name="打牵引">
+		<description value=""/>
+		<shipType value="富豪级"/>
+		<hardware type="挤压紧凑型散热槽" slot="low slot 0"/>
+		<hardware type="挤压紧凑型散热槽" slot="low slot 1"/>
+		<hardware type="小型聚焦脉冲激光器 II" slot="hi slot 0"/>
+		<hardware type="小型聚焦脉冲激光器 II" slot="hi slot 1"/>
+		<hardware type="延伸探针发射器 I" slot="hi slot 2"/>
+		<hardware type="小型超空间速度调节器 I" slot="rig slot 0"/>
+		<hardware type="小型超空间速度调节器 I" slot="rig slot 1"/>
+		<hardware type="小型超空间速度调节器 I" slot="rig slot 2"/>
+		<hardware qty="2" slot="cargo" type="多频晶体 S"/>
+		<hardware qty="8" slot="cargo" type="作战扫描探针 I"/>
+	</fitting>
+	<fitting name="万王宝座级 fit">
+		<description value=""/>
+		<shipType value="万王宝座级"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 0"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 1"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 2"/>
+		<hardware type="损伤控制 II" slot="low slot 3"/>
+		<hardware type="索敌增强器 II" slot="low slot 4"/>
+		<hardware type="惯性稳定器 II" slot="low slot 5"/>
+		<hardware type="惯性稳定器 II" slot="low slot 6"/>
+		<hardware type="惯性稳定器 II" slot="low slot 7"/>
+		<hardware type="冷气持久型500MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="伊普西隆眩晕视野型跃迁扰频器" slot="med slot 3"/>
+		<hardware type="中子疾速加农炮 II" slot="hi slot 0"/>
+		<hardware type="中子疾速加农炮 II" slot="hi slot 1"/>
+		<hardware type="中子疾速加农炮 II" slot="hi slot 2"/>
+		<hardware type="中子疾速加农炮 II" slot="hi slot 3"/>
+		<hardware type="中子疾速加农炮 II" slot="hi slot 4"/>
+		<hardware type="中子疾速加农炮 II" slot="hi slot 5"/>
+		<hardware type="中子疾速加农炮 II" slot="hi slot 6"/>
+		<hardware type="大型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="大型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="大型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="560" slot="cargo" type="涅槃 L"/>
+	</fitting>
+	<fitting name="塔洛斯级 fit">
+		<description value=""/>
+		<shipType value="塔洛斯级"/>
+	</fitting>
+	<fitting name="布鲁提克斯级海军型 fit">
+		<description value=""/>
+		<shipType value="布鲁提克斯级海军型"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 0"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 1"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 2"/>
+		<hardware type="损伤控制 II" slot="low slot 3"/>
+		<hardware type="惯性稳定器 II" slot="low slot 4"/>
+		<hardware type="惯性稳定器 II" slot="low slot 5"/>
+		<hardware type="惯性稳定器 II" slot="low slot 6"/>
+		<hardware type="冷气持久型50MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="伊普西隆眩晕视野型跃迁扰频器" slot="med slot 3"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 4"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 5"/>
+		<hardware type="中型盗墓者紧凑型掠能器" slot="hi slot 6"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="480" slot="cargo" type="涅槃 M"/>
+	</fitting>
+	<fitting name="pvp">
+		<description value=""/>
+		<shipType value="送葬者级海军型"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 0"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 1"/>
+		<hardware type="磁性力场稳定器 II" slot="low slot 2"/>
+		<hardware type="损伤控制 II" slot="low slot 3"/>
+		<hardware type="惯性稳定器 II" slot="low slot 4"/>
+		<hardware type="惯性稳定器 II" slot="low slot 5"/>
+		<hardware type="冷气持久型50MN微型跃迁推进器" slot="med slot 0"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 1"/>
+		<hardware type="骤停紧凑型停滞缠绕光束" slot="med slot 2"/>
+		<hardware type="伊普西隆眩晕视野型跃迁扰频器" slot="med slot 3"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 0"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 1"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 2"/>
+		<hardware type="重型中子疾速炮 II" slot="hi slot 3"/>
+		<hardware type="中型盗墓者紧凑型掠能器" slot="hi slot 4"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 0"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 1"/>
+		<hardware type="中型横贯舱壁 I" slot="rig slot 2"/>
+		<hardware qty="3" slot="drone bay" type="侍僧 II"/>
+		<hardware qty="2" slot="drone bay" type="武士 II"/>
+		<hardware qty="320" slot="cargo" type="涅槃 M"/>
+	</fitting>
+	<fitting name="高安死亡">
+		<description value=""/>
+		<shipType value="伊米卡斯级"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 1"/>
+		<hardware type="护盾能源继电器 II" slot="low slot 2"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="多谱式护盾增强器 II" slot="med slot 1"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 2"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="核心探针发射器 I" slot="hi slot 0"/>
+		<hardware type="小型电磁护盾强化装置 I" slot="rig slot 0"/>
+		<hardware type="小型热能护盾强化装置 I" slot="rig slot 1"/>
+		<hardware type="小型核心防御力场扩张装置 I" slot="rig slot 2"/>
+		<hardware qty="4" slot="drone bay" type="大黄蜂 II"/>
+		<hardware qty="4" slot="drone bay" type="大黄蜂 II"/>
+		<hardware qty="8" slot="cargo" type="姐妹会核心扫描探针"/>
+	</fitting>
+	<fitting name="高安死亡">
+		<description value=""/>
+		<shipType value="富豪级海军型"/>
+		<hardware type="散热槽 II" slot="low slot 0"/>
+		<hardware type="散热槽 II" slot="low slot 1"/>
+		<hardware type="散热槽 II" slot="low slot 2"/>
+		<hardware type="小型装甲维修器 II" slot="low slot 3"/>
+		<hardware type="多谱式电压薄膜 II" slot="low slot 4"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="电容回充器 II" slot="med slot 1"/>
+		<hardware type="索敌计算机 II" slot="med slot 2"/>
+		<hardware type="小型聚焦集束激光器 II" slot="hi slot 0"/>
+		<hardware type="小型聚焦集束激光器 II" slot="hi slot 1"/>
+		<hardware type="核心探针发射器 I" slot="hi slot 2"/>
+		<hardware type="小型电容器控制电路 I" slot="rig slot 0"/>
+		<hardware type="小型电容器控制电路 I" slot="rig slot 1"/>
+		<hardware type="小型电容器控制电路 I" slot="rig slot 2"/>
+		<hardware qty="1" slot="cargo" type="跟踪速度修正脚本"/>
+		<hardware qty="2" slot="cargo" type="多频晶体 S"/>
+		<hardware qty="8" slot="cargo" type="姐妹会核心扫描探针"/>
+	</fitting>
+	<fitting name="高安死亡">
+		<description value=""/>
+		<shipType value="伊米卡斯级海军型"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 0"/>
+		<hardware type="无人机伤害增效装置 II" slot="low slot 1"/>
+		<hardware type="全方位索敌增强器 II" slot="low slot 2"/>
+		<hardware type="护盾能源继电器 II" slot="low slot 3"/>
+		<hardware type="单元推进持久型1MN加力燃烧器" slot="med slot 0"/>
+		<hardware type="紧凑型多谱式护盾增强器" slot="med slot 1"/>
+		<hardware type="小型恒沸点抑制型护盾扩展装置" slot="med slot 2"/>
+		<hardware type="中型恒沸点抑制型护盾扩展装置" slot="med slot 3"/>
+		<hardware type="核心探针发射器 I" slot="hi slot 0"/>
+		<hardware type="150mm尖端型高斯炮 I" slot="hi slot 1"/>
+		<hardware type="小型电磁护盾强化装置 I" slot="rig slot 0"/>
+		<hardware type="小型热能护盾强化装置 I" slot="rig slot 1"/>
+		<hardware type="小型核心防御力场扩张装置 I" slot="rig slot 2"/>
+		<hardware qty="4" slot="drone bay" type="大黄蜂 II"/>
+		<hardware qty="8" slot="cargo" type="姐妹会核心扫描探针"/>
+		<hardware qty="40" slot="cargo" type="铁质轨道弹 S"/>
+	</fitting>
+	<fitting name="高安死亡">
+		<description value=""/>
+		<shipType value="苍鹭级海军型"/>
+	</fitting>
+</fittings>
