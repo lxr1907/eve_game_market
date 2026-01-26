@@ -526,11 +526,11 @@ const createGameScene = (scene, levelId, maneuver, distance) => {
   
   // 初始化游戏时间
   console.log('Creating game scene, time object:', scene.time);
-  if (scene.time) {
+  if (scene.time && scene.time.now > 0) {
     scene.gameTime = scene.time.now;
-    console.log('Game time initialized:', scene.gameTime);
+    console.log('Game time initialized with Phaser time:', scene.gameTime);
   } else {
-    console.log('WARNING: scene.time is undefined!');
+    console.log('WARNING: scene.time is undefined or time.now is 0, using Date.now()');
     scene.gameTime = Date.now(); // 作为备用方案
   }
   // 初始化倒计时（100秒）
@@ -760,7 +760,7 @@ const updateGameScene = function() {
   console.log('Game object properties:', Object.keys(this));
   
   // 尝试使用Date.now()作为备用方案
-  if (this.gameTime) {
+  if (this.gameTime !== undefined) {
     const currentTime = this.time?.now || Date.now();
     const elapsedTime = currentTime - this.gameTime;
     const remainingTime = Math.max(0, 100 - Math.floor(elapsedTime / 1000));
@@ -779,18 +779,21 @@ const updateGameScene = function() {
   }
   
   // 检查游戏时长
-  if (this.gameTime && this.time.now - this.gameTime > 100000) {
-    // 超过100秒，玩家失败
-    if (this.player) {
-      const x = this.player.x;
-      const y = this.player.y;
-      this.player.destroy();
-      createExplosion(this, x, y);
+  if (this.gameTime !== undefined) {
+    const currentTime = this.time?.now || Date.now();
+    if (currentTime - this.gameTime > 100000) {
+      // 超过100秒，玩家失败
+      if (this.player) {
+        const x = this.player.x;
+        const y = this.player.y;
+        this.player.destroy();
+        createExplosion(this, x, y);
+      }
+      this.time.delayedCall(2000, () => {
+        showFailureMessage(this.levelId);
+      });
+      return;
     }
-    this.time.delayedCall(2000, () => {
-      showFailureMessage(this.levelId);
-    });
-    return;
   }
   
   // 检查玩家是否存在
