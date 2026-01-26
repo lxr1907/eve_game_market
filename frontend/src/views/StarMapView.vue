@@ -14,6 +14,13 @@
       <option value="active">活跃</option>
       <option value="all">全部</option>
     </select>
+    <label for="securityFilter">安全状态：</label>
+    <select id="securityFilter" v-model="securityFilter" @change="loadData">
+      <option value="all">全部</option>
+      <option value="highsec">高安 (≥0.5)</option>
+      <option value="lowsec">低安 (0-0.5)</option>
+      <option value="nullsec">00 (≤0)</option>
+    </select>
     <button @click="resetView">重置视图</button>
   </div>
   </div>
@@ -27,6 +34,7 @@ import { starMapApi } from '../services/api';
 let chart = null;
 const selectedDatasource = ref('serenity');
 const systemFilter = ref('active'); // 默认选择活跃
+const securityFilter = ref('all'); // 默认选择全部安全状态
 
 // 初始化图表
 const initChart = () => {
@@ -90,7 +98,7 @@ const initChart = () => {
 // 加载数据
 const loadData = async () => {
   try {
-    const data = await starMapApi.getStarMapData(selectedDatasource.value, systemFilter.value);
+    const data = await starMapApi.getStarMapData(selectedDatasource.value, systemFilter.value, securityFilter.value);
     updateChart(data);
   } catch (error) {
     console.error('Failed to load star map data:', error);
@@ -113,7 +121,9 @@ const updateChart = (data) => {
     const securityStatus = node.security_status || 0;
     let color;
     
-    if (securityStatus >= 0.5) {
+    if (securityStatus >= 0.7) {
+      color = '#1890ff'; // 蓝色
+    } else if (securityStatus >= 0.5) {
       color = '#52c41a'; // 绿色
     } else if (securityStatus > 0) {
       color = '#fa8c16'; // 橘色
