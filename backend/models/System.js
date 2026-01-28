@@ -24,6 +24,8 @@ class System {
     await this.addStargatesField();
     // 增量添加datasource字段
     await this.addDatasourceField();
+    // 增量添加distance_to_jita字段
+    await this.addDistanceToJitaField();
   }
   
   // 增量添加stargates字段，确保多次执行不报错
@@ -96,6 +98,41 @@ class System {
     }
   }
 
+  // 增量添加distance_to_jita字段，确保多次执行不报错
+  static async addDistanceToJitaField() {
+    try {
+      // 检查字段是否存在
+      const checkQuery = `
+        SELECT column_name
+        FROM information_schema.COLUMNS
+        WHERE table_name = 'systems'
+        AND column_name = 'distance_to_jita'
+        AND table_schema = DATABASE()
+      `;
+      
+      const [columns] = await pool.execute(checkQuery);
+      
+      // 如果字段不存在，则添加
+      if (columns.length === 0) {
+        const addFieldQuery = `ALTER TABLE systems ADD COLUMN distance_to_jita INT`;
+        await pool.execute(addFieldQuery);
+        console.log('Successfully added distance_to_jita column to systems table');
+        return true;
+      } else {
+        console.log('distance_to_jita column already exists in systems table');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error adding distance_to_jita column:', error.message);
+      // 如果是因为字段已经存在导致的错误，忽略它
+      if (!error.message.includes('Duplicate column name')) {
+        throw error;
+      }
+      console.log('distance_to_jita column already exists in systems table (error caught)');
+      return false;
+    }
+  }
+
   static async insertOrUpdate(systemData) {
     // 只包含明确提供的字段，避免将现有数据覆盖为null
     const fields = [];
@@ -158,6 +195,12 @@ class System {
       fields.push('datasource');
       values.push(systemData.datasource || null);
       updateClauses.push('datasource = VALUES(datasource)');
+    }
+    
+    if (systemData.distance_to_jita !== undefined) {
+      fields.push('distance_to_jita');
+      values.push(systemData.distance_to_jita || null);
+      updateClauses.push('distance_to_jita = VALUES(distance_to_jita)');
     }
     
     // 添加updated_at字段
@@ -301,6 +344,7 @@ class System {
       if (system.security_status !== undefined) allFields.add('security_status');
       if (system.stargates !== undefined) allFields.add('stargates');
       if (system.datasource !== undefined) allFields.add('datasource');
+      if (system.distance_to_jita !== undefined) allFields.add('distance_to_jita');
     });
     
     // 转换为数组并确保system_id在首位
@@ -331,6 +375,8 @@ class System {
           case 'stargates':
             return '?';
           case 'datasource':
+            return '?';
+          case 'distance_to_jita':
             return '?';
           default:
             return 'null';
@@ -371,9 +417,12 @@ class System {
           case 'datasource':
             params.push(system.datasource || null);
             break;
+          case 'distance_to_jita':
+            params.push(system.distance_to_jita || null);
+            break;
           default:
             params.push(null);
-        }
+            break;}
       });
     });
     

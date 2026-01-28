@@ -4,6 +4,7 @@ const onlinePlayerStatsScheduler = require('./utils/onlinePlayerStatsScheduler')
 const systemKillScheduler = require('./utils/systemKillScheduler');
 const systemDetailsScheduler = require('./utils/systemDetailsScheduler');
 const stargateScheduler = require('./utils/stargateScheduler');
+const systemDistanceScheduler = require('./utils/systemDistanceScheduler');
 
 
 console.log('Starting server...');
@@ -28,6 +29,9 @@ const server = app.listen(PORT, '127.0.0.1', () => {
   
   // Start the stargate sync scheduler
   stargateScheduler.startScheduler();
+  
+  // Start the system distance to Jita scheduler
+  systemDistanceScheduler.startScheduler();
 });
 
 server.on('error', (err) => {

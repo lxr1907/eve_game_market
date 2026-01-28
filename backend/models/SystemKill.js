@@ -152,10 +152,7 @@ class SystemKill {
     let query = `
       SELECT sk.system_id, 
              ${avgSelect},
-             s.name AS system_name,
-             ROUND(s.security_status, 2) AS security_status,
-             c.name AS constellation_name,
-             r.name AS region_name
+             ${groupBy ? 'MAX(s.name) AS system_name, MAX(ROUND(s.security_status, 2)) AS security_status, MAX(c.name) AS constellation_name, MAX(r.name) AS region_name' : 's.name AS system_name, ROUND(s.security_status, 2) AS security_status, c.name AS constellation_name, r.name AS region_name'}
       FROM ${fromClause}
       LEFT JOIN systems s ON sk.system_id = s.system_id AND sk.datasource = s.datasource
       LEFT JOIN constellations c ON s.constellation_id = c.constellation_id
@@ -183,17 +180,22 @@ class SystemKill {
     }
     
     // 构建排序语句，注意表别名的使用
-    let sortTableAlias = safeSortBy === 'system_name' || safeSortBy === 'security_status' ? 's' : 'sk';
+    let sortField = safeSortBy;
     
     // 对于时间范围查询（使用GROUP BY），确保排序字段是聚合函数或GROUP BY中的列
     if (groupBy) {
-      // 如果排序字段是聚合列（npc_kills, pod_kills, ship_kills），不需要表别名
-      if (['npc_kills', 'pod_kills', 'ship_kills'].includes(safeSortBy)) {
-        sortTableAlias = '';
+      // 对于system_name和security_status，由于使用了MAX()聚合函数，不需要表别名
+      if (safeSortBy === 'system_name' || safeSortBy === 'security_status') {
+        sortField = safeSortBy; // 使用别名，因为我们在SELECT中已经定义了别名
+      } else if (!['npc_kills', 'pod_kills', 'ship_kills', 'system_id'].includes(safeSortBy)) {
+        sortField = 'ship_kills'; // 默认排序字段
       }
+    } else {
+      // 非GROUP BY查询，使用表别名
+      const sortTableAlias = safeSortBy === 'system_name' || safeSortBy === 'security_status' ? 's' : 'sk';
+      sortField = `${sortTableAlias}.${safeSortBy}`;
     }
     
-    const sortField = sortTableAlias ? `${sortTableAlias}.${safeSortBy}` : safeSortBy;
     query += ` ORDER BY ${sortField} ${safeSortOrder.toUpperCase()} LIMIT ${limitInt} OFFSET ${offset}`;
     
     const [rows] = await pool.execute(query, params);
