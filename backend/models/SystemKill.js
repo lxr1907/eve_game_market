@@ -110,7 +110,7 @@ class SystemKill {
     const offset = (pageInt - 1) * limitInt;
     
     // 验证排序字段，确保只允许安全的字段排序
-    const validSortFields = ['system_id', 'system_name', 'npc_kills', 'pod_kills', 'ship_kills', 'timestamp', 'security_status'];
+    const validSortFields = ['system_id', 'system_name', 'npc_kills', 'pod_kills', 'ship_kills', 'timestamp', 'security_status', 'distance_to_jita'];
     const safeSortBy = validSortFields.includes(sortBy) ? sortBy : 'ship_kills';
     // 转换排序方向为MySQL支持的格式（ASC或DESC）
     const safeSortOrder = sortOrder.toLowerCase().includes('desc') ? 'DESC' : 'ASC';
@@ -152,7 +152,7 @@ class SystemKill {
     let query = `
       SELECT sk.system_id, 
              ${avgSelect},
-             ${groupBy ? 'MAX(s.name) AS system_name, MAX(ROUND(s.security_status, 2)) AS security_status, MAX(c.name) AS constellation_name, MAX(r.name) AS region_name' : 's.name AS system_name, ROUND(s.security_status, 2) AS security_status, c.name AS constellation_name, r.name AS region_name'}
+             ${groupBy ? 'MAX(s.name) AS system_name, MAX(ROUND(s.security_status, 2)) AS security_status, MAX(s.distance_to_jita) AS distance_to_jita, MAX(c.name) AS constellation_name, MAX(r.name) AS region_name' : 's.name AS system_name, ROUND(s.security_status, 2) AS security_status, s.distance_to_jita, c.name AS constellation_name, r.name AS region_name'}
       FROM ${fromClause}
       LEFT JOIN systems s ON sk.system_id = s.system_id AND sk.datasource = s.datasource
       LEFT JOIN constellations c ON s.constellation_id = c.constellation_id
@@ -163,6 +163,8 @@ class SystemKill {
     // 添加安全状态过滤
     if (securityStatus === 'high') {
       query += ` AND s.security_status >= 0.5`;
+    } else if (securityStatus === 'veryhigh') {
+      query += ` AND s.security_status >= 0.7`;
     } else if (securityStatus === 'low') {
       query += ` AND s.security_status > 0 AND s.security_status < 0.5`;
     } else if (securityStatus === 'nullsec') {
@@ -184,15 +186,15 @@ class SystemKill {
     
     // 对于时间范围查询（使用GROUP BY），确保排序字段是聚合函数或GROUP BY中的列
     if (groupBy) {
-      // 对于system_name和security_status，由于使用了MAX()聚合函数，不需要表别名
-      if (safeSortBy === 'system_name' || safeSortBy === 'security_status') {
+      // 对于system_name、security_status和distance_to_jita，由于使用了MAX()聚合函数，不需要表别名
+      if (safeSortBy === 'system_name' || safeSortBy === 'security_status' || safeSortBy === 'distance_to_jita') {
         sortField = safeSortBy; // 使用别名，因为我们在SELECT中已经定义了别名
       } else if (!['npc_kills', 'pod_kills', 'ship_kills', 'system_id'].includes(safeSortBy)) {
         sortField = 'ship_kills'; // 默认排序字段
       }
     } else {
       // 非GROUP BY查询，使用表别名
-      const sortTableAlias = safeSortBy === 'system_name' || safeSortBy === 'security_status' ? 's' : 'sk';
+      const sortTableAlias = safeSortBy === 'system_name' || safeSortBy === 'security_status' || safeSortBy === 'distance_to_jita' ? 's' : 'sk';
       sortField = `${sortTableAlias}.${safeSortBy}`;
     }
     
@@ -242,6 +244,8 @@ class SystemKill {
     // 添加安全状态过滤
     if (securityStatus === 'high') {
       query += ` AND s.security_status >= 0.5`;
+    } else if (securityStatus === 'veryhigh') {
+      query += ` AND s.security_status >= 0.7`;
     } else if (securityStatus === 'low') {
       query += ` AND s.security_status > 0 AND s.security_status < 0.5`;
     } else if (securityStatus === 'nullsec') {

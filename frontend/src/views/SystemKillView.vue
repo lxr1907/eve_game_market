@@ -32,6 +32,7 @@
               clearable
             >
               <el-option label="高安 (>0.5)" value="high" />
+              <el-option label="高高安 (>=0.7)" value="veryhigh" />
               <el-option label="低安 (0~0.5)" value="low" />
               <el-option label="00 (<=0)" value="nullsec" />
             </el-select>
@@ -74,6 +75,14 @@
               </template>
               <template #default="scope">
                 {{ scope.row.security_status !== null ? scope.row.security_status.toFixed(2) : '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="distance_to_jita" label="到吉他距离" width="120" sortable="custom">
+              <template #header>
+                <span>到吉他距离 <el-icon v-if="sortBy === 'distance_to_jita'" :class="{ 'sort-desc': sortOrder === 'descending', 'sort-asc': sortOrder === 'ascending' }"><ArrowDown /></el-icon></span>
+              </template>
+              <template #default="scope">
+                {{ scope.row.distance_to_jita !== null ? scope.row.distance_to_jita : '-' }}
               </template>
             </el-table-column>
             <el-table-column prop="constellation_name" label="星座" min-width="150" />

@@ -7,14 +7,14 @@ const JITA_SYSTEM_ID = 30000142;
 // 当前处理的系统索引
 let currentSystemIndex = 0;
 
-// 获取系统列表，按system_id排序
+// 获取系统列表，按安全等级从大到小排序，只选择未同步距离的系统
 async function getSystemList(datasource = 'serenity') {
   try {
     const query = `
       SELECT system_id 
       FROM systems 
-      WHERE datasource = ? 
-      ORDER BY system_id
+      WHERE datasource = ? AND (distance_to_jita IS NULL OR distance_to_jita = '') 
+      ORDER BY security_status DESC, system_id
     `;
     const [rows] = await pool.execute(query, [datasource]);
     return rows.map(row => row.system_id);
@@ -99,7 +99,7 @@ async function startDistanceSyncForAllDatasources() {
       // 同步当前数据源的一批系统
       await syncBatchSystems(systemList, 2, datasource);
     } else {
-      console.log(`No systems found for datasource: ${datasource}`);
+      console.log(`No systems need distance sync for datasource: ${datasource}`);
     }
     
     // 添加小延迟，避免并发请求过多
