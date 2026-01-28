@@ -51,6 +51,20 @@ async function syncSystemDistance(systemId, datasource = 'serenity') {
     return true;
   } catch (error) {
     console.error(`Error syncing distance for system ${systemId}:`, error.message);
+    // 检查是否是404错误，如果是，则将距离设置为100
+    if (error.response && error.response.status === 404) {
+      try {
+        await pool.execute(
+          'UPDATE systems SET distance_to_jita = 100 WHERE system_id = ? AND datasource = ?',
+          [systemId, datasource]
+        );
+        console.log(`Updated distance for system ${systemId} to Jita: 100 (404 error)`);
+        return true;
+      } catch (dbError) {
+        console.error(`Error updating distance for system ${systemId} (404 error):`, dbError.message);
+        return false;
+      }
+    }
     return false;
   }
 }
