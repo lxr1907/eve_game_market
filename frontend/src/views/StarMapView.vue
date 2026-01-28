@@ -237,7 +237,7 @@ const handleSearch = () => {
   
   // 模糊搜索匹配的节点
   const matchedNodes = allNodes.filter(node => {
-    const name = (node.name || '').toLowerCase();
+    const name = String(node.name || '').toLowerCase();
     return name.includes(query);
   });
   
