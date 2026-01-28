@@ -64,6 +64,9 @@ async function syncBatchSystems(systemList, batchSize = 2, datasource = 'serenit
       return;
     }
 
+    // 重置索引，确保每次都从安全等级最高的系统开始
+    currentSystemIndex = 0;
+
     // 获取当前批次的系统
     const batchSystems = [];
     for (let i = 0; i < batchSize && currentSystemIndex < systemList.length; i++) {
