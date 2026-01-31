@@ -29,11 +29,6 @@ async function syncSystemDistance(systemId, datasource = 'serenity') {
   try {
     // 如果是吉他系统本身，距离为0
     if (systemId === JITA_SYSTEM_ID) {
-      await pool.execute(
-        'UPDATE systems SET distance_to_jita = 0 WHERE system_id = ? AND datasource = ?',
-        [systemId, datasource]
-      );
-      console.log(`Updated distance for Jita system (${systemId}) to 0`);
       return true;
     }
 
