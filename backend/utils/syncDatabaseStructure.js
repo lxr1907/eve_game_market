@@ -79,11 +79,11 @@ async function syncDatabaseStructure() {
         volume_remaining INT,
         volume_total INT,
         minimum_volume INT,
-        \`range\` VARCHAR(255),
-        issued DATETIME,
+        order_range VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+        location_id BIGINT,
         duration INT,
-        station_id BIGINT,
-        system_id INT,
+        is_active BOOLEAN,
+        datasource VARCHAR(20) NOT NULL DEFAULT 'serenity',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
