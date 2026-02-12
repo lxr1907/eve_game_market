@@ -156,8 +156,8 @@ async function syncDatabaseStructure() {
         isk_cost BIGINT NOT NULL,
         sell_price DECIMAL(20,6) NOT NULL,
         quantity INT NOT NULL,
-        profit DECIMAL(20,6) NOT NULL,
-        profit_rate DECIMAL(10,2) NOT NULL,
+        total_profit DECIMAL(20,6) NOT NULL,
+        profit_per_lp DECIMAL(20,6) NOT NULL,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         datasource VARCHAR(20) NOT NULL DEFAULT "serenity"
