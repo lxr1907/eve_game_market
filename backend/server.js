@@ -24,14 +24,14 @@ const server = app.listen(PORT, '127.0.0.1', () => {
   // Start the system kills scheduler
   systemKillScheduler.startScheduler();
   
-  // Start the system details scheduler
-  systemDetailsScheduler.startScheduler();
+  // // Start the system details scheduler
+  // systemDetailsScheduler.startScheduler();
   
-  // Start the stargate sync scheduler
-  stargateScheduler.startScheduler();
+  // // Start the stargate sync scheduler
+  // stargateScheduler.startScheduler();
   
-  // Start the system distance to Jita scheduler
-  systemDistanceScheduler.startScheduler();
+  // // Start the system distance to Jita scheduler
+  // systemDistanceScheduler.startScheduler();
 });
 
 server.on('error', (err) => {
