@@ -5,6 +5,7 @@ const systemKillScheduler = require('./utils/systemKillScheduler');
 const systemDetailsScheduler = require('./utils/systemDetailsScheduler');
 const stargateScheduler = require('./utils/stargateScheduler');
 const systemDistanceScheduler = require('./utils/systemDistanceScheduler');
+const loyaltyProfitScheduler = require('./utils/loyaltyProfitScheduler');
 
 
 console.log('Starting server...');
@@ -32,6 +33,9 @@ const server = app.listen(PORT, '127.0.0.1', () => {
   
   // // Start the system distance to Jita scheduler
   // systemDistanceScheduler.startScheduler();
+  
+  // Start the LP profit scheduler
+  loyaltyProfitScheduler.startLoyaltyProfitScheduler();
 });
 
 server.on('error', (err) => {
