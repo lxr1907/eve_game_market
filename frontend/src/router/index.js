@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
 import TypeListView from '../views/TypeListView.vue'
 import TypeDetailView from '../views/TypeDetailView.vue'
 import RegionListView from '../views/RegionListView.vue'
@@ -19,7 +18,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView
+      component: OnlinePlayerStatsView
     },
     {
       path: '/types',
