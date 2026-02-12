@@ -34,7 +34,7 @@ class SystemController {
           // 只插入ID，其他字段可以为空
           for (const systemId of systemIds) {
             try {
-              await System.insertOrUpdate({ system_id: systemId });
+              await System.insertOrUpdate({ system_id: systemId, datasource: 'infinity' });
               insertedIds++;
             } catch (dbError) {
               console.error(`Error inserting system ID ${systemId} to database:`, dbError.message);
@@ -104,7 +104,8 @@ class SystemController {
                     name: systemDetails.name || '',
                     position: systemDetails.position,
                     security_status: systemDetails.security_status,
-                    stargates: systemDetails.stargates
+                    stargates: systemDetails.stargates,
+                    datasource: 'infinity'
                   });
                   
                   updatedSystems++;
@@ -165,7 +166,8 @@ class SystemController {
                 name: system.name || '',
                 position: system.position,
                 security_status: system.security_status,
-                stargates: system.stargates
+                stargates: system.stargates,
+                datasource: 'infinity'
               });
               insertedSystems++;
             } catch (dbError) {
