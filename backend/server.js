@@ -21,8 +21,8 @@ const server = app.listen(PORT, '127.0.0.1', () => {
   // Start the online player stats scheduler
   onlinePlayerStatsScheduler.startScheduler();
   
-  // Start the system kills scheduler
-  systemKillScheduler.startScheduler();
+  // // Start the system kills scheduler
+  // systemKillScheduler.startScheduler();
   
   // // Start the system details scheduler
   // systemDetailsScheduler.startScheduler();
