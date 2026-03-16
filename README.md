@@ -194,10 +194,32 @@ EVE_API_LANGUAGE=zh
 EVE_API_COMPATIBILITY_DATE=2025-11-06
 ```
 
-#### 初始化数据库
+#### 初始化数据库（重要：启动服务前必须执行）
+
+在启动后端服务之前，必须先初始化数据库表结构：
+
 ```bash
+# 初始化数据库表结构（首次运行必须执行）
 npm run init-db
 ```
+
+此命令会创建所有必需的数据表，包括：
+- `types` - 物品类型数据表
+- `regions` - 区域数据表
+- `systems` - 星系数据表
+- `orders` - 市场订单表
+- `loyalty_offers` - 忠诚点兑换物品表
+- `loyalty_type_lp_isk` - LP/ISK 计算数据表
+- `online_player_stats` - 在线玩家统计表
+- `system_kills` - 星系击杀统计表
+- `stargates` - 星门数据表
+- `categories` - 分类数据表
+- `groups` - 组别数据表
+
+**注意**：
+- 确保 MySQL 服务已启动且数据库 `eve` 已创建
+- 确保 `.env` 中的数据库配置正确
+- 如果表结构有更新，可以使用 `npm run sync-db` 同步表结构
 
 #### 启动后端服务
 ```bash
