@@ -139,6 +139,21 @@ class LoyaltyTypeLpIsk {
     }
   }
 
+  // 删除更新时间在5天之前的数据
+  static async deleteOldData(days = 5) {
+    const query = `DELETE FROM loyalty_type_lp_isk WHERE updated_at < DATE_SUB(NOW(), INTERVAL ? DAY)`;
+    try {
+      const [result] = await pool.execute(query, [days]);
+      if (result.affectedRows > 0) {
+        console.log(`Deleted ${result.affectedRows} LP profit records older than ${days} days.`);
+      }
+      return true;
+    } catch (error) {
+      console.error(`Error deleting LP profit data older than ${days} days:`, error);
+      return false;
+    }
+  }
+
   // 清空表数据
   static async truncate() {
     const query = `TRUNCATE TABLE loyalty_type_lp_isk`;
