@@ -389,8 +389,8 @@ class LoyaltyController {
           const profitPerLp = offer.lp_cost > 0 ? totalProfit / offer.lp_cost : 0;
           
           // 根据不同服务器设置不同的存储门槛
-          // 欧服(tranquility)每LP收益560以上，其他服务器900以上
-          const profitThreshold = datasource.toLowerCase() === 'tranquility' ? 560 : 900;
+          // 晨曦/无限服务器每LP收益1300以上，欧服(tranquility)560以上
+          const profitThreshold = datasource.toLowerCase() === 'tranquility' ? 560 : 1300;
           if (profitPerLp > profitThreshold) {
             // 准备数据
             const lpIskData = {
