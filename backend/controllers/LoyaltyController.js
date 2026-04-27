@@ -391,7 +391,10 @@ class LoyaltyController {
           // 根据不同服务器设置不同的存储门槛
           // 晨曦/无限服务器每LP收益1300以上，欧服(tranquility)560以上
           const profitThreshold = datasource.toLowerCase() === 'tranquility' ? 560 : 1300;
-          if (profitPerLp > profitThreshold) {
+          // 总利润门槛：1000W
+          const minTotalProfit = 10000000;
+
+          if (profitPerLp > profitThreshold && totalProfit >= minTotalProfit) {
             // 准备数据
             const lpIskData = {
               type_id: offer.type_id,
@@ -411,7 +414,11 @@ class LoyaltyController {
               savedOffers++;
             }
           } else {
-            console.log(`Skipping offer for type ${offer.type_id} - profit per LP (${profitPerLp.toFixed(2)}) is less than threshold (${profitThreshold})`);
+            if (profitPerLp <= profitThreshold) {
+              console.log(`Skipping offer for type ${offer.type_id} - profit per LP (${profitPerLp.toFixed(2)}) is less than threshold (${profitThreshold})`);
+            } else {
+              console.log(`Skipping offer for type ${offer.type_id} - total profit (${totalProfit.toFixed(2)}) is less than 10M threshold`);
+            }
           }
         }
         
