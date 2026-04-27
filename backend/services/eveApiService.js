@@ -3,11 +3,14 @@ require('dotenv').config();
 
 class EveApiService {
   constructor() {
+    const apiBaseUrl = (process.env.EVE_API_BASE_URL || '').replace(/\/$/, '');
+    const apiVersion = (process.env.EVE_API_VERSION || 'latest').replace(/^\//, '');
+    
     this.client = axios.create({
-      baseURL: `${process.env.EVE_API_BASE_URL}/${process.env.EVE_API_VERSION}`,
+      baseURL: `${apiBaseUrl}/${apiVersion}`,
       headers: {
-        'Accept-Language': process.env.EVE_API_LANGUAGE,
-        'X-Compatibility-Date': process.env.EVE_API_COMPATIBILITY_DATE
+        'Accept-Language': process.env.EVE_API_LANGUAGE || 'zh',
+        'X-Compatibility-Date': process.env.EVE_API_COMPATIBILITY_DATE || '2025-11-06'
       }
     });
     // 节流控制：跟踪上次请求时间
@@ -335,20 +338,21 @@ class EveApiService {
     try {
       // 欧服使用不同的API端点
       if (datasource === 'tranquility') {
-        const response = await axios.get('https://esi.evetech.net/status', {
+        const response = await axios.get('https://esi.evetech.net/latest/status/', {
+          params: {
+            datasource: 'tranquility'
+          },
           headers: {
             'Accept': 'application/json',
-            'Accept-Language': '',
-            'If-None-Match': '',
-            'X-Compatibility-Date': '2025-12-16',
-            'X-Tenant': ''
+            'X-Compatibility-Date': '2025-11-06'
           },
           timeout: 5000 // 设置5秒超时
         });
         return response.data;
       } else {
         // 其他服务器使用默认的API客户端配置
-        const response = await this.client.get(`/status/`, {
+        // 根据用户要求，使用 GET 方式调用 https://ali-esi.evepc.163.com/latest/status
+        const response = await this.client.get('/status', {
           params: {
             datasource: datasource
           },
