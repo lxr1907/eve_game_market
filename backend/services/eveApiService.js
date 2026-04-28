@@ -860,7 +860,6 @@ class EveApiService {
       // 检查是否是页码超出范围的错误
       if ((error.response?.status === 500 || error.response?.status === 404) && 
           error.response?.data?.error?.includes('page does not exist')) {
-        console.log(`Page ${page} does not exist for orders: regionId=${regionId}, typeId=${typeId}, stopping pagination`);
         return []; // 返回空数组表示没有更多数据
       }
       

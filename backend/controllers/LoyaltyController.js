@@ -361,8 +361,17 @@ class LoyaltyController {
           // 先删除该区域和类型的现有订单数据（如果有）
           await Order.deleteByRegionAndType(regionId, offer.type_id, datasource);
           
-          // 定义处理订单数据的回调函数
-          const processOrders = async (orders, page) => {
+          // 对于 LP 收益计算，只获取第一页买单通常已经足够（1000条数据足以包含最高出价）
+          // 这样可以避免不必要的翻页尝试和“Page 2 does not exist”的冗余日志
+          const orders = await eveApiService.getMarketOrdersByRegionAndType(
+            regionId, 
+            offer.type_id, 
+            'buy', 
+            1, // page 1
+            datasource
+          );
+
+          if (orders && orders.length > 0) {
             // 为每个订单添加region_id和type_id
             const ordersWithRegionAndType = orders.map(order => ({
               ...order,
@@ -372,17 +381,7 @@ class LoyaltyController {
             
             // 批量插入或更新数据库
             await Order.insertOrUpdate(ordersWithRegionAndType, datasource);
-          };
-
-          // 获取买入订单
-          await eveApiService.getAllMarketOrdersByRegionAndType(
-            regionId, 
-            offer.type_id, 
-            'buy', 
-            1, // startPage
-            processOrders,
-            datasource
-          );
+          }
           
           syncedOffers++;
         }
