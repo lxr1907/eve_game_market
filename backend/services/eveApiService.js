@@ -196,12 +196,10 @@ class EveApiService {
 
   // 获取特定公司的忠诚度商店商品
   async getLoyaltyStoreOffers(corporationId, datasource = 'serenity', retries = 3) {
-    // 节流控制：确保每1秒只请求1次
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
     if (timeSinceLastRequest < this.throttleInterval) {
       const waitTime = this.throttleInterval - timeSinceLastRequest;
-      console.log(`Throttling request for corporation ${corporationId} loyalty offers, waiting ${waitTime}ms...`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
     this.lastRequestTime = Date.now();
@@ -211,7 +209,6 @@ class EveApiService {
       // 欧服使用不同的API端点
       if (datasource.toLowerCase() === 'tranquility') {
         const fullUrl = `https://esi.evetech.net/latest/loyalty/stores/${corporationId}/offers/`;
-        console.log(`Sending request to EVE Tech API for loyalty store offers: ${fullUrl}`);
         response = await axios.get(fullUrl, {
           headers: {
             'Accept': 'application/json',
@@ -223,7 +220,6 @@ class EveApiService {
           timeout: 10000 // 设置10秒超时
         });
       } else {
-        console.log(`Sending request for loyalty store offers: /loyalty/stores/${corporationId}/offers/?datasource=${datasource}`);
         response = await this.client.get(`/loyalty/stores/${corporationId}/offers/`, {
           params: {
             datasource: datasource
@@ -232,7 +228,6 @@ class EveApiService {
         });
       }
       
-      console.log(`Received ${response.data.length} loyalty store offers for corporation ${corporationId}`);
       return response.data;
     } catch (error) {
       if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
@@ -798,12 +793,10 @@ class EveApiService {
   }
 
   async getMarketOrdersByRegionAndType(regionId, typeId, orderType = 'all', page = 1, datasource = 'serenity', retries = 3) {
-    // 节流控制：确保每1秒只请求1次
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
     if (timeSinceLastRequest < this.throttleInterval) {
       const waitTime = this.throttleInterval - timeSinceLastRequest;
-      console.log(`Throttling request for market orders: regionId=${regionId}, typeId=${typeId}, waiting ${waitTime}ms...`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
     this.lastRequestTime = Date.now();
@@ -826,7 +819,6 @@ class EveApiService {
       // 欧服使用不同的API端点
       if (datasource.toLowerCase() === 'tranquility') {
         const fullUrl = `https://esi.evetech.net/latest/markets/${regionId}/orders/`;
-        console.log(`Sending request to EVE Tech API for market orders: ${fullUrl}?page=${page}&type_id=${typeId}&datasource=${datasource}`);
         response = await axios.get(fullUrl, {
           params: {
             page: page,
@@ -843,14 +835,12 @@ class EveApiService {
           timeout: 5000 // 设置5秒超时
         });
       } else {
-        console.log(`Sending request for market orders: /markets/${regionId}/orders/?page=${page}&type_id=${typeId}&datasource=${datasource}`);
         response = await this.client.get(`/markets/${regionId}/orders/`, {
           params: params,
           timeout: 5000 // 设置5秒超时
         });
       }
       
-      console.log(`Received ${response.data.length} orders for region ID ${regionId}, type ID ${typeId}, page ${page}`);
       // Transform order data to map 'range' to 'order_range'
       return response.data.map(order => ({
         order_id: order.order_id,
