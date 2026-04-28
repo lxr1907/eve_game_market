@@ -298,12 +298,14 @@ class LoyaltyController {
     // 获取该公司的所有loyalty_offers
     const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId);
     const offers = allOffers.offers;
+    const totalOffersCount = offers.length;
     
     // 获取需要跳过的物品ID列表
     const skipItemIds = await LoyaltySkipItem.getAllSkipIds(datasource);
-    console.log(`Fetched ${skipItemIds.length} items to skip for datasource ${datasource}`);
     
-    console.log(`Fetched ${offers.length} loyalty offers from database`);
+    console.log(`=== Starting LP profit calculation for ${datasource} ===`);
+    console.log(`Total offers to process: ${totalOffersCount}`);
+    console.log(`Already skipping ${skipItemIds.length} items from skip table`);
     
     // 遍历处理每个offer（仅处理没有required_items的offer）
     let processedOffers = 0;
@@ -312,17 +314,23 @@ class LoyaltyController {
     let skippedOffers = 0;
     
     for (const offer of offers) {
+      processedOffers++;
+      const progress = ((processedOffers / totalOffersCount) * 100).toFixed(1);
+      
       try {
+        // 每处理10个打印一次进度，或者在关键节点打印
+        if (processedOffers % 20 === 0 || processedOffers === 1 || processedOffers === totalOffersCount) {
+          process.stdout.write(`\rProgress: [${processedOffers}/${totalOffersCount}] ${progress}% | Saved: ${savedOffers} | Skipped: ${skippedOffers}   `);
+        }
+
         // 检查是否在跳过列表中
         if (skipItemIds.includes(offer.type_id)) {
-          console.log(`Skipping offer for type ${offer.type_id} - found in loyalty_skip_items table`);
           skippedOffers++;
           continue;
         }
 
         // 检查是否有required_items，如果有则跳过
         if (offer.required_items && offer.required_items.length > 0) {
-          console.log(`Skipping offer for type ${offer.type_id} - it has required_items`);
           skippedOffers++;
           continue;
         }
@@ -341,10 +349,7 @@ class LoyaltyController {
             const hoursDiff = timeDiff / (1000 * 60 * 60);
             
             if (hoursDiff > 1) {
-              console.log(`Orders for type ${offer.type_id} in region ${regionId} are more than 1 hour old (${hoursDiff.toFixed(2)} hours), synchronizing...`);
               shouldSync = true;
-            } else {
-              console.log(`Orders for type ${offer.type_id} in region ${regionId} are up-to-date (${hoursDiff.toFixed(2)} hours old), using existing data`);
             }
           } else {
             // 如果没有更新时间，重新同步
@@ -353,18 +358,11 @@ class LoyaltyController {
         }
         
         if (shouldSync) {
-          // 如果没有订单数据或数据过期，先同步
-          if (existingOrderCount === 0) {
-            console.log(`No buy orders found for type ${offer.type_id} in region ${regionId}, synchronizing...`);
-          }
-          
           // 先删除该区域和类型的现有订单数据（如果有）
           await Order.deleteByRegionAndType(regionId, offer.type_id, datasource);
           
           // 定义处理订单数据的回调函数
           const processOrders = async (orders, page) => {
-            console.log(`Processing page ${page} with ${orders.length} orders`);
-            
             // 为每个订单添加region_id和type_id
             const ordersWithRegionAndType = orders.map(order => ({
               ...order,
@@ -425,43 +423,36 @@ class LoyaltyController {
             if (saved) {
               savedOffers++;
             }
-          } else {
-            if (profitPerLp <= profitThreshold) {
-              console.log(`Skipping offer for type ${offer.type_id} - profit per LP (${profitPerLp.toFixed(2)}) is less than threshold (${profitThreshold})`);
-            } else {
-              console.log(`Skipping offer for type ${offer.type_id} - total profit (${totalProfit.toFixed(2)}) is less than 10M threshold`);
-            }
           }
         } else {
           // 如果没有买单，记录到跳过表
-          console.log(`No buy orders found for type ${offer.type_id} after sync. Adding to skip items table.`);
           await LoyaltySkipItem.addSkipItem(offer.type_id, datasource, 'no_buy_orders');
           skippedOffers++;
         }
         
-        processedOffers++;
-        
         // 每处理100个offers暂停1秒，避免API调用过于频繁
         if (processedOffers % 100 === 0) {
-          console.log(`Processed ${processedOffers}/${offers.length} offers...`);
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (error) {
         if (error.message.startsWith('API_BLOCKED')) {
           // 如果是API被屏蔽的错误，记录并停止处理
+          process.stdout.write('\n');
           console.error(`API blocked while processing offer ${offer.offer_id}: ${error.message}`);
           console.error('Stopping profit calculation due to API block');
           // 抛出错误，让上层处理
           throw error;
         } else {
-          // 其他错误，只记录并继续处理下一个offer
-          console.error(`Error processing offer ${offer.offer_id}: ${error.message}`);
+          // 其他错误，记录并继续处理下一个offer
+          // console.error(`Error processing offer ${offer.offer_id}: ${error.message}`);
         }
       }
     }
     
-    console.log(`LP profit calculation completed for corporation ${corporationId}`);
-    console.log(`Statistics: Processed ${processedOffers}/${offers.length} offers, Saved ${savedOffers} records, Synced ${syncedOffers} order sets, Skipped ${skippedOffers} offers with required_items`);
+    process.stdout.write('\n'); // 进度条结束后换行
+    console.log(`LP profit calculation completed for corporation ${corporationId} (${datasource})`);
+    console.log(`Statistics: Saved ${savedOffers} records, Synced ${syncedOffers} order sets, Skipped ${skippedOffers} items`);
+    console.log('-----------------------------------');
   }
 
   // 计算LP收益
