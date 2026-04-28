@@ -63,6 +63,7 @@ class OrderController {
             regionId, 
             typeId, 
             'buy', 
+            1, // startPage
             processOrders
           );
 
@@ -72,6 +73,7 @@ class OrderController {
             regionId, 
             typeId, 
             'sell', 
+            1, // startPage
             processOrders
           );
 
@@ -150,6 +152,7 @@ class OrderController {
           regionId, 
           typeId, 
           'buy', 
+          1, // startPage
           processOrders
         );
 
@@ -159,6 +162,7 @@ class OrderController {
           regionId, 
           typeId, 
           'sell', 
+          1, // startPage
           processOrders
         );
 

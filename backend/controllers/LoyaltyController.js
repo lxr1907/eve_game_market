@@ -379,12 +379,12 @@ class LoyaltyController {
             regionId, 
             offer.type_id, 
             'buy', 
+            1, // startPage
             processOrders,
             datasource
           );
           
           syncedOffers++;
-          console.log(`Order synchronization completed for type ${offer.type_id} in region ${regionId}`);
         }
         
         // 查询该type_id在特定区域的最高价买单
@@ -435,16 +435,18 @@ class LoyaltyController {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (error) {
-        if (error.message.startsWith('API_BLOCKED')) {
-          // 如果是API被屏蔽的错误，记录并停止处理
+        const isApiBlocked = error.message.startsWith('API_BLOCKED');
+        const isSeriousError = error.response && error.response.status >= 400 && error.response.status < 500 && error.response.status !== 404;
+        
+        if (isApiBlocked || isSeriousError) {
+          // 如果是API被屏蔽或严重参数错误，记录并停止整个计算任务
           process.stdout.write('\n');
-          console.error(`API blocked while processing offer ${offer.offer_id}: ${error.message}`);
-          console.error('Stopping profit calculation due to API block');
-          // 抛出错误，让上层处理
+          console.error(`Stopping task: ${isApiBlocked ? 'API BLOCKED' : 'Serious API Error (4xx)'} while processing offer ${offer.offer_id}`);
+          console.error(`Error details: ${error.message}`);
           throw error;
         } else {
-          // 其他错误，记录并继续处理下一个offer
-          // console.error(`Error processing offer ${offer.offer_id}: ${error.message}`);
+          // 其他错误（如 404, 5xx, 网络超时等），记录并继续处理下一个offer
+          // 这些错误通常是暂时的或局限于单个物品的
         }
       }
     }

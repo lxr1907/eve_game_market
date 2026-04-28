@@ -109,7 +109,6 @@ class Order {
 
     while (retries <= maxRetries) {
       try {
-        console.log(`Processing ${orders.length} orders, merged into ${mergedOrders.length} records (attempt ${retries + 1})`);
         await pool.execute(query, params);
         return true;
       } catch (error) {

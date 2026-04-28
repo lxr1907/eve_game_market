@@ -867,9 +867,13 @@ class EveApiService {
       if (error.response?.status === 420) {
         // 420状态码：ESI API请求被屏蔽，需要长时间等待
         console.error(`API request blocked (420) for region ID ${regionId}, type ID ${typeId}, page ${page}`);
-        console.error('Response data:', error.response.data);
         // 被屏蔽时，抛出特殊错误，让上层处理
         throw new Error(`API_BLOCKED: ${JSON.stringify(error.response.data)}`);
+      } else if (error.response?.status === 400) {
+        // 400状态码：请求参数错误，不应重试
+        console.error(`Bad request (400) for region ID ${regionId}, type ID ${typeId}, page ${page}`);
+        console.error('Response data:', error.response.data);
+        throw error;
       } else if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
         // 如果是超时或连接重置错误，进行重试
         console.log(`Timeout fetching market orders for region ID ${regionId}, type ID ${typeId}, page ${page}, retrying (${retries} left)...`);
@@ -887,40 +891,49 @@ class EveApiService {
     }
   }
 
-  async getAllMarketOrdersByRegionAndType(regionId, typeId, orderType = 'all', callback, datasource = 'serenity') {
+  async getAllMarketOrdersByRegionAndType(regionId, typeId, orderType = 'all', startPage = 1, callback, datasource = 'serenity') {
+    // 兼容处理：如果 startPage 是函数，说明调用者跳过了 startPage 参数
+    if (typeof startPage === 'function') {
+      datasource = callback || 'serenity';
+      callback = startPage;
+      startPage = 1;
+    }
+
     try {
-      let page = 1;
+      let page = startPage;
       let hasMoreData = true;
-      let allOrders = [];
-      
-      console.log(`Starting to fetch all market orders for region ${regionId}, type ${typeId}, orderType ${orderType}`);
       
       while (hasMoreData) {
-        const orders = await this.getMarketOrdersByRegionAndType(regionId, typeId, orderType, page, datasource);
-        
-        if (orders.length === 0) {
-          hasMoreData = false;
-          break;
+        try {
+          const orders = await this.getMarketOrdersByRegionAndType(regionId, typeId, orderType, page, datasource);
+          
+          if (orders.length === 0) {
+            hasMoreData = false;
+            break;
+          }
+          
+          // 调用回调函数处理当前页的数据
+          if (callback && typeof callback === 'function') {
+            await callback(orders, page);
+          }
+          
+          page++;
+        } catch (error) {
+          // 如果是 API 被屏蔽或 4xx 错误（除 404 外），立即停止任务并向上抛出
+          if (error.message.startsWith('API_BLOCKED') || (error.response && error.response.status >= 400 && error.response.status < 500 && error.response.status !== 404)) {
+            throw error;
+          }
+          // 其他错误（如超时）在 getMarketOrdersByRegionAndType 中已经处理过重试
+          // 如果重试也失败了，这里应该停止
+          throw error;
         }
-        
-        allOrders = allOrders.concat(orders);
-        
-        // 调用回调函数处理当前页的数据
-        if (callback && typeof callback === 'function') {
-          await callback(orders, page);
-        }
-        
-        // 添加 50ms 延迟，避免被 API 服务器限流
-        await new Promise(resolve => setTimeout(resolve, 50));
-        
-        page++;
       }
       
-      console.log(`Finished fetching all market orders for region ${regionId}, type ${typeId}`);
-      return allOrders;
+      return page - 1; // 返回总页数
     } catch (error) {
-      console.error(`Error in fetching all market orders for region ${regionId}, type ${typeId}:`, error.message);
-      console.error('Error stack:', error.stack);
+      if (!error.message.startsWith('API_BLOCKED')) {
+        console.error(`Error in fetching all market orders for region ${regionId}, type ${typeId}:`, error.message);
+      }
       throw error;
     }
   }
