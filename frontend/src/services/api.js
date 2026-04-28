@@ -146,8 +146,8 @@ export const regionApi = {
 
 export const orderApi = {
   // 同步订单数据
-  async syncOrders(regionId, typeId) {
-    const response = await apiClient.post(`/orders/${regionId}/${typeId}/sync`);
+  async syncOrders(regionId, typeId, datasource = 'serenity') {
+    const response = await apiClient.post(`/orders/${regionId}/${typeId}/sync`, {}, { params: { datasource } });
     return response;
   },
   

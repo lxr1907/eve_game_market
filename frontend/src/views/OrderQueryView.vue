@@ -3,7 +3,7 @@
     <!-- 顶部查询条件 -->
     <div class="top-query-form">
       <div class="form-group">
-        <label for="regionSelect">选择区域</label>
+        <label for="regionSelect">区域</label>
         <select 
           id="regionSelect" 
           v-model="selectedRegionId"
@@ -18,6 +18,21 @@
             {{ region.name }} (ID: {{ region.id }})
           </option>
         </select>
+      </div>
+
+      <div class="form-group">
+        <label>数据源</label>
+        <div class="datasource-selector">
+          <label class="radio-label">
+            <input type="radio" v-model="datasource" value="serenity" @change="handleDatasourceChange"> 晨曦
+          </label>
+          <label class="radio-label">
+            <input type="radio" v-model="datasource" value="infinity" @change="handleDatasourceChange"> 曙光
+          </label>
+          <label class="radio-label">
+            <input type="radio" v-model="datasource" value="tranquility" @change="handleDatasourceChange"> 欧服
+          </label>
+        </div>
       </div>
     </div>
     
@@ -163,6 +178,9 @@ export default {
     const regions = ref([])
     const selectedRegionId = ref('10000002') // 默认选择区域10000002
     
+    // 数据源
+    const datasource = ref('serenity')
+    
     // 类型数据
     const typeSearch = ref('')
     const availableTypes = ref([])
@@ -212,6 +230,13 @@ export default {
       loadAvailableTypes()
     }
     
+    // 处理数据源变化
+    const handleDatasourceChange = () => {
+      if (selectedTypeId.value) {
+        queryOrders()
+      }
+    }
+    
     // 加载可用类型
     const loadAvailableTypes = async () => {
       if (!selectedRegionId.value) return
@@ -246,7 +271,7 @@ export default {
       
       try {
         syncing.value = true
-        await orderApi.syncOrders(selectedRegionId.value, selectedTypeId.value)
+        await orderApi.syncOrders(selectedRegionId.value, selectedTypeId.value, datasource.value)
         alert('订单数据同步已开始，请稍后查询结果')
       } catch (error) {
         console.error('同步订单失败:', error)
@@ -264,7 +289,8 @@ export default {
         querying.value = true
         const response = await orderApi.getOrders({
           regionId: selectedRegionId.value,
-          typeId: selectedTypeId.value
+          typeId: selectedTypeId.value,
+          datasource: datasource.value
         })
         
         // 使用API返回的分离好的订单数据
@@ -287,6 +313,10 @@ export default {
       // 区域相关
       regions,
       selectedRegionId,
+      
+      // 数据源
+      datasource,
+      handleDatasourceChange,
       
       // 类型相关
       typeSearch,
@@ -315,18 +345,41 @@ export default {
 
 <style scoped>
 .order-query-container {
-  width: 100%;
-  min-height: 100vh;
-  padding: 10px 20px 20px 20px;
-  font-family: Arial, sans-serif;
+  padding: 20px;
 }
 
-/* 顶部查询条件 */
 .top-query-form {
+  display: flex;
+  gap: 30px;
   margin-bottom: 20px;
-  padding: 1px;
-  background-color: #2c3e50;
-  border-radius: 8px;
+  padding: 15px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  align-items: center;
+}
+
+.form-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-group label {
+  font-weight: bold;
+  color: #606266;
+}
+
+.datasource-selector {
+  display: flex;
+  gap: 15px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 14px;
 }
 
 /* 主内容区域 */

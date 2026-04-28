@@ -8,6 +8,7 @@ class OrderController {
   static async syncOrders(req, res) {
     try {
       const { regionId, typeId } = req.params;
+      const { datasource = 'serenity' } = req.query;
       
       // 验证参数
       if (!regionId || !typeId) {
@@ -28,23 +29,24 @@ class OrderController {
 
       // 返回202，表示请求已接受，正在后台处理
       res.status(202).json({ 
-        message: `Order synchronization started for region ${region.name} and type ${type.name}`,
+        message: `Order synchronization started for region ${region.name} and type ${type.name} (${datasource})`,
         regionId, 
-        typeId 
+        typeId,
+        datasource
       });
 
       // 后台异步同步数据
       (async () => {
         try {
-          console.log(`Starting order synchronization for region ${regionId}, type ${typeId}`);
+          console.log(`Starting order synchronization for region ${regionId}, type ${typeId}, datasource ${datasource}`);
           
           // 只删除该区域和类型的1小时之前的订单数据
-          const deletedCount = await Order.deleteOlderThanOneHourByRegionAndType(regionId, typeId);
-          console.log(`Deleted ${deletedCount} outdated orders for region ${regionId}, type ${typeId}`);
+          const deletedCount = await Order.deleteOlderThanOneHourByRegionAndType(regionId, typeId, datasource);
+          console.log(`Deleted ${deletedCount} outdated orders for region ${regionId}, type ${typeId}, datasource ${datasource}`);
           
           // 定义处理订单数据的回调函数
           const processOrders = async (orders, page) => {
-            console.log(`Processing page ${page} with ${orders.length} orders`);
+            console.log(`Processing page ${page} with ${orders.length} orders for ${datasource}`);
             
             // 为每个订单添加region_id和type_id
             const ordersWithRegionAndType = orders.map(order => ({
@@ -54,32 +56,34 @@ class OrderController {
             }));
             
             // 批量插入或更新数据库
-            await Order.insertOrUpdate(ordersWithRegionAndType);
+            await Order.insertOrUpdate(ordersWithRegionAndType, datasource);
           };
 
           // 获取买入订单
-          console.log(`Fetching buy orders for region ${regionId}, type ${typeId}`);
+          console.log(`Fetching buy orders for region ${regionId}, type ${typeId}, datasource ${datasource}`);
           await eveApiService.getAllMarketOrdersByRegionAndType(
             regionId, 
             typeId, 
             'buy', 
             1, // startPage
-            processOrders
+            processOrders,
+            datasource
           );
 
           // 获取卖出订单
-          console.log(`Fetching sell orders for region ${regionId}, type ${typeId}`);
+          console.log(`Fetching sell orders for region ${regionId}, type ${typeId}, datasource ${datasource}`);
           await eveApiService.getAllMarketOrdersByRegionAndType(
             regionId, 
             typeId, 
             'sell', 
             1, // startPage
-            processOrders
+            processOrders,
+            datasource
           );
 
-          console.log(`Order synchronization completed for region ${regionId}, type ${typeId}`);
+          console.log(`Order synchronization completed for region ${regionId}, type ${typeId}, datasource ${datasource}`);
         } catch (error) {
-          console.error(`Error synchronizing orders for region ${regionId}, type ${typeId}:`, error.message);
+          console.error(`Error synchronizing orders for region ${regionId}, type ${typeId}, datasource ${datasource}:`, error.message);
           console.error('Error stack:', error.stack);
         }
       })();
@@ -94,7 +98,7 @@ class OrderController {
   // 查询订单数据
   static async getOrders(req, res) {
     try {
-      const { regionId, typeId } = req.query;
+      const { regionId, typeId, datasource = 'serenity' } = req.query;
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
       
@@ -116,24 +120,24 @@ class OrderController {
       }
 
       // 获取买入订单数据
-      let buyOrders = await Order.findByRegionAndType(regionId, typeId, 'buy', page, limit);
-      let buyTotal = await Order.countByRegionAndType(regionId, typeId, 'buy');
+      let buyOrders = await Order.findByRegionAndType(regionId, typeId, 'buy', page, limit, datasource);
+      let buyTotal = await Order.countByRegionAndType(regionId, typeId, 'buy', datasource);
       
       // 获取卖出订单数据
-      let sellOrders = await Order.findByRegionAndType(regionId, typeId, 'sell', page, limit);
-      let sellTotal = await Order.countByRegionAndType(regionId, typeId, 'sell');
+      let sellOrders = await Order.findByRegionAndType(regionId, typeId, 'sell', page, limit, datasource);
+      let sellTotal = await Order.countByRegionAndType(regionId, typeId, 'sell', datasource);
 
       // 如果本地没有数据，从官方API同步
       if (buyTotal === 0 && sellTotal === 0) {
-        console.log(`No orders found in local database for region ${regionId}, type ${typeId}. Synchronizing from official API...`);
+        console.log(`No orders found in local database for region ${regionId}, type ${typeId}, datasource ${datasource}. Synchronizing from official API...`);
         
         // 只删除该区域和类型的1小时之前的订单数据
-        const deletedCount = await Order.deleteOlderThanOneHourByRegionAndType(regionId, typeId);
-        console.log(`Deleted ${deletedCount} outdated orders for region ${regionId}, type ${typeId}`);
+        const deletedCount = await Order.deleteOlderThanOneHourByRegionAndType(regionId, typeId, datasource);
+        console.log(`Deleted ${deletedCount} outdated orders for region ${regionId}, type ${typeId}, datasource ${datasource}`);
         
         // 定义处理订单数据的回调函数
         const processOrders = async (orders, page) => {
-          console.log(`Processing page ${page} with ${orders.length} orders`);
+          console.log(`Processing page ${page} with ${orders.length} orders for ${datasource}`);
           
           // 为每个订单添加region_id和type_id
           const ordersWithRegionAndType = orders.map(order => ({
@@ -143,37 +147,39 @@ class OrderController {
           }));
           
           // 批量插入或更新数据库
-          await Order.insertOrUpdate(ordersWithRegionAndType);
+          await Order.insertOrUpdate(ordersWithRegionAndType, datasource);
         };
 
         // 获取买入订单
-        console.log(`Fetching buy orders for region ${regionId}, type ${typeId}`);
+        console.log(`Fetching buy orders for region ${regionId}, type ${typeId}, datasource ${datasource}`);
         await eveApiService.getAllMarketOrdersByRegionAndType(
           regionId, 
           typeId, 
           'buy', 
           1, // startPage
-          processOrders
+          processOrders,
+          datasource
         );
 
         // 获取卖出订单
-        console.log(`Fetching sell orders for region ${regionId}, type ${typeId}`);
+        console.log(`Fetching sell orders for region ${regionId}, type ${typeId}, datasource ${datasource}`);
         await eveApiService.getAllMarketOrdersByRegionAndType(
           regionId, 
           typeId, 
           'sell', 
           1, // startPage
-          processOrders
+          processOrders,
+          datasource
         );
 
-        console.log(`Order synchronization completed for region ${regionId}, type ${typeId}`);
+        console.log(`Order synchronization completed for region ${regionId}, type ${typeId}, datasource ${datasource}`);
         
         // 再次查询本地数据库
-        buyOrders = await Order.findByRegionAndType(regionId, typeId, 'buy', page, limit);
-        buyTotal = await Order.countByRegionAndType(regionId, typeId, 'buy');
+        buyOrders = await Order.findByRegionAndType(regionId, typeId, 'buy', page, limit, datasource);
+        buyTotal = await Order.countByRegionAndType(regionId, typeId, 'buy', datasource);
         
-        sellOrders = await Order.findByRegionAndType(regionId, typeId, 'sell', page, limit);
-        sellTotal = await Order.countByRegionAndType(regionId, typeId, 'sell');
+        sellOrders = await Order.findByRegionAndType(regionId, typeId, 'sell', page, limit, datasource);
+        sellTotal = await Order.countByRegionAndType(regionId, typeId, 'sell', datasource);
       }
 
       res.status(200).json({
