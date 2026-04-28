@@ -1,64 +1,69 @@
 <template>
-  <div class="order-query-container">
-    <!-- 顶部查询条件 -->
-    <div class="top-query-form">
-      <div class="form-group">
-        <label for="regionSelect">区域</label>
-        <select 
-          id="regionSelect" 
-          v-model="selectedRegionId"
-          @change="handleRegionChange"
-        >
-          <option value="">请选择区域</option>
-          <option 
-            v-for="region in regions" 
-            :key="region.id" 
-            :value="region.id"
-          >
-            {{ region.name }} (ID: {{ region.id }})
-          </option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>数据源</label>
-        <div class="datasource-selector">
-          <label class="radio-label">
-            <input type="radio" v-model="datasource" value="serenity" @change="handleDatasourceChange"> 晨曦
-          </label>
-          <label class="radio-label">
-            <input type="radio" v-model="datasource" value="infinity" @change="handleDatasourceChange"> 曙光
-          </label>
-          <label class="radio-label">
-            <input type="radio" v-model="datasource" value="tranquility" @change="handleDatasourceChange"> 欧服
-          </label>
-        </div>
-      </div>
-    </div>
-    
-    <!-- 主内容区域 -->
-    <div class="main-content">
-      <!-- 左侧：物品搜索 -->
-      <div class="left-panel">
-        <div class="item-search">
-          <el-input
-            v-model="filterText"
-            placeholder="输入物品名称或ID搜索"
-            clearable
-            class="search-input"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
+  <div class="order-query-page">
+    <!-- 顶部控制栏 -->
+    <header class="query-header">
+      <div class="header-content">
+        <div class="header-left">
+          <h1 class="page-title">市场订单查询</h1>
+          <el-tag type="info" effect="plain" round class="status-tag">实时数据</el-tag>
         </div>
         
-        <div class="search-results">
-          <div v-if="loadingTree" class="loading-container">
-            <el-skeleton :rows="10" animated />
+        <div class="header-right">
+          <div class="filter-item">
+            <span class="filter-label">所属区域</span>
+            <el-select 
+              v-model="selectedRegionId" 
+              placeholder="请选择区域" 
+              filterable 
+              class="region-select"
+              @change="handleRegionChange"
+            >
+              <el-option 
+                v-for="region in regions" 
+                :key="region.id" 
+                :label="`${region.name} (${region.id})`" 
+                :value="region.id" 
+              />
+            </el-select>
           </div>
+
+          <div class="filter-item">
+            <span class="filter-label">数据源</span>
+            <el-radio-group v-model="datasource" @change="handleDatasourceChange" size="small">
+              <el-radio-button label="serenity">晨曦</el-radio-button>
+              <el-radio-button label="infinity">曙光</el-radio-button>
+              <el-radio-button label="tranquility">欧服</el-radio-button>
+            </el-radio-group>
+          </div>
+
+          <el-button 
+            type="primary" 
+            :loading="syncing" 
+            :disabled="!selectedTypeId"
+            @click="syncOrders"
+            icon="Refresh"
+          >
+            同步订单
+          </el-button>
+        </div>
+      </div>
+    </header>
+    
+    <!-- 主体布局 -->
+    <div class="query-main">
+      <!-- 左侧物品树 -->
+      <aside class="sidebar">
+        <div class="search-box">
+          <el-input
+            v-model="filterText"
+            placeholder="搜索物品名称或ID..."
+            clearable
+            prefix-icon="Search"
+          />
+        </div>
+        
+        <div class="tree-wrapper" v-loading="loadingTree">
           <el-tree
-            v-else
             ref="treeRef"
             :data="treeData"
             :props="{ label: 'label', children: 'children' }"
@@ -66,104 +71,94 @@
             @node-click="handleNodeClick"
             highlight-current
             node-key="id"
-            class="type-tree"
+            class="custom-tree"
           >
             <template #default="{ node, data }">
-              <span class="custom-tree-node" :class="{ 'is-active': selectedTypeId === data.id && data.type === 'type' }">
+              <div class="tree-node-content" :class="{ 'is-active': selectedTypeId === data.id && data.type === 'type' }">
                 <el-icon v-if="data.type === 'category'"><Folder /></el-icon>
                 <el-icon v-else-if="data.type === 'group'"><Collection /></el-icon>
                 <el-icon v-else><Document /></el-icon>
-                <span class="node-label">{{ node.label }}</span>
-              </span>
+                <span class="node-text">{{ node.label }}</span>
+              </div>
             </template>
           </el-tree>
         </div>
-      </div>
+      </aside>
       
-      <!-- 右侧：订单展示 -->
-      <div class="right-panel">
-        <!-- 右上：卖单 -->
-        <div class="order-section sell-orders">
-          <h2>卖出订单</h2>
-          <div v-if="querying">
-            <p>查询中...</p>
-          </div>
-          <div v-else-if="sellOrders.length > 0">
-            <table>
-              <thead>
-                <tr>
-                  <th>订单ID</th>
-                  <th>类型ID</th>
-                  <th>类型名称</th>
-                  <th>价格</th>
-                  <th>数量</th>
-                  <th>最小数量</th>
-                  <th>有效期</th>
-                  <th>位置</th>
-                  <th>创建时间</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="order in sellOrders" :key="order.order_id">
-                  <td>{{ order.order_id }}</td>
-                  <td>{{ order.type_id }}</td>
-                  <td>{{ order.type_name }}</td>
-                  <td>{{ parseFloat(order.price).toFixed(2) }}</td>
-                  <td>{{ order.volume_total }}</td>
-                  <td>{{ order.min_volume }}</td>
-                  <td>{{ order.duration }}</td>
-                  <td>{{ order.location_id }}</td>
-                  <td>{{ formatDate(order.created_at) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div v-else>
-            <p>{{ sellOrders.length === 0 && !querying ? '暂无卖出订单' : '' }}</p>
-          </div>
+      <!-- 右侧订单表格 -->
+      <main class="content-area" v-loading="querying">
+        <div v-if="!selectedTypeId" class="empty-state">
+          <el-empty description="请在左侧选择一个物品查看订单详情" />
         </div>
         
-        <!-- 右下：买单 -->
-        <div class="order-section buy-orders">
-          <h2>买入订单</h2>
-          <div v-if="querying">
-            <p>查询中...</p>
-          </div>
-          <div v-else-if="buyOrders.length > 0">
-            <table>
-              <thead>
-                <tr>
-                  <th>订单ID</th>
-                  <th>类型ID</th>
-                  <th>类型名称</th>
-                  <th>价格</th>
-                  <th>数量</th>
-                  <th>最小数量</th>
-                  <th>有效期</th>
-                  <th>位置</th>
-                  <th>创建时间</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="order in buyOrders" :key="order.order_id">
-                  <td>{{ order.order_id }}</td>
-                  <td>{{ order.type_id }}</td>
-                  <td>{{ order.type_name }}</td>
-                  <td>{{ parseFloat(order.price).toFixed(2) }}</td>
-                  <td>{{ order.volume_total }}</td>
-                  <td>{{ order.min_volume }}</td>
-                  <td>{{ order.duration }}</td>
-                  <td>{{ order.location_id }}</td>
-                  <td>{{ formatDate(order.created_at) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div v-else>
-            <p>{{ buyOrders.length === 0 && !querying ? '暂无买入订单' : '' }}</p>
-          </div>
-        </div>
-      </div>
+        <template v-else>
+          <!-- 卖单表格 -->
+          <section class="table-section">
+            <div class="section-header">
+              <h2 class="section-title sell">
+                <el-icon><Top /></el-icon> 卖出订单 (Sell)
+              </h2>
+            </div>
+            <el-table 
+              :data="sellOrders" 
+              style="width: 100%" 
+              height="45%"
+              border
+              stripe
+              size="small"
+              class="order-table sell-table"
+            >
+              <el-table-column prop="price" label="价格 (ISK)" sortable min-width="120">
+                <template #default="{ row }">
+                  <span class="price-text sell">{{ formatISK(row.price) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="volume_total" label="数量" sortable width="100" />
+              <el-table-column prop="min_volume" label="最小数量" width="90" />
+              <el-table-column prop="location_id" label="位置 ID" width="120" />
+              <el-table-column prop="duration" label="有效期" width="80" />
+              <el-table-column prop="created_at" label="创建时间" sortable width="160">
+                <template #default="{ row }">
+                  {{ formatDate(row.created_at) }}
+                </template>
+              </el-table-column>
+            </el-table>
+          </section>
+
+          <!-- 买单表格 -->
+          <section class="table-section">
+            <div class="section-header">
+              <h2 class="section-title buy">
+                <el-icon><Bottom /></el-icon> 买入订单 (Buy)
+              </h2>
+            </div>
+            <el-table 
+              :data="buyOrders" 
+              style="width: 100%" 
+              height="45%"
+              border
+              stripe
+              size="small"
+              class="order-table buy-table"
+            >
+              <el-table-column prop="price" label="价格 (ISK)" sortable min-width="120">
+                <template #default="{ row }">
+                  <span class="price-text buy">{{ formatISK(row.price) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="volume_total" label="数量" sortable width="100" />
+              <el-table-column prop="min_volume" label="最小数量" width="90" />
+              <el-table-column prop="location_id" label="位置 ID" width="120" />
+              <el-table-column prop="duration" label="有效期" width="80" />
+              <el-table-column prop="created_at" label="创建时间" sortable width="160">
+                <template #default="{ row }">
+                  {{ formatDate(row.created_at) }}
+                </template>
+              </el-table-column>
+            </el-table>
+          </section>
+        </template>
+      </main>
     </div>
   </div>
 </template>
@@ -172,97 +167,90 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { regionApi, orderApi, typeApi } from '../services/api'
+import { ElMessage } from 'element-plus'
 
 export default {
   name: 'OrderQueryView',
   setup() {
-      // 路由
-      const router = useRouter()
-      
-      // 区域数据
+    const router = useRouter()
+    
+    // 状态定义
     const regions = ref([])
-    const selectedRegionId = ref('10000002') // 默认选择区域10000002
-    
-    // 数据源
+    const selectedRegionId = ref('10000002')
     const datasource = ref('serenity')
-    
-    // 类型数据
-    const typeSearch = ref('')
     const treeData = ref([])
     const treeRef = ref(null)
     const filterText = ref('')
     const selectedTypeId = ref('')
-    
-    // 订单数据
     const buyOrders = ref([])
     const sellOrders = ref([])
-    
-    // 加载状态
     const syncing = ref(false)
     const querying = ref(false)
     const loadingTree = ref(false)
     
-    // 格式化日期
+    // 格式化工具
     const formatDate = (dateString) => {
-      if (!dateString) return ''
+      if (!dateString) return '-'
       const date = new Date(dateString)
-      return date.toLocaleString()
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    }
+
+    const formatISK = (val) => {
+      if (val === undefined || val === null) return '0.00'
+      return parseFloat(val).toLocaleString('zh-CN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
     }
     
-    // 获取所有区域
+    // 数据加载逻辑
     const loadRegions = async () => {
       try {
         const response = await regionApi.getRegions(1, null, '')
         regions.value = response.regions
       } catch (error) {
-        console.error('加载区域失败:', error)
+        ElMessage.error('加载区域失败')
       }
     }
 
-    // 获取层级结构
     const loadHierarchy = async () => {
       try {
         loadingTree.value = true
         const response = await typeApi.getHierarchy()
         treeData.value = response
       } catch (error) {
-        console.error('加载层级结构失败:', error)
+        ElMessage.error('加载物品树失败')
       } finally {
         loadingTree.value = false
       }
     }
 
-    // 树过滤逻辑
+    // 事件处理
     const filterNode = (value, data) => {
       if (!value) return true
-      // 如果是分类层，始终保留显示
       if (data.type === 'category') return true
-      // 搜索名称或ID
       const searchTerm = value.toLowerCase()
       return data.label.toLowerCase().includes(searchTerm)
     }
 
-    // 监听过滤文本变化
     watch(filterText, (val) => {
       treeRef.value?.filter(val)
     })
     
-    // 处理区域选择变化
     const handleRegionChange = () => {
-      // 区域变化不再需要重新加载可用类型，因为我们现在用全量树
-      if (selectedTypeId.value) {
-        queryOrders()
-      }
+      if (selectedTypeId.value) queryOrders()
     }
     
-    // 处理数据源变化
     const handleDatasourceChange = () => {
-      if (selectedTypeId.value) {
-        queryOrders()
-      }
+      if (selectedTypeId.value) queryOrders()
     }
     
-    // 处理树节点点击
     const handleNodeClick = (data) => {
       if (data.type === 'type') {
         selectedTypeId.value = data.id
@@ -270,26 +258,21 @@ export default {
       }
     }
     
-    // 同步订单数据
     const syncOrders = async () => {
       if (!selectedRegionId.value || !selectedTypeId.value) return
-      
       try {
         syncing.value = true
         await orderApi.syncOrders(selectedRegionId.value, selectedTypeId.value, datasource.value)
-        alert('订单数据同步已开始，请稍后查询结果')
+        ElMessage.success('订单同步任务已下发，请稍后刷新')
       } catch (error) {
-        console.error('同步订单失败:', error)
-        alert('同步失败：' + (error.response?.data?.message || error.message))
+        ElMessage.error('同步失败: ' + (error.response?.data?.message || error.message))
       } finally {
         syncing.value = false
       }
     }
     
-    // 查询订单数据
     const queryOrders = async () => {
       if (!selectedRegionId.value || !selectedTypeId.value) return
-      
       try {
         querying.value = true
         const response = await orderApi.getOrders({
@@ -297,238 +280,221 @@ export default {
           typeId: selectedTypeId.value,
           datasource: datasource.value
         })
-        
-        // 使用API返回的分离好的订单数据
         buyOrders.value = response.buyOrders.data
         sellOrders.value = response.sellOrders.data
       } catch (error) {
-        console.error('查询订单失败:', error)
-        alert('查询失败：' + (error.response?.data?.message || error.message))
+        ElMessage.error('查询订单失败')
       } finally {
         querying.value = false
       }
     }
     
-    // 生命周期钩子
     onMounted(() => {
       loadRegions()
       loadHierarchy()
     })
     
     return {
-      regions,
-      selectedRegionId,
-      datasource,
-      filterText,
-      treeData,
-      treeRef,
-      selectedTypeId,
-      buyOrders,
-      sellOrders,
-      syncing,
-      querying,
-      loadingTree,
-      formatDate,
-      handleRegionChange,
-      handleDatasourceChange,
-      handleNodeClick,
-      filterNode,
-      syncOrders,
-      queryOrders
+      regions, selectedRegionId, datasource, filterText, treeData, treeRef,
+      selectedTypeId, buyOrders, sellOrders, syncing, querying, loadingTree,
+      formatDate, formatISK, handleRegionChange, handleDatasourceChange,
+      handleNodeClick, filterNode, syncOrders, queryOrders
     }
   }
 }
 </script>
 
 <style scoped>
-.order-query-container {
-  padding: 20px;
-}
-
-.top-query-form {
-  display: flex;
-  gap: 30px;
-  margin-bottom: 20px;
-  padding: 15px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
-  align-items: center;
-}
-
-.form-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.form-group label {
-  font-weight: bold;
-  color: #606266;
-}
-
-.datasource-selector {
-  display: flex;
-  gap: 15px;
-}
-
-.radio-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-/* 主内容区域 */
-.main-content {
-  display: flex;
-  gap: 20px;
-  min-height: 600px;
-}
-
-/* 左侧面板 */
-.left-panel {
-  width: 350px;
-  min-width: 350px;
-  flex-shrink: 0;
-  background-color: #1a1a1a;
-  border-right: 1px solid #333;
+/* 页面整体容器 */
+.order-query-page {
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  background-color: #0f111a;
+  color: #e2e8f0;
+  overflow: hidden;
 }
 
-.item-search {
-  padding: 15px;
-  border-bottom: 1px solid #333;
+/* 顶部标题栏 */
+.query-header {
+  height: 64px;
+  background-color: #1a1c26;
+  border-bottom: 1px solid #2d303e;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
-.search-results {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
+.header-content {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.type-tree {
-  background: transparent !important;
-  color: #ccc !important;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-:deep(.el-tree-node__content) {
-  height: 32px !important;
+.page-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  background: linear-gradient(120deg, #409eff, #67c23a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-:deep(.el-tree-node__content:hover) {
-  background-color: #2a2a2a !important;
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
-:deep(.el-tree-node.is-current > .el-tree-node__content) {
-  background-color: #333 !important;
-  color: #409eff !important;
-}
-
-.custom-tree-node {
+.filter-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+}
+
+.filter-label {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.region-select {
+  width: 220px;
+}
+
+/* 主内容布局 */
+.query-main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+  width: 320px;
+  background-color: #161821;
+  border-right: 1px solid #2d303e;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-box {
+  padding: 16px;
+  border-bottom: 1px solid #2d303e;
+}
+
+.tree-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+/* 深度定制树样式 */
+.custom-tree {
+  background: transparent !important;
+  --el-tree-node-hover-bg-color: #242736;
+}
+
+:deep(.el-tree-node__content) {
+  height: 36px !important;
+  border-radius: 6px;
+  margin-bottom: 2px;
+}
+
+.tree-node-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
   width: 100%;
+  padding-right: 8px;
 }
 
-.custom-tree-node.is-active {
+.tree-node-content.is-active {
   color: #409eff;
-  font-weight: bold;
+  font-weight: 500;
 }
 
-.node-label {
+.node-text {
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.loading-container {
-  padding: 20px;
-}
-
-/* 右侧面板 */
-.right-panel {
+/* 右侧内容区 */
+.content-area {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-}
-
-/* 订单区域 */
-.order-section {
-  background-color: #2c3e50;
-  border-radius: 8px;
   padding: 20px;
-  flex: 1;
+  gap: 20px;
   overflow-y: auto;
-  width: 800px;
+  background-color: #0f111a;
 }
 
-.order-section h2 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  color: #e2e8f0;
-  font-size: 20px;
+.empty-state {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.order-section table {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: #1a202c;
-  color: #e2e8f0;
+.table-section {
+  flex: 1;
+  min-height: 300px;
+  background-color: #1a1c26;
+  border-radius: 8px;
+  border: 1px solid #2d303e;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
 }
 
-.order-section th,
-.order-section td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #4a5568;
-  font-size: 14px;
+.section-header {
+  margin-bottom: 12px;
 }
 
-.order-section th {
-  background-color: #2c3e50;
-  color: white;
-  font-weight: bold;
+.section-title {
+  margin: 0;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.order-section tr {
-  background-color: #1a202c;
+.section-title.sell { color: #f56c6c; }
+.section-title.buy { color: #67c23a; }
+
+/* 表格样式美化 */
+.order-table {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: #242736;
+  --el-table-border-color: #2d303e;
+  --el-table-text-color: #cbd5e1;
+  --el-table-header-text-color: #94a3b8;
 }
 
-.order-section tr:nth-child(even) {
-  background-color: #1a202c;
+.price-text {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 600;
 }
 
-.order-section tr:nth-child(odd) {
-  background-color: #1a202c;
+.price-text.sell { color: #ff8e8e; }
+.price-text.buy { color: #8ef58e; }
+
+:deep(.el-table__row--striped) td {
+  background-color: #1e202e !important;
 }
 
-.order-section tr:hover {
-  background-color: #34495e;
-}
-
-/* 表单样式 */
-.form-group {
-  margin-bottom: 0;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: bold;
-}
-
-.form-group select {
-  width: 100%;
-  max-width: 300px;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
+:deep(.el-table__body tr:hover > td) {
+  background-color: #2a2d3d !important;
 }
 </style>
