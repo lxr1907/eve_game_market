@@ -1,6 +1,7 @@
 const LoyaltyOffer = require('../models/LoyaltyOffer');
 const Order = require('../models/Order');
 const LoyaltyTypeLpIsk = require('../models/LoyaltyTypeLpIsk');
+const LoyaltySkipItem = require('../models/LoyaltySkipItem');
 const eveApiService = require('../services/eveApiService');
 
 class LoyaltyController {
@@ -298,6 +299,10 @@ class LoyaltyController {
     const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId);
     const offers = allOffers.offers;
     
+    // 获取需要跳过的物品ID列表
+    const skipItemIds = await LoyaltySkipItem.getAllSkipIds(datasource);
+    console.log(`Fetched ${skipItemIds.length} items to skip for datasource ${datasource}`);
+    
     console.log(`Fetched ${offers.length} loyalty offers from database`);
     
     // 遍历处理每个offer（仅处理没有required_items的offer）
@@ -308,6 +313,13 @@ class LoyaltyController {
     
     for (const offer of offers) {
       try {
+        // 检查是否在跳过列表中
+        if (skipItemIds.includes(offer.type_id)) {
+          console.log(`Skipping offer for type ${offer.type_id} - found in loyalty_skip_items table`);
+          skippedOffers++;
+          continue;
+        }
+
         // 检查是否有required_items，如果有则跳过
         if (offer.required_items && offer.required_items.length > 0) {
           console.log(`Skipping offer for type ${offer.type_id} - it has required_items`);
@@ -420,6 +432,11 @@ class LoyaltyController {
               console.log(`Skipping offer for type ${offer.type_id} - total profit (${totalProfit.toFixed(2)}) is less than 10M threshold`);
             }
           }
+        } else {
+          // 如果没有买单，记录到跳过表
+          console.log(`No buy orders found for type ${offer.type_id} after sync. Adding to skip items table.`);
+          await LoyaltySkipItem.addSkipItem(offer.type_id, datasource, 'no_buy_orders');
+          skippedOffers++;
         }
         
         processedOffers++;

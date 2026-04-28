@@ -3,6 +3,7 @@ const SystemKill = require('../models/SystemKill');
 const System = require('../models/System');
 const Stargate = require('../models/Stargate');
 const Constellation = require('../models/Constellation');
+const LoyaltySkipItem = require('../models/LoyaltySkipItem');
 
 
 /**
@@ -213,6 +214,10 @@ async function syncDatabaseStructure() {
     
     // 15. 创建或更新 stargates 表
     await Stargate.createTable();
+    
+    // 16. 创建或更新 loyalty_skip_items 表
+    await LoyaltySkipItem.createTable();
+    console.log(`✓ 表 loyalty_skip_items 创建或验证成功`);
     
     console.log('所有表结构同步完成！');
 
