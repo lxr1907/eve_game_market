@@ -124,6 +124,28 @@ class Type {
     return rows;
   }
 
+  // 获取完整的层级结构数据 (Category -> Group -> Type)
+  static async getHierarchyData() {
+    const query = `
+      SELECT 
+        c.category_id, c.name as category_name,
+        g.group_id, g.name as group_name,
+        t.id as type_id, t.name as type_name
+      FROM types t
+      JOIN item_groups g ON t.group_id = g.group_id
+      JOIN item_categories c ON g.category_id = c.category_id
+      WHERE t.name IS NOT NULL AND t.name != ''
+      ORDER BY c.name, g.name, t.name
+    `;
+    try {
+      const [rows] = await pool.execute(query);
+      return rows;
+    } catch (error) {
+      console.error('Error in Type.getHierarchyData:', error);
+      throw error;
+    }
+  }
+
   static async findAll(page = 1, limit = 10, search = '') {
     // 构建查询字符串，使用字符串拼接代替参数绑定
     let query = 'SELECT * FROM types';

@@ -3,6 +3,7 @@ const TypeController = require('../controllers/TypeController');
 const router = express.Router();
 
 // Type Routes
+router.get('/types/hierarchy', TypeController.getHierarchy);
 router.get('/types', TypeController.getTypes);
 router.get('/types/sync-ids', TypeController.syncTypeIds);
 router.get('/types/sync-details', TypeController.syncTypeDetails);

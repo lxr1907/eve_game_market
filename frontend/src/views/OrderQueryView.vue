@@ -41,37 +41,42 @@
       <!-- 左侧：物品搜索 -->
       <div class="left-panel">
         <div class="item-search">
-          <div class="search-input">
-            <input 
-              type="text" 
-              v-model="typeSearch" 
-              placeholder="输入物品名称搜索"
-              @input="handleTypeSearch"
-            >
-            <button @click="handleTypeSearch">搜索</button>
-          </div>
+          <el-input
+            v-model="filterText"
+            placeholder="输入物品名称或ID搜索"
+            clearable
+            class="search-input"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
         </div>
         
         <div class="search-results">
-          <h3>搜索结果</h3>
-          <div v-if="querying">
-            <p>查询中...</p>
+          <div v-if="loadingTree" class="loading-container">
+            <el-skeleton :rows="10" animated />
           </div>
-          <div v-else-if="availableTypes.length > 0">
-            <ul>
-              <li 
-                v-for="type in availableTypes" 
-                :key="type.id"
-                @click="selectItem(type)"
-                :class="{ active: selectedTypeId === type.id }"
-              >
-                {{ type.name }} (ID: {{ type.id }})
-              </li>
-            </ul>
-          </div>
-          <div v-else>
-            <p>{{ typeSearch ? '未找到匹配的物品' : '请输入物品名称进行搜索' }}</p>
-          </div>
+          <el-tree
+            v-else
+            ref="treeRef"
+            :data="treeData"
+            :props="{ label: 'label', children: 'children' }"
+            :filter-node-method="filterNode"
+            @node-click="handleNodeClick"
+            highlight-current
+            node-key="id"
+            class="type-tree"
+          >
+            <template #default="{ node, data }">
+              <span class="custom-tree-node" :class="{ 'is-active': selectedTypeId === data.id && data.type === 'type' }">
+                <el-icon v-if="data.type === 'category'"><Folder /></el-icon>
+                <el-icon v-else-if="data.type === 'group'"><Collection /></el-icon>
+                <el-icon v-else><Document /></el-icon>
+                <span class="node-label">{{ node.label }}</span>
+              </span>
+            </template>
+          </el-tree>
         </div>
       </div>
       
@@ -164,9 +169,9 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { regionApi, orderApi } from '../services/api'
+import { regionApi, orderApi, typeApi } from '../services/api'
 
 export default {
   name: 'OrderQueryView',
@@ -183,10 +188,10 @@ export default {
     
     // 类型数据
     const typeSearch = ref('')
-    const availableTypes = ref([])
+    const treeData = ref([])
+    const treeRef = ref(null)
+    const filterText = ref('')
     const selectedTypeId = ref('')
-    const typePage = ref(1)
-    const typeLimit = ref(20)
     
     // 订单数据
     const buyOrders = ref([])
@@ -195,6 +200,7 @@ export default {
     // 加载状态
     const syncing = ref(false)
     const querying = ref(false)
+    const loadingTree = ref(false)
     
     // 格式化日期
     const formatDate = (dateString) => {
@@ -206,28 +212,43 @@ export default {
     // 获取所有区域
     const loadRegions = async () => {
       try {
-        console.log('开始加载区域数据...')
         const response = await regionApi.getRegions(1, null, '')
-        console.log('区域数据加载成功:', response)
         regions.value = response.regions
-        
-        // 如果默认区域ID存在，自动加载该区域的可用类型
-        if (selectedRegionId.value) {
-          setTimeout(() => {
-            loadAvailableTypes()
-          }, 100)
-        }
       } catch (error) {
         console.error('加载区域失败:', error)
-        console.error('错误详情:', error.response)
       }
     }
+
+    // 获取层级结构
+    const loadHierarchy = async () => {
+      try {
+        loadingTree.value = true
+        const response = await typeApi.getHierarchy()
+        treeData.value = response
+      } catch (error) {
+        console.error('加载层级结构失败:', error)
+      } finally {
+        loadingTree.value = false
+      }
+    }
+
+    // 树过滤逻辑
+    const filterNode = (value, data) => {
+      if (!value) return true
+      return data.label.toLowerCase().includes(value.toLowerCase())
+    }
+
+    // 监听过滤文本变化
+    watch(filterText, (val) => {
+      treeRef.value?.filter(val)
+    })
     
     // 处理区域选择变化
     const handleRegionChange = () => {
-      selectedTypeId.value = ''
-      typeSearch.value = ''
-      loadAvailableTypes()
+      // 区域变化不再需要重新加载可用类型，因为我们现在用全量树
+      if (selectedTypeId.value) {
+        queryOrders()
+      }
     }
     
     // 处理数据源变化
@@ -237,32 +258,12 @@ export default {
       }
     }
     
-    // 加载可用类型
-    const loadAvailableTypes = async () => {
-      if (!selectedRegionId.value) return
-      
-      try {
-        const response = await orderApi.getAvailableTypesByRegion(selectedRegionId.value, {
-          page: typePage.value,
-          limit: typeLimit.value,
-          search: typeSearch.value
-        })
-        availableTypes.value = response.data
-      } catch (error) {
-        console.error('加载可用类型失败:', error)
+    // 处理树节点点击
+    const handleNodeClick = (data) => {
+      if (data.type === 'type') {
+        selectedTypeId.value = data.id
+        queryOrders()
       }
-    }
-    
-    // 处理类型搜索
-    const handleTypeSearch = () => {
-      typePage.value = 1
-      loadAvailableTypes()
-    }
-    
-    // 选择物品并查询订单
-    const selectItem = (type) => {
-      selectedTypeId.value = type.id
-      queryOrders() // 选中物品后自动触发查询订单
     }
     
     // 同步订单数据
@@ -304,38 +305,30 @@ export default {
       }
     }
     
-    // 初始化数据
+    // 生命周期钩子
     onMounted(() => {
       loadRegions()
+      loadHierarchy()
     })
     
     return {
-      // 区域相关
       regions,
       selectedRegionId,
-      
-      // 数据源
       datasource,
-      handleDatasourceChange,
-      
-      // 类型相关
-      typeSearch,
-      availableTypes,
+      filterText,
+      treeData,
+      treeRef,
       selectedTypeId,
-      
-      // 订单相关
       buyOrders,
       sellOrders,
-      
-      // 状态相关
       syncing,
       querying,
-      
-      // 方法
+      loadingTree,
       formatDate,
       handleRegionChange,
-      handleTypeSearch,
-      selectItem,
+      handleDatasourceChange,
+      handleNodeClick,
+      filterNode,
       syncOrders,
       queryOrders
     }
@@ -391,87 +384,64 @@ export default {
 
 /* 左侧面板 */
 .left-panel {
-  width: 300px;
-  background-color: #2c3e50;
-  border-radius: 8px;
-  padding: 20px;
+  width: 350px;
+  background-color: #1a1a1a;
+  border-right: 1px solid #333;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
-/* 物品搜索 */
 .item-search {
-  margin-bottom: 20px;
+  padding: 15px;
+  border-bottom: 1px solid #333;
 }
 
-.search-input {
-  display: flex;
-  gap: 10px;
-  width: 100%;
-}
-
-.search-input input {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #4a5568;
-  border-radius: 4px;
-  font-size: 16px;
-  background-color: #1a202c;
-  color: #e2e8f0;
-}
-
-.search-input button {
-  padding: 10px 15px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.search-input button:hover {
-  background-color: #45a049;
-}
-
-/* 搜索结果 */
 .search-results {
   flex: 1;
   overflow-y: auto;
-}
-
-.search-results h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  color: #333;
-  font-size: 18px;
-}
-
-.search-results ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.search-results li {
   padding: 10px;
-  margin-bottom: 8px;
-  background-color: #1a202c;
-  border-radius: 4px;
-  cursor: pointer;
-  border: 1px solid #4a5568;
-  transition: all 0.2s ease;
-  color: #e2e8f0;
 }
 
-.search-results li:hover {
-  background-color: #2d3748;
-  border-color: #4CAF50;
+.type-tree {
+  background: transparent !important;
+  color: #ccc !important;
 }
 
-.search-results li.active {
-  background-color: #4CAF50;
-  color: white;
-  border-color: #4CAF50;
+:deep(.el-tree-node__content) {
+  height: 32px !important;
+}
+
+:deep(.el-tree-node__content:hover) {
+  background-color: #2a2a2a !important;
+}
+
+:deep(.el-tree-node.is-current > .el-tree-node__content) {
+  background-color: #333 !important;
+  color: #409eff !important;
+}
+
+.custom-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  width: 100%;
+}
+
+.custom-tree-node.is-active {
+  color: #409eff;
+  font-weight: bold;
+}
+
+.node-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loading-container {
+  padding: 20px;
 }
 
 /* 右侧面板 */

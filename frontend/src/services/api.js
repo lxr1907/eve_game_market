@@ -85,6 +85,12 @@ export const typeApi = {
   async getCountWithNameNotNull() {
     const response = await apiClient.get(`/types/count-with-name-not-null`);
     return response;
+  },
+
+  // 获取层级结构数据
+  async getHierarchy() {
+    const response = await apiClient.get(`/types/hierarchy`);
+    return response;
   }
 };
 

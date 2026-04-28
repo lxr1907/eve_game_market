@@ -15,6 +15,65 @@ let syncTaskStatus = {
 };
 
 class TypeController {
+  // 获取层级结构
+  static async getHierarchy(req, res) {
+    try {
+      const rows = await Type.getHierarchyData();
+      
+      // 在后端构建树形结构
+      const hierarchy = [];
+      const categoryMap = new Map();
+      const groupMap = new Map();
+
+      for (const row of rows) {
+        // 处理 Category
+        let category = categoryMap.get(row.category_id);
+        if (!category) {
+          category = {
+            id: `c${row.category_id}`,
+            realId: row.category_id,
+            name: row.category_name,
+            label: `${row.category_name} (${row.category_id})`,
+            children: [],
+            type: 'category'
+          };
+          categoryMap.set(row.category_id, category);
+          hierarchy.push(category);
+        }
+
+        // 处理 Group
+        let group = groupMap.get(row.group_id);
+        if (!group) {
+          group = {
+            id: `g${row.group_id}`,
+            realId: row.group_id,
+            name: row.group_name,
+            label: `${row.group_name} (${row.group_id})`,
+            children: [],
+            type: 'group'
+          };
+          groupMap.set(row.group_id, group);
+          category.children.push(group);
+        }
+
+        // 处理 Type
+        group.children.push({
+          id: row.type_id,
+          realId: row.type_id,
+          name: row.type_name,
+          label: `${row.type_name} (${row.type_id})`,
+          type: 'type',
+          isLeaf: true
+        });
+      }
+
+      res.status(200).json(hierarchy);
+    } catch (error) {
+      console.error('Error in getHierarchy:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
   // 同步Type IDs
   static async syncTypeIds(req, res) {
     // 直接返回成功给前端
