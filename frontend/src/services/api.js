@@ -88,8 +88,10 @@ export const typeApi = {
   },
 
   // 获取层级结构数据
-  async getHierarchy() {
-    const response = await apiClient.get(`/types/hierarchy`);
+  async getHierarchy(regionId = null) {
+    const params = {};
+    if (regionId) params.regionId = regionId;
+    const response = await apiClient.get(`/types/hierarchy`, { params });
     return response;
   }
 };

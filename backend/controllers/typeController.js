@@ -18,7 +18,8 @@ class TypeController {
   // 获取层级结构
   static async getHierarchy(req, res) {
     try {
-      const rows = await Type.getHierarchyData();
+      const { regionId } = req.query;
+      const rows = await Type.getHierarchyData(regionId);
       
       // 在后端构建树形结构
       const hierarchy = [];

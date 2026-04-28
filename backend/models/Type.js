@@ -125,8 +125,8 @@ class Type {
   }
 
   // 获取完整的层级结构数据 (Category -> Group -> Type)
-  static async getHierarchyData() {
-    const query = `
+  static async getHierarchyData(regionId = null) {
+    let query = `
       SELECT 
         c.category_id, c.name as category_name,
         g.group_id, g.name as group_name,
@@ -134,11 +134,21 @@ class Type {
       FROM types t
       JOIN item_groups g ON t.group_id = g.group_id
       JOIN item_categories c ON g.category_id = c.category_id
-      WHERE t.name IS NOT NULL AND t.name != ''
-      ORDER BY c.name, g.name, t.name
     `;
+    
+    const params = [];
+    if (regionId) {
+      query += ` JOIN region_types rt ON t.id = rt.type_id `;
+      query += ` WHERE t.name IS NOT NULL AND t.name != '' AND rt.region_id = ? `;
+      params.push(regionId);
+    } else {
+      query += ` WHERE t.name IS NOT NULL AND t.name != '' `;
+    }
+    
+    query += ` ORDER BY c.name, g.name, t.name `;
+    
     try {
-      const [rows] = await pool.execute(query);
+      const [rows] = await pool.execute(query, params);
       return rows;
     } catch (error) {
       console.error('Error in Type.getHierarchyData:', error);

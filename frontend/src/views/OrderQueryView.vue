@@ -222,7 +222,7 @@ export default {
     const loadHierarchy = async () => {
       try {
         loadingTree.value = true
-        const response = await typeApi.getHierarchy()
+        const response = await typeApi.getHierarchy(selectedRegionId.value)
         treeData.value = response
       } catch (error) {
         ElMessage.error('加载物品树失败')
@@ -234,7 +234,6 @@ export default {
     // 事件处理
     const filterNode = (value, data) => {
       if (!value) return true
-      if (data.type === 'category') return true
       const searchTerm = value.toLowerCase()
       return data.label.toLowerCase().includes(searchTerm)
     }
@@ -244,6 +243,7 @@ export default {
     })
     
     const handleRegionChange = () => {
+      loadHierarchy()
       if (selectedTypeId.value) queryOrders()
     }
     
