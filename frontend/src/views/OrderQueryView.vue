@@ -235,7 +235,11 @@ export default {
     // 树过滤逻辑
     const filterNode = (value, data) => {
       if (!value) return true
-      return data.label.toLowerCase().includes(value.toLowerCase())
+      // 如果是分类层，始终保留显示
+      if (data.type === 'category') return true
+      // 搜索名称或ID
+      const searchTerm = value.toLowerCase()
+      return data.label.toLowerCase().includes(searchTerm)
     }
 
     // 监听过滤文本变化
@@ -385,6 +389,8 @@ export default {
 /* 左侧面板 */
 .left-panel {
   width: 350px;
+  min-width: 350px;
+  flex-shrink: 0;
   background-color: #1a1a1a;
   border-right: 1px solid #333;
   display: flex;
