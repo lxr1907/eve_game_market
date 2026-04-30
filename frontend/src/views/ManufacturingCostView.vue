@@ -330,14 +330,45 @@ export default {
         materials.value = materialsWithCost
 
         // 3. 计算总成本
-        const total = materialsWithCost.reduce((sum, material) => sum + material.total_cost, 0)
-        totalCost.value = [{
-          name: '原材料总成本',
-          value: total
-        }, {
-          name: '单单位成本',
-          value: total
-        }]
+      const total = materialsWithCost.reduce((sum, material) => sum + material.total_cost, 0)
+      totalCost.value = [{
+        name: '原材料总成本',
+        value: total
+      }, {
+        name: '单单位成本',
+        value: total
+      }]
+
+      // 4. 查询产品的市场价格
+      const productPriceResponse = await orderApi.getOrders({
+        regionId: selectedRegionId.value,
+        typeId: selectedTypeId.value,
+        datasource: datasource.value
+      })
+      const buyPrice = productPriceResponse.buyOrders.data.length > 0 
+        ? productPriceResponse.buyOrders.data[0].price 
+        : 0
+      const sellPrice = productPriceResponse.sellOrders.data.length > 0 
+        ? productPriceResponse.sellOrders.data[0].price 
+        : 0
+      
+      // 计算收益
+      const buyProfit = buyPrice - total
+      const sellProfit = sellPrice - total
+      
+      totalCost.value.push({
+        name: '产品最低卖价',
+        value: sellPrice
+      }, {
+        name: '产品最高买价',
+        value: buyPrice
+      }, {
+        name: '按卖价收益',
+        value: sellProfit
+      }, {
+        name: '按买价收益',
+        value: buyProfit
+      })
       } catch (error) {
         console.error('查询制造成本失败:', error)
         const errorMessage = error.response?.data?.message || error.message || '查询制造成本失败'
