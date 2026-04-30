@@ -339,7 +339,9 @@ export default {
           value: total
         }]
       } catch (error) {
-        ElMessage.error('查询制造成本失败')
+        console.error('查询制造成本失败:', error)
+        const errorMessage = error.response?.data?.message || error.message || '查询制造成本失败'
+        ElMessage.error(errorMessage)
       } finally {
         querying.value = false
       }
