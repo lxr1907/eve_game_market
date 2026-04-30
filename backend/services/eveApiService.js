@@ -616,7 +616,7 @@ class EveApiService {
         timeout: 10000 // 设置10秒超时
       });
       // 检查是否是蓝图
-      if (response.data.category_id === 8) {
+      if (response.data.category_id === 9) {
         // 获取蓝图所需的原材料
         const materials = response.data.activities?.manufacturing?.materials || [];
         return materials;
