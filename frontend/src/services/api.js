@@ -99,6 +99,12 @@ export const typeApi = {
   async getBlueprintMaterials(typeId, datasource = 'serenity') {
     const response = await apiClient.get(`/types/${typeId}/blueprint-materials`, { params: { datasource } });
     return response;
+  },
+
+  // 获取蓝图获取成本
+  async getBlueprintCost(typeId, datasource = 'serenity') {
+    const response = await apiClient.get(`/types/${typeId}/blueprint-cost`, { params: { datasource } });
+    return response;
   }
 };
 

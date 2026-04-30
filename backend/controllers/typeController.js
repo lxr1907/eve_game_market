@@ -437,6 +437,25 @@ class TypeController {
       res.status(500).json({ message: 'Failed to get blueprint materials', error: error.message });
     }
   }
+
+  // 获取蓝图获取成本
+  static async getBlueprintCost(req, res) {
+    try {
+      const { id } = req.params;
+      const { datasource } = req.query;
+      
+      // 查询loyalty_offers表
+      const [rows] = await pool.execute(
+        'SELECT lp_cost, isk_cost FROM loyalty_offers WHERE type_id = ?',
+        [id]
+      );
+      
+      res.status(200).json(rows);
+    } catch (error) {
+      console.error(`Error getting blueprint cost for type ID ${req.params.id}:`, error);
+      res.status(500).json({ message: 'Failed to get blueprint cost', error: error.message });
+    }
+  }
 }
 
 module.exports = TypeController;

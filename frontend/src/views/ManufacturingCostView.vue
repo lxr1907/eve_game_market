@@ -35,6 +35,11 @@
               <el-radio-button label="tranquility">欧服</el-radio-button>
             </el-radio-group>
           </div>
+
+          <div class="filter-item">
+            <span class="filter-label">LP兑换比例</span>
+            <el-input-number v-model="lpToIskRatio" @change="handleLpRatioChange" :min="500" :max="5000" :step="100" placeholder="LP兑换ISK比例"></el-input-number>
+          </div>
         </div>
       </div>
     </header>
@@ -182,11 +187,13 @@ export default {
     const regions = ref([])
     const selectedRegionId = ref('10000002')
     const datasource = ref('serenity')
+    const lpToIskRatio = ref(1300)
     const treeData = ref([])
     const treeRef = ref(null)
     const filterText = ref('')
-    const selectedTypeId = ref('')
+    const selectedTypeId = ref(null)
     const blueprintInfo = ref([])
+    const blueprintCost = ref([])
     const materials = ref([])
     const totalCost = ref([])
     const querying = ref(false)
@@ -279,6 +286,10 @@ export default {
     const handleRegionChange = () => {
       if (selectedTypeId.value) queryManufacturingCost()
     }
+
+    const handleLpRatioChange = () => {
+      if (selectedTypeId.value) queryManufacturingCost()
+    }
     
     const handleDatasourceChange = () => {
       if (selectedTypeId.value) queryManufacturingCost()
@@ -305,37 +316,74 @@ export default {
         }]
 
         // 2. 获取蓝图所需的原材料
-        const materialsResponse = await typeApi.getBlueprintMaterials(selectedTypeId.value, datasource.value)
-        const materialsWithCost = await Promise.all(materialsResponse.map(async (material) => {
-          // 获取原材料的市场价格
-          const priceResponse = await orderApi.getOrders({
-            regionId: selectedRegionId.value,
-            typeId: material.type_id,
-            datasource: datasource.value
+      const materialsResponse = await typeApi.getBlueprintMaterials(selectedTypeId.value, datasource.value)
+      // 查询蓝图是否在loyalty_offers表中
+      const blueprintCostResponse = await typeApi.getBlueprintCost(selectedTypeId.value, datasource.value)
+      blueprintCost.value = blueprintCostResponse
+      const materialsWithCost = await Promise.all(materialsResponse.map(async (material) => {
+        // 获取原材料的市场价格
+        const priceResponse = await orderApi.getOrders({
+          regionId: selectedRegionId.value,
+          typeId: material.type_id,
+          datasource: datasource.value
           })
-          // 取最低卖价作为成本
-          const sellPrice = priceResponse.sellOrders.data.length > 0 
-            ? priceResponse.sellOrders.data[0].price 
-            : 0
-          return {
-            name: material.name,
-            type_id: material.type_id,
-            quantity: material.quantity,
-            price: sellPrice,
-            total_cost: sellPrice * material.quantity
-          }
-        }))
-        materials.value = materialsWithCost
+        // 取最低卖价作为成本
+        const sellPrice = priceResponse.sellOrders.data.length > 0 
+          ? priceResponse.sellOrders.data[0].price 
+          : 0
+        return {
+          name: material.name,
+          type_id: material.type_id,
+          quantity: material.quantity,
+          price: sellPrice,
+          total_cost: sellPrice * material.quantity
+        }
+      }))
+      materials.value = materialsWithCost
 
         // 3. 计算总成本
-      const total = materialsWithCost.reduce((sum, material) => sum + material.total_cost, 0)
-      totalCost.value = [{
-        name: '原材料总成本',
-        value: total
-      }, {
-        name: '单单位成本',
-        value: total
-      }]
+      const materialsTotal = materialsWithCost.reduce((sum, material) => sum + material.total_cost, 0)
+      let total = materialsTotal
+      
+      // 4. 计算蓝图获取成本（如果在loyalty_offers表中）
+      if (blueprintCost.value && blueprintCost.value.length > 0) {
+        const blueprintLpCost = blueprintCost.value[0].lp_cost
+        const blueprintIskCost = blueprintCost.value[0].isk_cost
+        const lpToIskValue = blueprintLpCost * lpToIskRatio.value
+        const blueprintTotalCost = lpToIskValue + blueprintIskCost
+        total += blueprintTotalCost
+        
+        totalCost.value = [{
+          name: '原材料总成本',
+          value: materialsTotal
+        }, {
+          name: '单单位成本',
+          value: materialsTotal
+        }, {
+          name: '蓝图LP成本',
+          value: blueprintLpCost
+        }, {
+          name: '蓝图ISK成本',
+          value: blueprintIskCost
+        }, {
+          name: 'LP换算ISK成本',
+          value: lpToIskValue
+        }, {
+          name: '蓝图总成本',
+          value: blueprintTotalCost
+        }, {
+          name: '总制造成本',
+          value: total
+        }]
+      } else {
+        totalCost.value = [{
+          name: '原材料总成本',
+          value: materialsTotal
+        }, {
+          name: '单单位成本',
+          value: materialsTotal
+        }]
+      }
 
       // 4. 查询产品的市场价格
       const productPriceResponse = await orderApi.getOrders({
@@ -393,7 +441,7 @@ export default {
     
     return {
       regions, selectedRegionId, datasource, filterText, treeData, treeRef,
-      selectedTypeId, blueprintInfo, materials, totalCost, querying, loadingTree,
+      selectedTypeId, blueprintInfo, blueprintCost, materials, totalCost, querying, loadingTree,
       formatDate, formatISK, handleRegionChange, handleDatasourceChange,
       handleNodeClick, filterNode, queryManufacturingCost
     }

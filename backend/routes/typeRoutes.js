@@ -11,6 +11,7 @@ router.get('/types/sync-details', TypeController.syncTypeDetails);
 router.get('/types/count-with-name-not-null', TypeController.getCountWithNameNotNull);
 router.get('/types/:id', TypeController.getTypeById);
 router.get('/types/:id/blueprint-materials', TypeController.getBlueprintMaterials);
+router.get('/types/:id/blueprint-cost', TypeController.getBlueprintCost);
 router.post('/types', TypeController.createType);
 router.put('/types/:id', TypeController.updateType);
 router.put('/types/:id/update-status', TypeController.updateStatus);
