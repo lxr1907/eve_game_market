@@ -11,6 +11,7 @@ import SystemListView from '../views/SystemListView.vue'
 import SystemDetailView from '../views/SystemDetailView.vue'
 import SystemKillView from '../views/SystemKillView.vue'
 import StarMapView from '../views/StarMapView.vue'
+import ManufacturingCostView from '../views/ManufacturingCostView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -79,6 +80,11 @@ const router = createRouter({
       path: '/star-map',
       name: 'star-map',
       component: StarMapView
+    },
+    {
+      path: '/manufacturing-cost',
+      name: 'manufacturing-cost',
+      component: ManufacturingCostView
     }
   ]
 })

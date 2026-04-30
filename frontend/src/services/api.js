@@ -93,6 +93,12 @@ export const typeApi = {
     if (regionId) params.regionId = regionId;
     const response = await apiClient.get(`/types/hierarchy`, { params });
     return response;
+  },
+
+  // 获取蓝图所需的原材料
+  async getBlueprintMaterials(typeId) {
+    const response = await apiClient.get(`/types/${typeId}/blueprint-materials`);
+    return response;
   }
 };
 

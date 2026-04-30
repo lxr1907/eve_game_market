@@ -28,6 +28,10 @@
           <el-icon><Document /></el-icon>
           订单查询
         </el-menu-item>
+        <el-menu-item index="10">
+          <el-icon><Money /></el-icon>
+          制造成本
+        </el-menu-item>
         <el-menu-item index="5">
           <el-icon><Star /></el-icon>
           Loyalty商店
@@ -69,6 +73,7 @@ const activeIndex = computed(() => {
   if (path === '/regions') return '2-2'
   if (path === '/systems') return '2-3'
   if (path === '/orders') return '4'
+  if (path === '/manufacturing-cost') return '10'
   if (path === '/loyalty') return '5'
   if (path === '/profit-data') return '6'
   if (path === '/online-player-stats') return '7'
@@ -90,6 +95,8 @@ const handleSelect = (key, keyPath) => {
     router.push('/systems')
   } else if (key === '4') {
     router.push('/orders')
+  } else if (key === '10') {
+    router.push('/manufacturing-cost')
   } else if (key === '5') {
     router.push('/loyalty')
   } else if (key === '6') {
@@ -107,52 +114,50 @@ const handleSelect = (key, keyPath) => {
 <style scoped>
 .navbar-container {
   width: 100%;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1000;
+  background-color: #1a1c26;
+  border-bottom: 1px solid #2d303e;
 }
 
 .navbar-header {
-  background-color: #2c5cc5;
-  color: white;
   padding: 0;
-  height: 60px;
-  line-height: 60px;
-  display: flex;
-  align-items: center;
+  background-color: #1a1c26;
+  border-bottom: 1px solid #2d303e;
 }
 
 :deep(.el-menu) {
-  background-color: #2c5cc5;
+  background-color: #1a1c26;
   border-bottom: none;
 }
 
 :deep(.el-menu-item) {
-  color: white !important;
+  color: #94a3b8;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s;
 }
 
-:deep(.el-menu-item:hover),
+:deep(.el-menu-item:hover) {
+  color: #409eff;
+  border-bottom: 2px solid #409eff;
+}
+
 :deep(.el-menu-item.is-active) {
-  background-color: #409eff !important;
-  color: white !important;
+  color: #409eff;
+  border-bottom: 2px solid #409eff;
 }
 
 :deep(.el-sub-menu__title) {
-  color: white !important;
+  color: #94a3b8;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s;
 }
 
-:deep(.el-sub-menu__title:hover),
-:deep(.el-sub-menu__title.is-active) {
-  background-color: #409eff !important;
-  color: white !important;
+:deep(.el-sub-menu__title:hover) {
+  color: #409eff;
+  border-bottom: 2px solid #409eff;
 }
 
-:deep(.el-menu--horizontal > .el-menu-item:hover),
-:deep(.el-menu--horizontal > .el-menu-item.is-active),
-:deep(.el-menu--horizontal > .el-sub-menu__title:hover),
-:deep(.el-menu--horizontal > .el-sub-menu__title.is-active) {
-  background-color: #409eff !important;
-  color: white !important;
+:deep(.el-sub-menu.is-active .el-sub-menu__title) {
+  color: #409eff;
+  border-bottom: 2px solid #409eff;
 }
 </style>

@@ -386,6 +386,28 @@ class TypeController {
       res.status(500).json({ message: 'Failed to get count', error: error.message });
     }
   }
+
+  // 获取蓝图所需的原材料
+  static async getBlueprintMaterials(req, res) {
+    try {
+      const { id } = req.params;
+      // 从EVE API获取蓝图所需的原材料
+      const materials = await eveApiService.getBlueprintMaterials(id);
+      // 获取每个原材料的名称
+      const materialsWithNames = await Promise.all(materials.map(async (material) => {
+        const type = await Type.findById(material.type_id);
+        return {
+          type_id: material.type_id,
+          name: type ? type.name : `Unknown Type (${material.type_id})`,
+          quantity: material.quantity
+        };
+      }));
+      res.status(200).json(materialsWithNames);
+    } catch (error) {
+      console.error(`Error getting blueprint materials for type ID ${req.params.id}:`, error);
+      res.status(500).json({ message: 'Failed to get blueprint materials', error: error.message });
+    }
+  }
 }
 
 module.exports = TypeController;

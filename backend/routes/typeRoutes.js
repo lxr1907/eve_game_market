@@ -10,6 +10,7 @@ router.get('/types/sync-details', TypeController.syncTypeDetails);
 // 获取name不为null的数据总数（放在动态路由之前）
 router.get('/types/count-with-name-not-null', TypeController.getCountWithNameNotNull);
 router.get('/types/:id', TypeController.getTypeById);
+router.get('/types/:id/blueprint-materials', TypeController.getBlueprintMaterials);
 router.post('/types', TypeController.createType);
 router.put('/types/:id', TypeController.updateType);
 router.put('/types/:id/update-status', TypeController.updateStatus);
