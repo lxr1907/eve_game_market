@@ -619,12 +619,36 @@ class EveApiService {
       // 打印调试信息
       console.log(`Blueprint type ${typeId} category_id: ${response.data.category_id}`);
       console.log(`Blueprint type ${typeId} activities: ${JSON.stringify(response.data.activities, null, 2)}`);
+      console.log(`Blueprint type ${typeId} dogma_attributes: ${JSON.stringify(response.data.dogma_attributes, null, 2)}`);
+      console.log(`Blueprint type ${typeId} dogma_effects: ${JSON.stringify(response.data.dogma_effects, null, 2)}`);
       
       // 检查是否是蓝图
       if (response.data.category_id === 9) {
-        // 获取蓝图所需的原材料
-        const materials = response.data.activities?.manufacturing?.materials || [];
-        console.log(`Found ${materials.length} materials for blueprint ${typeId}`);
+        // 尝试从dogma_attributes中获取原材料信息
+        let materials = [];
+        
+        // 首先尝试从activities中获取
+        if (response.data.activities?.manufacturing?.materials) {
+          materials = response.data.activities.manufacturing.materials;
+          console.log(`Found ${materials.length} materials from activities for blueprint ${typeId}`);
+        } else {
+          // 如果activities中没有，尝试从dogma_effects中解析
+          console.log(`No materials found in activities, checking dogma_effects...`);
+          // 从dogma_effects获取制造所需原材料（EVE ESI回退方案）
+          if (response.data.dogma_effects) {
+            const manufacturingEffect = response.data.dogma_effects.find(effect => effect.effect_id === 1);
+            if (manufacturingEffect && manufacturingEffect.dogma_attributes) {
+              materials = manufacturingEffect.dogma_attributes
+                .filter(attr => attr.attribute_id >= 1000000)
+                .map(attr => ({
+                  type_id: attr.attribute_id - 1000000,
+                  quantity: Math.round(attr.value)
+                }));
+              console.log(`Found ${materials.length} materials from dogma_effects for blueprint ${typeId}`);
+            }
+          }
+        }
+        
         return materials;
       } else {
         // 不是蓝图，返回空数组
@@ -635,8 +659,8 @@ class EveApiService {
       if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
         // 如果是超时或连接重置错误，进行重试
         console.log(`Timeout fetching blueprint materials for type ${typeId}, retrying (${retries} left)...`);
-        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
-        return this.getBlueprintMaterials(typeId, datasource, retries - 1);
+        await new Promise(resolve => setTimeout(resolve,(4 - retries)*1000));
+        return this.getBlueprintMaterials(typeId, datasource, retries -1);
       } else {
         console.error(`Error fetching blueprint materials for type ID ${typeId}: ${error.message}`);
         return []; // 返回空数组表示获取失败

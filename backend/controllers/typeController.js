@@ -1,5 +1,6 @@
 const Type = require('../models/Type');
 const Group = require('../models/Group');
+const Category = require('../models/Category');
 const eveApiService = require('../services/eveApiService');
 const pool = require('../config/database');
 
@@ -394,18 +395,33 @@ class TypeController {
     try {
       const { id } = req.params;
       const { datasource } = req.query;
-      // 从EVE API获取蓝图所需的原材料
-      const materials = await eveApiService.getBlueprintMaterials(id, datasource);
       
-      // 如果API返回空，尝试从本地数据库查询
-      if (materials.length === 0) {
-        console.log(`API returned no materials for blueprint ${id}, checking local database...`);
-        // 这里可以添加从本地blueprint_materials表查询的逻辑
-        // 由于表结构未知，暂时返回空数组
-        res.status(200).json([]);
+      // 首先尝试从本地blueprint_materials表查询
+      const [rows] = await pool.execute(
+        'SELECT material_type_id, quantity FROM blueprint_materials WHERE blueprint_type_id = ?',
+        [id]
+      );
+      
+      console.log(`Query result for blueprint ${id}:`, rows);
+      
+      if (rows.length > 0) {
+        console.log(`Found ${rows.length} materials from local blueprint_materials table for blueprint ${id}`);
+        // 获取每个原材料的名称
+        const materialsWithNames = await Promise.all(rows.map(async (row) => {
+          const type = await Type.findById(row.material_type_id);
+          return {
+            type_id: row.material_type_id,
+            name: type ? type.name : `Unknown Type (${row.material_type_id})`,
+            quantity: row.quantity
+          };
+        }));
+        res.status(200).json(materialsWithNames);
         return;
       }
       
+      // 如果本地数据库没有，再从EVE API获取
+      console.log(`No materials found in local database for blueprint ${id}, fetching from EVE API...`);
+      const materials = await eveApiService.getBlueprintMaterials(id, datasource);
       // 获取每个原材料的名称
       const materialsWithNames = await Promise.all(materials.map(async (material) => {
         const type = await Type.findById(material.type_id);
