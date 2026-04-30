@@ -307,7 +307,7 @@ export default {
         }]
 
         // 2. 获取蓝图所需的原材料
-        const materialsResponse = await typeApi.getBlueprintMaterials(selectedTypeId.value)
+        const materialsResponse = await typeApi.getBlueprintMaterials(selectedTypeId.value, datasource.value)
         const materialsWithCost = await Promise.all(materialsResponse.map(async (material) => {
           // 获取原材料的市场价格
           const priceResponse = await orderApi.getOrders({

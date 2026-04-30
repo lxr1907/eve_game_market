@@ -96,8 +96,8 @@ export const typeApi = {
   },
 
   // 获取蓝图所需的原材料
-  async getBlueprintMaterials(typeId) {
-    const response = await apiClient.get(`/types/${typeId}/blueprint-materials`);
+  async getBlueprintMaterials(typeId, datasource = 'serenity') {
+    const response = await apiClient.get(`/types/${typeId}/blueprint-materials`, { params: { datasource } });
     return response;
   }
 };

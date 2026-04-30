@@ -393,8 +393,9 @@ class TypeController {
   static async getBlueprintMaterials(req, res) {
     try {
       const { id } = req.params;
+      const { datasource } = req.query;
       // 从EVE API获取蓝图所需的原材料
-      const materials = await eveApiService.getBlueprintMaterials(id);
+      const materials = await eveApiService.getBlueprintMaterials(id, datasource);
       // 获取每个原材料的名称
       const materialsWithNames = await Promise.all(materials.map(async (material) => {
         const type = await Type.findById(material.type_id);
