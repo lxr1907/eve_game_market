@@ -396,42 +396,32 @@ class TypeController {
       const { id } = req.params;
       const { datasource } = req.query;
       
-      // 首先尝试从本地blueprint_materials表查询
-      const [rows] = await pool.execute(
-        'SELECT material_type_id, quantity FROM blueprint_materials WHERE blueprint_type_id = ?',
+      // 从blueprint_materials表查询制造材料
+      const [materials] = await pool.execute(
+        'SELECT material_type_id, quantity FROM blueprint_materials WHERE blueprint_type_id = ? AND activity_type = "manufacturing"',
         [id]
       );
       
-      console.log(`Query result for blueprint ${id}:`, rows);
+      console.log(`Query result for blueprint ${id}:`, materials);
       
-      if (rows.length > 0) {
-        console.log(`Found ${rows.length} materials from local blueprint_materials table for blueprint ${id}`);
+      if (materials.length > 0) {
+        console.log(`Found ${materials.length} materials from local blueprint_materials table for blueprint ${id}`);
         // 获取每个原材料的名称
-        const materialsWithNames = await Promise.all(rows.map(async (row) => {
-          const type = await Type.findById(row.material_type_id);
+        const materialsWithNames = await Promise.all(materials.map(async (material) => {
+          const type = await Type.findById(material.material_type_id);
           return {
-            type_id: row.material_type_id,
-            name: type ? type.name : `Unknown Type (${row.material_type_id})`,
-            quantity: row.quantity
+            type_id: material.material_type_id,
+            name: type ? type.name : `Unknown Type (${material.material_type_id})`,
+            quantity: material.quantity
           };
         }));
         res.status(200).json(materialsWithNames);
         return;
       }
       
-      // 如果本地数据库没有，再从EVE API获取
-      console.log(`No materials found in local database for blueprint ${id}, fetching from EVE API...`);
-      const materials = await eveApiService.getBlueprintMaterials(id, datasource);
-      // 获取每个原材料的名称
-      const materialsWithNames = await Promise.all(materials.map(async (material) => {
-        const type = await Type.findById(material.type_id);
-        return {
-          type_id: material.type_id,
-          name: type ? type.name : `Unknown Type (${material.type_id})`,
-          quantity: material.quantity
-        };
-      }));
-      res.status(200).json(materialsWithNames);
+      // 如果本地数据库没有，返回空数组
+      console.log(`No materials found in local database for blueprint ${id}`);
+      res.status(200).json([]);
     } catch (error) {
       console.error(`Error getting blueprint materials for type ID ${req.params.id}:`, error);
       res.status(500).json({ message: 'Failed to get blueprint materials', error: error.message });
@@ -454,6 +444,45 @@ class TypeController {
     } catch (error) {
       console.error(`Error getting blueprint cost for type ID ${req.params.id}:`, error);
       res.status(500).json({ message: 'Failed to get blueprint cost', error: error.message });
+    }
+  }
+
+  // 获取蓝图制造产品
+  static async getBlueprintProducts(req, res) {
+    try {
+      const { id } = req.params;
+      const { datasource } = req.query;
+      
+      // 从blueprint_products表查询制造产品
+      const [products] = await pool.execute(
+        'SELECT product_type_id, quantity, probability FROM blueprint_products WHERE blueprint_type_id = ? AND activity_type = "manufacturing"',
+        [id]
+      );
+      
+      console.log(`Query result for blueprint products ${id}:`, products);
+      
+      if (products.length > 0) {
+        console.log(`Found ${products.length} products from local blueprint_products table for blueprint ${id}`);
+        // 获取每个产品的名称
+        const productsWithNames = await Promise.all(products.map(async (product) => {
+          const type = await Type.findById(product.product_type_id);
+          return {
+            type_id: product.product_type_id,
+            name: type ? type.name : `Unknown Type (${product.product_type_id})`,
+            quantity: product.quantity,
+            probability: product.probability
+          };
+        }));
+        res.status(200).json(productsWithNames);
+        return;
+      }
+      
+      // 如果本地数据库没有，返回空数组
+      console.log(`No products found in local database for blueprint ${id}`);
+      res.status(200).json([]);
+    } catch (error) {
+      console.error(`Error getting blueprint products for type ID ${req.params.id}:`, error);
+      res.status(500).json({ message: 'Failed to get blueprint products', error: error.message });
     }
   }
 }

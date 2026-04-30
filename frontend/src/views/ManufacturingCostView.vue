@@ -389,18 +389,26 @@ export default {
         }]
       }
 
-      // 4. 查询产品的市场价格
-      const productPriceResponse = await orderApi.getOrders({
-        regionId: selectedRegionId.value,
-        typeId: selectedTypeId.value,
-        datasource: datasource.value
-      })
-      const buyPrice = productPriceResponse.buyOrders.data.length > 0 
-        ? productPriceResponse.buyOrders.data[0].price 
-        : 0
-      const sellPrice = productPriceResponse.sellOrders.data.length > 0 
-        ? productPriceResponse.sellOrders.data[0].price 
-        : 0
+      // 4. 获取蓝图制造的产品信息
+      const productsResponse = await typeApi.getBlueprintProducts(selectedTypeId.value, datasource.value)
+      
+      // 5. 查询产品的市场价格（使用产品的type_id，而不是蓝图的type_id）
+      let buyPrice = 0
+      let sellPrice = 0
+      if (productsResponse.length > 0) {
+        const productTypeId = productsResponse[0].type_id
+        const productPriceResponse = await orderApi.getOrders({
+          regionId: selectedRegionId.value,
+          typeId: productTypeId,
+          datasource: datasource.value
+        })
+        buyPrice = productPriceResponse.buyOrders.data.length > 0 
+          ? productPriceResponse.buyOrders.data[0].price 
+          : 0
+        sellPrice = productPriceResponse.sellOrders.data.length > 0 
+          ? productPriceResponse.sellOrders.data[0].price 
+          : 0
+      }
       
       // 计算收益
       const buyProfit = buyPrice - total

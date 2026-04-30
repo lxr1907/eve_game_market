@@ -105,6 +105,12 @@ export const typeApi = {
   async getBlueprintCost(typeId, datasource = 'serenity') {
     const response = await apiClient.get(`/types/${typeId}/blueprint-cost`, { params: { datasource } });
     return response;
+  },
+
+  // 获取蓝图制造产品
+  async getBlueprintProducts(typeId, datasource = 'serenity') {
+    const response = await apiClient.get(`/types/${typeId}/blueprint-products`, { params: { datasource } });
+    return response;
   }
 };
 
