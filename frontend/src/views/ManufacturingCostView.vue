@@ -83,7 +83,7 @@
         
         <template v-else>
           <!-- 蓝图信息 -->
-          <section class="table-section">
+          <section class="table-section" >
             <div class="section-header">
               <h2 class="section-title">
                 <el-icon><Document /></el-icon> 蓝图信息
@@ -114,7 +114,6 @@
             <el-table 
               :data="materials" 
               style="width: 100%" 
-              height="45%"
               border
               stripe
               size="small"
@@ -547,7 +546,6 @@ export default {
 
 .table-section {
   flex: 1;
-  min-height: 300px;
   background-color: #1a1c26;
   border-radius: 8px;
   border: 1px solid #2d303e;
