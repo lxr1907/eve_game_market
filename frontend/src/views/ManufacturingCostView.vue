@@ -298,7 +298,7 @@ export default {
       try {
         querying.value = true
         // 1. 获取蓝图信息
-        const blueprintResponse = await typeApi.getType(selectedTypeId.value)
+        const blueprintResponse = await typeApi.getTypeById(selectedTypeId.value)
         blueprintInfo.value = [{
           name: blueprintResponse.name,
           type_id: blueprintResponse.id,
