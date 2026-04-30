@@ -130,34 +130,44 @@ const handleSelect = (key, keyPath) => {
 }
 
 :deep(.el-menu-item) {
-  color: #94a3b8;
+  color: #fff !important;
   border-bottom: 2px solid transparent;
   transition: all 0.3s;
 }
 
+:deep(.el-menu--horizontal > .el-menu-item) {
+  color: #fff !important;
+  border-bottom: 2px solid transparent;
+}
+
 :deep(.el-menu-item:hover) {
-  color: #409eff;
+  color: #409eff !important;
   border-bottom: 2px solid #409eff;
 }
 
 :deep(.el-menu-item.is-active) {
-  color: #409eff;
+  color: #409eff !important;
   border-bottom: 2px solid #409eff;
 }
 
 :deep(.el-sub-menu__title) {
-  color: #94a3b8;
+  color: #fff !important;
   border-bottom: 2px solid transparent;
   transition: all 0.3s;
 }
 
+:deep(.el-menu--horizontal > .el-sub-menu .el-sub-menu__title) {
+  color: #fff !important;
+  border-bottom: 2px solid transparent;
+}
+
 :deep(.el-sub-menu__title:hover) {
-  color: #409eff;
+  color: #409eff !important;
   border-bottom: 2px solid #409eff;
 }
 
 :deep(.el-sub-menu.is-active .el-sub-menu__title) {
-  color: #409eff;
+  color: #409eff !important;
   border-bottom: 2px solid #409eff;
 }
 </style>

@@ -37,7 +37,7 @@
 
           <div class="filter-item">
             <span class="filter-label">LP兑换比例</span>
-            <el-input-number v-model="lpToIskRatio" @change="handleLpRatioChange" :min="500" :max="5000" :step="100" size="small" style="background-color: white; color: black; border: 1px solid #ccc; width: 150px;"></el-input-number>
+            <el-input-number v-model="lpToIskRatio" @change="handleLpRatioChange" :min="500" :max="5000" :step="100" size="small" class="lp-ratio-input"></el-input-number>
           </div>
         </div>
       </div>
@@ -526,6 +526,22 @@ export default {
   width: 220px;
 }
 
+.lp-ratio-input {
+  width: 150px;
+}
+
+.lp-ratio-input :deep(.el-input-number__decrease),
+.lp-ratio-input :deep(.el-input-number__increase) {
+  background-color: #2d303e;
+  color: #fff;
+  border-color: #3d4050;
+}
+
+.lp-ratio-input :deep(.el-input__inner) {
+  background-color: #2d303e;
+  color: #fff;
+}
+
 /* 主内容布局 */
 .query-main {
   flex: 1;
@@ -547,6 +563,15 @@ export default {
   border-bottom: 1px solid #2d303e;
 }
 
+.search-box :deep(.el-input__wrapper) {
+  background-color: #2d303e;
+  border-color: #3d4050;
+}
+
+.search-box :deep(.el-input__inner) {
+  color: #fff;
+}
+
 .tree-wrapper {
   flex: 1;
   overflow-y: auto;
@@ -565,6 +590,10 @@ export default {
   margin-bottom: 2px;
 }
 
+:deep(.el-tree) {
+  color: #fff;
+}
+
 .tree-node-content {
   display: flex;
   align-items: center;
@@ -572,6 +601,7 @@ export default {
   font-size: 13px;
   width: 100%;
   padding-right: 8px;
+  color: #fff;
 }
 
 .tree-node-content.is-active {
