@@ -240,11 +240,30 @@ export default {
 
     // 过滤蓝图数据
     const filterBlueprintData = (data) => {
-      const filtered = data.filter(item => item.type === 'category' && item.id === 8)
-      if (filtered.length > 0) {
-        return filtered
+      // 递归过滤函数，只保留蓝图类别及其下属数据
+      const filterRecursive = (items) => {
+        return items.filter(item => {
+          // 保留蓝图类别（category_id为9）或其下属数据
+          if (item.type === 'category' && item.realId === 9) {
+            // 如果有子节点，递归过滤子节点
+            if (item.children && item.children.length > 0) {
+              item.children = filterRecursive(item.children)
+            }
+            return true
+          } else if (item.type === 'group' && item.category_id === 9) {
+            // 保留蓝图类别下的组
+            if (item.children && item.children.length > 0) {
+              item.children = filterRecursive(item.children)
+            }
+            return true
+          } else if (item.type === 'type' && item.category_id === 9) {
+            // 保留蓝图类别下的物品
+            return true
+          }
+          return false
+        })
       }
-      return data
+      return filterRecursive(data)
     }
 
     // 事件处理

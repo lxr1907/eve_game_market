@@ -51,7 +51,8 @@ class TypeController {
             name: row.group_name,
             label: `${row.group_name} (${row.group_id})`,
             children: [],
-            type: 'group'
+            type: 'group',
+            category_id: row.category_id
           };
           groupMap.set(row.group_id, group);
           category.children.push(group);
@@ -64,7 +65,8 @@ class TypeController {
           name: row.type_name,
           label: `${row.type_name} (${row.type_id})`,
           type: 'type',
-          isLeaf: true
+          isLeaf: true,
+          category_id: row.category_id
         });
       }
 
