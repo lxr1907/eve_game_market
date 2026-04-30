@@ -28,7 +28,6 @@
           </div>
 
           <div class="filter-item">
-            <span class="filter-label">数据源</span>
             <el-radio-group v-model="datasource" @change="handleDatasourceChange" size="small">
               <el-radio-button label="serenity">晨曦</el-radio-button>
               <el-radio-button label="infinity">曙光</el-radio-button>
@@ -38,7 +37,7 @@
 
           <div class="filter-item">
             <span class="filter-label">LP兑换比例</span>
-            <el-input-number v-model="lpToIskRatio" @change="handleLpRatioChange" :min="500" :max="5000" :step="100" placeholder="LP兑换ISK比例"></el-input-number>
+            <el-input-number v-model="lpToIskRatio" @change="handleLpRatioChange" :min="500" :max="5000" :step="100" size="small" style="background-color: white; color: black; border: 1px solid #ccc; width: 150px;"></el-input-number>
           </div>
         </div>
       </div>
@@ -218,6 +217,11 @@ export default {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
       })
+    }
+    
+    // 调试方法
+    const debugLpRatio = () => {
+      console.log('lpToIskRatio value:', lpToIskRatio.value)
     }
     
     // 数据加载逻辑
@@ -437,12 +441,13 @@ export default {
     onMounted(() => {
       loadRegions()
       loadHierarchy()
+      console.log('lpToIskRatio onMounted:', lpToIskRatio.value)
     })
     
     return {
-      regions, selectedRegionId, datasource, filterText, treeData, treeRef,
+      regions, selectedRegionId, datasource, lpToIskRatio, filterText, treeData, treeRef,
       selectedTypeId, blueprintInfo, blueprintCost, materials, totalCost, querying, loadingTree,
-      formatDate, formatISK, handleRegionChange, handleDatasourceChange,
+      formatDate, formatISK, handleRegionChange, handleDatasourceChange, handleLpRatioChange,
       handleNodeClick, filterNode, queryManufacturingCost
     }
   }
@@ -500,7 +505,6 @@ export default {
 }
 
 .filter-item {
-  display: flex;
   align-items: center;
   gap: 8px;
 }
