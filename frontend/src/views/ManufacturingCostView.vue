@@ -224,14 +224,14 @@ export default {
     }
 
     const loadHierarchy = async () => {
+      loadingTree.value = true
       try {
-        loadingTree.value = true
-        const response = await typeApi.getHierarchy(selectedRegionId.value)
+        const response = await typeApi.getHierarchy()
         // 只保留蓝图这一类数据（蓝图的category_id是8）
         const blueprintTree = filterBlueprintData(response)
         treeData.value = blueprintTree
       } catch (error) {
-        ElMessage.error('加载物品树失败')
+        console.error('加载层级结构失败:', error)
       } finally {
         loadingTree.value = false
       }
@@ -277,7 +277,6 @@ export default {
     })
     
     const handleRegionChange = () => {
-      loadHierarchy()
       if (selectedTypeId.value) queryManufacturingCost()
     }
     

@@ -127,7 +127,7 @@ class Type {
   // 获取完整的层级结构数据 (Category -> Group -> Type)
   static async getHierarchyData(regionId = null) {
     let query = `
-      SELECT 
+      SELECT DISTINCT
         c.category_id, c.name as category_name,
         g.group_id, g.name as group_name,
         t.id as type_id, t.name as type_name
@@ -138,8 +138,8 @@ class Type {
     
     const params = [];
     if (regionId) {
-      query += ` JOIN region_types rt ON t.id = rt.type_id `;
-      query += ` WHERE t.name IS NOT NULL AND t.name != '' AND rt.region_id = ? `;
+      query += ` LEFT JOIN region_types rt ON t.id = rt.type_id `;
+      query += ` WHERE (t.name IS NOT NULL AND t.name != '') AND (rt.region_id = ? OR rt.region_id IS NULL) `;
       params.push(regionId);
     } else {
       query += ` WHERE t.name IS NOT NULL AND t.name != '' `;
