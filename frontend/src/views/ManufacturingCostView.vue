@@ -356,9 +356,9 @@ export default {
       const buyProfit = buyPrice - total
       const sellProfit = sellPrice - total
       
-      // 计算收益率
-      const buyProfitRate = total > 0 ? (buyProfit / total) * 100 : 0
-      const sellProfitRate = total > 0 ? (sellProfit / total) * 100 : 0
+      // 计算收益率并保留两位小数
+      const buyProfitRate = total > 0 ? Number(((buyProfit / total) * 100).toFixed(2)) : 0
+      const sellProfitRate = total > 0 ? Number(((sellProfit / total) * 100).toFixed(2)) : 0
       
       totalCost.value.push({
         name: '产品最低卖价',
@@ -371,13 +371,13 @@ export default {
         value: sellProfit
       }, {
         name: '按卖价收益率',
-        value: sellProfitRate
+        value: `${sellProfitRate}%`
       }, {
         name: '按买价收益',
         value: buyProfit
       }, {
         name: '按买价收益率',
-        value: buyProfitRate
+        value: `${buyProfitRate}%`
       })
       } catch (error) {
         console.error('查询制造成本失败:', error)
