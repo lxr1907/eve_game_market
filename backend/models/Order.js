@@ -66,16 +66,16 @@ class Order {
     mergedOrders.forEach(order => {
       params.push(
         order.order_id,
-        order.region_id,
-        order.type_id,
+        order.region_id || null,
+        order.type_id || null,
         order.is_buy_order ? 1 : 0,
-        order.price,
-        order.volume_remaining,
-        order.volume_total,
-        order.minimum_volume,
-        order.order_range,
-        order.location_id,
-        order.duration,
+        order.price || 0,
+        order.volume_remaining || 0,
+        order.volume_total || 0,
+        order.minimum_volume || 0,
+        order.order_range || null,
+        order.location_id || null,
+        order.duration || 0,
         order.is_active !== undefined ? (order.is_active ? 1 : 0) : 1,
         datasource
       );

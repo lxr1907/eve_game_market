@@ -615,22 +615,107 @@ class EveApiService {
         },
         timeout: 10000 // 设置10秒超时
       });
+      
+      // 打印调试信息
+      console.log(`Blueprint type ${typeId} category_id: ${response.data.category_id}`);
+      console.log(`Blueprint type ${typeId} activities: ${JSON.stringify(response.data.activities, null, 2)}`);
+      
       // 检查是否是蓝图
       if (response.data.category_id === 9) {
         // 获取蓝图所需的原材料
         const materials = response.data.activities?.manufacturing?.materials || [];
+        console.log(`Found ${materials.length} materials for blueprint ${typeId}`);
         return materials;
       } else {
         // 不是蓝图，返回空数组
+        console.log(`Type ${typeId} is not a blueprint (category_id: ${response.data.category_id})`);
         return [];
       }
     } catch (error) {
       if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
         // 如果是超时或连接重置错误，进行重试
+        console.log(`Timeout fetching blueprint materials for type ${typeId}, retrying (${retries} left)...`);
         await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
         return this.getBlueprintMaterials(typeId, datasource, retries - 1);
       } else {
         console.error(`Error fetching blueprint materials for type ID ${typeId}: ${error.message}`);
+        return []; // 返回空数组表示获取失败
+      }
+    }
+  }
+
+  // 获取特定区域和类型的所有市场订单
+  async getAllMarketOrdersByRegionAndType(regionId, typeId, orderType, startPage, callback, datasource = 'serenity') {
+    try {
+      let page = startPage;
+      let hasMoreData = true;
+      
+      console.log(`Starting recursive fetch of ${orderType} orders for region ${regionId}, type ${typeId} from page ${startPage}`);
+      
+      while (hasMoreData) {
+        console.log(`Fetching ${orderType} orders for region ${regionId}, type ${typeId} from page ${page}...`);
+        const orders = await this.getMarketOrdersByRegionAndType(regionId, typeId, orderType, page, datasource);
+        
+        console.log(`Orders for region ${regionId}, type ${typeId}, page ${page}:`, orders.slice(0, 10), orders.length > 10 ? '...' : '');
+        
+        if (orders.length === 0) {
+          hasMoreData = false;
+          break;
+        }
+        
+        // 调用回调函数处理当前页的数据
+        if (callback && typeof callback === 'function') {
+          console.log(`Calling callback with ${orders.length} items from page ${page}`);
+          await callback(orders, page);
+        }
+        
+        page++;
+      }
+      
+      console.log(`Finished fetching all ${orderType} orders for region ${regionId}, type ${typeId}`);
+      return page - 1; // 返回总页数
+    } catch (error) {
+      console.error(`Error in recursive fetching of ${orderType} orders for region ${regionId}, type ${typeId}:`, error.message);
+      console.error('Error stack:', error.stack);
+      throw error;
+    }
+  }
+
+  // 获取特定区域和类型的市场订单
+  async getMarketOrdersByRegionAndType(regionId, typeId, orderType, page = 1, datasource = 'serenity', retries =3) {
+    // 节流控制：确保每1秒只请求1次
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.throttleInterval) {
+      const waitTime = this.throttleInterval - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastRequestTime = Date.now();
+
+    try {
+      const response = await this.client.get(`/markets/${regionId}/orders/`, {
+        params: {
+          datasource: datasource,
+          type_id: typeId,
+          order_type: orderType,
+          page: page
+        },
+        timeout: 10000 // 设置10秒超时
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 500 && error.response?.data?.error?.includes('Requested page does not exist')) {
+        console.log(`Page ${page} does not exist, stopping pagination`);
+        return []; // 返回空数组表示没有更多数据
+      }
+      
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        // 如果是超时或连接重置错误，进行重试
+        console.log(`Timeout fetching ${orderType} orders for region ${regionId}, type ${typeId}, page ${page}, retrying (${retries} left)...`);
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getMarketOrdersByRegionAndType(regionId, typeId, orderType, page, datasource, retries -1);
+      } else {
+        console.error(`Error fetching ${orderType} orders for region ${regionId}, type ${typeId}: ${error.message}`);
         return []; // 返回空数组表示获取失败
       }
     }

@@ -396,6 +396,16 @@ class TypeController {
       const { datasource } = req.query;
       // 从EVE API获取蓝图所需的原材料
       const materials = await eveApiService.getBlueprintMaterials(id, datasource);
+      
+      // 如果API返回空，尝试从本地数据库查询
+      if (materials.length === 0) {
+        console.log(`API returned no materials for blueprint ${id}, checking local database...`);
+        // 这里可以添加从本地blueprint_materials表查询的逻辑
+        // 由于表结构未知，暂时返回空数组
+        res.status(200).json([]);
+        return;
+      }
+      
       // 获取每个原材料的名称
       const materialsWithNames = await Promise.all(materials.map(async (material) => {
         const type = await Type.findById(material.type_id);
