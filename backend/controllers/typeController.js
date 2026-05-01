@@ -15,116 +15,91 @@ let syncTaskStatus = {
   lastUpdated: new Date().toISOString()
 };
 
+// 辅助函数：从查询结果构建树形结构
+function buildTreeFromRows(rows) {
+  const hierarchy = [];
+  const categoryMap = new Map();
+  const groupMap = new Map();
+
+  for (const row of rows) {
+    // 处理 Category
+    let category = categoryMap.get(row.category_id);
+    if (!category) {
+      category = {
+        id: `c${row.category_id}`,
+        realId: row.category_id,
+        name: row.category_name,
+        label: `${row.category_name} (${row.category_id})`,
+        children: [],
+        type: 'category'
+      };
+      categoryMap.set(row.category_id, category);
+      hierarchy.push(category);
+    }
+
+    // 处理 Group
+    let group = groupMap.get(row.group_id);
+    if (!group) {
+      group = {
+        id: `g${row.group_id}`,
+        realId: row.group_id,
+        name: row.group_name,
+        label: `${row.group_name} (${row.group_id})`,
+        children: [],
+        type: 'group',
+        category_id: row.category_id
+      };
+      groupMap.set(row.group_id, group);
+      category.children.push(group);
+    }
+
+    // 处理 Type
+    group.children.push({
+      id: row.type_id,
+      realId: row.type_id,
+      name: row.type_name,
+      label: `${row.type_name} (${row.type_id})`,
+      type: 'type',
+      isLeaf: true,
+      category_id: row.category_id
+    });
+  }
+
+  return hierarchy;
+}
+
 class TypeController {
   // 获取层级结构（支持根据 regionId 过滤）
   static async getHierarchy(req, res) {
     try {
-      const { regionId } = req.query;
-      
+      const { regionId, datasource = 'serenity' } = req.query;
+
       let hierarchy = [];
-      
+
       if (regionId) {
-        // 根据 regionId 过滤
+        // 检查该 region 是否有数据
         const rows = await Type.findByRegionId(regionId);
-        
-        // 在后端构建树形结构
-        const categoryMap = new Map();
-        const groupMap = new Map();
 
-        for (const row of rows) {
-          // 处理 Category
-          let category = categoryMap.get(row.category_id);
-          if (!category) {
-            category = {
-              id: `c${row.category_id}`,
-              realId: row.category_id,
-              name: row.category_name,
-              label: `${row.category_name} (${row.category_id})`,
-              children: [],
-              type: 'category'
-            };
-            categoryMap.set(row.category_id, category);
-            hierarchy.push(category);
+        // 如果没有数据，先同步
+        if (rows.length === 0) {
+          console.log(`No region_types data for region ${regionId}, syncing from EVE API...`);
+          try {
+            await Type.updateRegionTypes(parseInt(regionId), datasource);
+            // 重新查询
+            const newRows = await Type.findByRegionId(regionId);
+            if (newRows.length > 0) {
+              hierarchy = buildTreeFromRows(newRows);
+            }
+          } catch (syncError) {
+            console.error(`Failed to sync region_types for region ${regionId}:`, syncError.message);
           }
-
-          // 处理 Group
-          let group = groupMap.get(row.group_id);
-          if (!group) {
-            group = {
-              id: `g${row.group_id}`,
-              realId: row.group_id,
-              name: row.group_name,
-              label: `${row.group_name} (${row.group_id})`,
-              children: [],
-              type: 'group',
-              category_id: row.category_id
-            };
-            groupMap.set(row.group_id, group);
-            category.children.push(group);
-          }
-
-          // 处理 Type
-          group.children.push({
-            id: row.type_id,
-            realId: row.type_id,
-            name: row.type_name,
-            label: `${row.type_name} (${row.type_id})`,
-            type: 'type',
-            isLeaf: true,
-            category_id: row.category_id
-          });
+        } else {
+          hierarchy = buildTreeFromRows(rows);
         }
       } else {
         // 不带 regionId，使用原有逻辑
-        const rows = await Type.getHierarchyData(regionId);
-        
-        // 在后端构建树形结构
-        const categoryMap = new Map();
-        const groupMap = new Map();
-
-        for (const row of rows) {
-          // 处理 Category
-          let category = categoryMap.get(row.category_id);
-          if (!category) {
-            category = {
-              id: `c${row.category_id}`,
-              realId: row.category_id,
-              name: row.category_name,
-              label: `${row.category_name} (${row.category_id})`,
-              children: [],
-              type: 'category'
-            };
-            categoryMap.set(row.category_id, category);
-            hierarchy.push(category);
-          }
-
-          // 处理 Group
-          let group = groupMap.get(row.group_id);
-          if (!group) {
-            group = {
-              id: `g${row.group_id}`,
-              realId: row.group_id,
-              name: row.group_name,
-              label: `${row.group_name} (${row.group_id})`,
-              children: [],
-              type: 'group',
-              category_id: row.category_id
-            };
-            groupMap.set(row.group_id, group);
-            category.children.push(group);
-          }
-
-          // 处理 Type
-          group.children.push({
-            id: row.type_id,
-            realId: row.type_id,
-            name: row.type_name,
-            label: `${row.type_name} (${row.type_id})`,
-            type: 'type',
-            isLeaf: true,
-            category_id: row.category_id
-          });
-        }
+        const rows = await Type.getHierarchyData();
+        hierarchy = buildTreeFromRows(rows);
       }
 
       res.status(200).json(hierarchy);
