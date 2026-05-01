@@ -32,10 +32,26 @@ class LoyaltyOffer {
         quantity INT NOT NULL,
         datasource VARCHAR(20) NOT NULL DEFAULT 'serenity',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_required (offer_id, corporation_id, type_id, datasource)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query2);
+
+    // 确保现有表的索引也是正确的（处理 IF NOT EXISTS 不更新已存在表的情况）
+    try {
+      await pool.execute('ALTER TABLE loyalty_offers DROP INDEX unique_offer');
+    } catch (e) { /* 索引不存在或已删除，忽略 */ }
+    try {
+      await pool.execute('ALTER TABLE loyalty_offers ADD UNIQUE KEY unique_offer (offer_id, corporation_id, datasource)');
+    } catch (e) { /* 索引已存在，忽略 */ }
+
+    try {
+      await pool.execute('ALTER TABLE loyalty_offer_required_items DROP INDEX unique_required');
+    } catch (e) { /* 索引不存在，忽略 */ }
+    try {
+      await pool.execute('ALTER TABLE loyalty_offer_required_items ADD UNIQUE KEY unique_required (offer_id, corporation_id, type_id, datasource)');
+    } catch (e) { /* 索引已存在，忽略 */ }
   }
 
   static async insertOrUpdate(offerData, datasource = 'serenity') {
