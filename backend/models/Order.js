@@ -183,11 +183,11 @@ class Order {
     return result.affectedRows;
   }
 
-  static async deleteOlderThanTwoWeeks(datasource = 'serenity') {
-    const query = `DELETE FROM orders WHERE datasource = ? AND updated_at < DATE_SUB(NOW(), INTERVAL 2 WEEK)`;
-    const [result] = await pool.execute(query, [datasource]);
+  static async deleteOlderThanTwoWeeks() {
+    const query = `DELETE FROM orders WHERE updated_at < DATE_SUB(NOW(), INTERVAL 2 WEEK)`;
+    const [result] = await pool.execute(query);
     if (result.affectedRows > 0) {
-      console.log(`Deleted ${result.affectedRows} orders older than 2 weeks for datasource ${datasource}.`);
+      console.log(`Deleted ${result.affectedRows} orders older than 2 weeks for datasource all.`);
     }
     return result.affectedRows;
   }
