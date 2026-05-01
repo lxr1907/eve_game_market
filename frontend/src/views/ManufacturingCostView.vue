@@ -84,27 +84,29 @@
         <div v-if="!selectedTypeId" class="empty-state">
           <el-empty description="请在左侧选择一个蓝图查看制造成本" />
         </div>
-        
+
         <template v-else>
-          <!-- 蓝图信息 -->
-          <section class="table-section" >
+          <!-- 收益突出展示 -->
+          <section class="table-section profit-highlight">
             <div class="section-header">
               <h2 class="section-title">
-                <el-icon><Document /></el-icon> 蓝图信息
+                <el-icon><TrendCharts /></el-icon> 收益概览
               </h2>
             </div>
-            <el-table 
-              :data="blueprintInfo" 
-              style="width: 100%" 
+            <el-table
+              :data="profitDisplay"
+              style="width: 100%"
               border
               stripe
               size="small"
-              class="blueprint-table"
+              class="profit-table"
             >
-              <el-table-column prop="name" label="蓝图名称" min-width="200" />
-              <el-table-column prop="type_id" label="蓝图ID" width="120" />
-              <el-table-column prop="manufacturing_time" label="制造时间" width="120" />
-              <el-table-column prop="volume" label="体积" width="100" />
+              <el-table-column prop="label" label="指标" min-width="150" />
+              <el-table-column prop="value" label="数值" min-width="200">
+                <template #default="{ row }">
+                  <span :class="row.class">{{ row.value }}</span>
+                </template>
+              </el-table-column>
             </el-table>
           </section>
 
@@ -195,6 +197,7 @@ export default {
     const blueprintCost = ref([])
     const materials = ref([])
     const totalCost = ref([])
+    const profitDisplay = ref([])
     const querying = ref(false)
     const loadingTree = ref(false)
     
@@ -437,6 +440,17 @@ export default {
         name: '按买价收益率',
         value: `${buyProfitRate}%`
       })
+
+      // 设置收益展示数据
+      profitDisplay.value = [
+        { label: '按卖价收益率', value: `${sellProfitRate}%`, class: sellProfitRate > 0 ? 'profit-positive' : 'profit-negative' },
+        { label: '按卖价收益', value: formatISK(sellProfit), class: sellProfit > 0 ? 'profit-positive' : 'profit-negative' },
+        { label: '按买价收益率', value: `${buyProfitRate}%`, class: buyProfitRate > 0 ? 'profit-positive' : 'profit-negative' },
+        { label: '按买价收益', value: formatISK(buyProfit), class: buyProfit > 0 ? 'profit-positive' : 'profit-negative' },
+        { label: '产品卖价', value: formatISK(sellPrice), class: '' },
+        { label: '产品买价', value: formatISK(buyPrice), class: '' },
+        { label: '总成本', value: formatISK(total), class: '' }
+      ]
       } catch (error) {
         console.error('查询制造成本失败:', error)
         const errorMessage = error.response?.data?.message || error.message || '查询制造成本失败'
@@ -454,7 +468,7 @@ export default {
     
     return {
       regions, selectedRegionId, datasource, lpToIskRatio, filterText, treeData, treeRef,
-      selectedTypeId, blueprintInfo, blueprintCost, materials, totalCost, querying, loadingTree,
+      selectedTypeId, blueprintInfo, blueprintCost, materials, totalCost, profitDisplay, querying, loadingTree,
       formatDate, formatISK, handleRegionChange, handleDatasourceChange, handleLpRatioChange,
       handleNodeClick, filterNode, queryManufacturingCost
     }
@@ -695,5 +709,45 @@ export default {
 
 :deep(.el-table__body tr:hover > td) {
   background-color: #2a2d3d !important;
+}
+
+/* 收益突出展示样式 */
+.profit-highlight {
+  background-color: #1a1c26;
+  border: 2px solid #409eff;
+  box-shadow: 0 0 20px rgba(64, 158, 255, 0.2);
+}
+
+.profit-highlight .section-title {
+  color: #409eff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.profit-table {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: #242736;
+  --el-table-border-color: #2d303e;
+  --el-table-text-color: #cbd5e1;
+  --el-table-header-text-color: #94a3b8;
+}
+
+.profit-table .el-table__cell {
+  padding: 12px 0;
+}
+
+.profit-positive {
+  color: #67c23a;
+  font-weight: 700;
+  font-size: 16px;
+  text-shadow: 0 0 10px rgba(103, 194, 58, 0.3);
+}
+
+.profit-negative {
+  color: #f56c6c;
+  font-weight: 700;
+  font-size: 16px;
+  text-shadow: 0 0 10px rgba(245, 108, 108, 0.3);
 }
 </style>
