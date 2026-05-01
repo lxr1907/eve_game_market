@@ -393,6 +393,15 @@ export default {
   border-bottom: 1px solid #2d303e;
 }
 
+.search-box :deep(.el-input__wrapper) {
+  background-color: #2d303e;
+  border-color: #3d4050;
+}
+
+.search-box :deep(.el-input__inner) {
+  color: #fff;
+}
+
 .tree-wrapper {
   flex: 1;
   overflow-y: auto;
@@ -403,12 +412,18 @@ export default {
 .custom-tree {
   background: transparent !important;
   --el-tree-node-hover-bg-color: #242736;
+  color: #fff;
 }
 
 :deep(.el-tree-node__content) {
   height: 36px !important;
   border-radius: 6px;
   margin-bottom: 2px;
+  color: #fff;
+}
+
+:deep(.el-tree-node__label) {
+  color: #fff;
 }
 
 .tree-node-content {
