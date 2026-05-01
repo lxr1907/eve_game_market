@@ -289,8 +289,11 @@ class LoyaltyController {
 
   // 内部方法：执行LP收益计算
   static async calculateProfitInternal(corporationId, datasource = 'serenity') {
-    // 1. 先删除更新时间在5天之前的数据
+    // 1. 删除更新时间在5天之前的LP收益数据
     await LoyaltyTypeLpIsk.deleteOldData(5);
+
+    // 2. 删除2周前的订单数据
+    await Order.deleteOlderThanTwoWeeks(datasource);
 
     // 根据数据源选择对应的区域ID
     const regionId = datasource === 'infinity' ? 10000016 : 10000002;

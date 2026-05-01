@@ -183,6 +183,15 @@ class Order {
     return result.affectedRows;
   }
 
+  static async deleteOlderThanTwoWeeks(datasource = 'serenity') {
+    const query = `DELETE FROM orders WHERE datasource = ? AND updated_at < DATE_SUB(NOW(), INTERVAL 2 WEEK)`;
+    const [result] = await pool.execute(query, [datasource]);
+    if (result.affectedRows > 0) {
+      console.log(`Deleted ${result.affectedRows} orders older than 2 weeks for datasource ${datasource}.`);
+    }
+    return result.affectedRows;
+  }
+
   static async getLatestUpdateTime(regionId, typeId, orderType = null, datasource = 'serenity') {
     let query = `
       SELECT MAX(updated_at) as latest_update
