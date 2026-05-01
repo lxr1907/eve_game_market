@@ -248,9 +248,10 @@ class LoyaltyOffer {
       // 获取每个offer的required_items
       for (const offer of offers) {
         const requiredItemsQuery = `
-          SELECT type_id, quantity
-          FROM loyalty_offer_required_items
-          WHERE offer_id = ? AND corporation_id = ?
+          SELECT lor.type_id, lor.quantity, t.name as type_name
+          FROM loyalty_offer_required_items lor
+          LEFT JOIN types t ON lor.type_id = t.id
+          WHERE lor.offer_id = ? AND lor.corporation_id = ?
         `;
         const [requiredItems] = await pool.execute(requiredItemsQuery, [offer.offer_id, offer.corporation_id]);
         offer.required_items = requiredItems;

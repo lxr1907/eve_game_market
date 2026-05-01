@@ -74,15 +74,15 @@
                 {{ formatCost(scope.row.isk_cost) }}
               </template>
             </el-table-column>
-            <el-table-column label="所需物品" min-width="200">
+            <el-table-column label="所需物品" min-width="250">
               <template #default="scope">
-                <el-tag v-if="!scope.row.required_items || scope.row.required_items.length === 0" type="info">
+                <el-tag v-if="!scope.row.required_items || scope.row.required_items.length === 0" class="tag-dark">
                   无
                 </el-tag>
                 <div v-else>
                   <div v-for="(item, index) in scope.row.required_items" :key="index" class="required-item">
-                    <el-tag type="success" size="small">
-                      类型: {{ item.type_id }}, 数量: {{ item.quantity }}
+                    <el-tag class="tag-dark" size="small">
+                      {{ item.type_name || `物品${item.type_id}` }} ({{ item.type_id }}), x{{ item.quantity }}
                     </el-tag>
                   </div>
                 </div>
@@ -298,5 +298,11 @@ onMounted(() => {
 
 .required-item {
   margin-bottom: 5px;
+}
+
+:deep(.tag-dark) {
+  background-color: #333;
+  color: #fff;
+  border-color: #444;
 }
 </style>
