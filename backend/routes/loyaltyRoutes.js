@@ -5,6 +5,7 @@ const router = express.Router();
 // Loyalty Routes
 router.get('/loyalty/offers', LoyaltyController.getLoyaltyOffers);
 router.post('/loyalty/offers/sync', LoyaltyController.syncLoyaltyOffers);
+router.post('/loyalty/offers/sync-all', LoyaltyController.syncAllLoyaltyOffers);
 router.post('/loyalty/offers/calculate-profit', LoyaltyController.calculateProfit);
 router.post('/loyalty/offers/clean-recalculate-profit', LoyaltyController.cleanAndRecalculateProfit);
 router.get('/loyalty/profit-data', LoyaltyController.getProfitData);

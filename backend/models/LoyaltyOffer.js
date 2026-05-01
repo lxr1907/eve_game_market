@@ -14,13 +14,14 @@ class LoyaltyOffer {
         isk_cost BIGINT NOT NULL,
         ak_cost INT,
         status VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
+        datasource VARCHAR(20) NOT NULL DEFAULT 'serenity',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_offer (offer_id, corporation_id)
+        UNIQUE KEY unique_offer (offer_id, corporation_id, datasource)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query);
-    
+
     // 创建从表：loyalty_offer_required_items
     const query2 = `
       CREATE TABLE IF NOT EXISTS loyalty_offer_required_items (
@@ -29,6 +30,7 @@ class LoyaltyOffer {
         corporation_id INT NOT NULL,
         type_id INT NOT NULL,
         quantity INT NOT NULL,
+        datasource VARCHAR(20) NOT NULL DEFAULT 'serenity',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -36,7 +38,7 @@ class LoyaltyOffer {
     await pool.execute(query2);
   }
 
-  static async insertOrUpdate(offerData) {
+  static async insertOrUpdate(offerData, datasource = 'serenity') {
     // 将所有undefined值转换为null，避免数据库绑定参数错误
     const safeData = {
       offer_id: offerData.offer_id !== undefined ? offerData.offer_id : null,
@@ -47,11 +49,11 @@ class LoyaltyOffer {
       isk_cost: offerData.isk_cost !== undefined ? offerData.isk_cost : null,
       ak_cost: offerData.ak_cost !== undefined ? offerData.ak_cost : null
     };
-    
+
     const query = `
       INSERT INTO loyalty_offers (
-        offer_id, corporation_id, type_id, quantity, lp_cost, isk_cost, ak_cost
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        offer_id, corporation_id, type_id, quantity, lp_cost, isk_cost, ak_cost, datasource
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         type_id = VALUES(type_id),
         quantity = VALUES(quantity),
@@ -61,7 +63,7 @@ class LoyaltyOffer {
         status = 'completed',
         updated_at = CURRENT_TIMESTAMP
     `;
-    
+
     try {
       await pool.execute(query, [
         safeData.offer_id,
@@ -70,9 +72,10 @@ class LoyaltyOffer {
         safeData.quantity,
         safeData.lp_cost,
         safeData.isk_cost,
-        safeData.ak_cost
+        safeData.ak_cost,
+        datasource
       ]);
-      
+
       return true;
     } catch (error) {
       console.error('Error inserting/updating loyalty offer:', error);
@@ -80,35 +83,36 @@ class LoyaltyOffer {
     }
   }
 
-  static async insertRequiredItems(offerId, corporationId, requiredItems) {
+  static async insertRequiredItems(offerId, corporationId, requiredItems, datasource = 'serenity') {
     if (!requiredItems || requiredItems.length === 0) {
       return true;
     }
-    
+
     // 先删除该offer_id和corporation_id的所有现有required_items
     const deleteQuery = `
-      DELETE FROM loyalty_offer_required_items 
-      WHERE offer_id = ? AND corporation_id = ?
+      DELETE FROM loyalty_offer_required_items
+      WHERE offer_id = ? AND corporation_id = ? AND datasource = ?
     `;
-    await pool.execute(deleteQuery, [offerId, corporationId]);
+    await pool.execute(deleteQuery, [offerId, corporationId, datasource]);
     
     // 插入新的required_items
     const insertQuery = `
       INSERT INTO loyalty_offer_required_items (
-        offer_id, corporation_id, type_id, quantity
-      ) VALUES (?, ?, ?, ?)
+        offer_id, corporation_id, type_id, quantity, datasource
+      ) VALUES (?, ?, ?, ?, ?)
     `;
-    
+
     try {
       for (const item of requiredItems) {
         await pool.execute(insertQuery, [
           offerId,
           corporationId,
           item.type_id,
-          item.quantity
+          item.quantity,
+          datasource
         ]);
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error inserting loyalty offer required items:', error);

@@ -9,32 +9,33 @@ class LoyaltyController {
   static async syncLoyaltyOffers(req, res) {
     try {
       const { corporationId } = req.body;
-      
+      const { datasource = 'serenity' } = req.query;
+
       if (!corporationId) {
         return res.status(400).json({ message: 'corporationId is required' });
       }
 
       // 直接返回成功给前端，任务在后台执行
       res.status(202).json({
-        message: `Loyalty offers synchronization for corporation ${corporationId} has started in background`,
+        message: `Loyalty offers synchronization for corporation ${corporationId} (${datasource}) has started in background`,
         status: 'started'
       });
 
       // 在后台异步执行同步
       (async () => {
         try {
-          console.log(`Starting loyalty offers synchronization for corporation ${corporationId} in background...`);
-          
+          console.log(`Starting loyalty offers synchronization for corporation ${corporationId} (${datasource}) in background...`);
+
           // 从EVE API获取忠诚度商店商品
-          const loyaltyOffers = await eveApiService.getLoyaltyStoreOffers(corporationId);
-          
+          const loyaltyOffers = await eveApiService.getLoyaltyStoreOffers(corporationId, datasource);
+
           let totalOffers = loyaltyOffers.length;
           let processedOffers = 0;
           let insertedOffers = 0;
           let updatedOffers = 0;
-          
-          console.log(`Fetched ${totalOffers} loyalty offers from API`);
-          
+
+          console.log(`Fetched ${totalOffers} loyalty offers from API for ${datasource}`);
+
           // 插入或更新到数据库
           for (const offer of loyaltyOffers) {
             try {
@@ -49,41 +50,115 @@ class LoyaltyController {
                 ak_cost: offer.ak_cost || 0,
                 required_items: offer.required_items
               };
-              
-              const result = await LoyaltyOffer.insertOrUpdate(offerData);
-              
+
+              const result = await LoyaltyOffer.insertOrUpdate(offerData, datasource);
+
               if (result.insertId) {
                 insertedOffers++;
               } else {
                 updatedOffers++;
               }
-              
+
               // 插入或更新required_items
               await LoyaltyOffer.insertRequiredItems(
                 offer.offer_id,
                 corporationId,
-                offer.required_items
+                offer.required_items,
+                datasource
               );
-              
+
               processedOffers++;
-              
+
               if (processedOffers % 10 === 0) {
-                console.log(`Progress: ${processedOffers}/${totalOffers} loyalty offers processed`);
+                console.log(`[${datasource}] Progress: ${processedOffers}/${totalOffers} loyalty offers processed`);
               }
             } catch (dbError) {
-              console.error(`Error processing loyalty offer ${offer.offer_id}:`, dbError.message);
+              console.error(`[${datasource}] Error processing loyalty offer ${offer.offer_id}:`, dbError.message);
             }
           }
-          
-          console.log(`Loyalty offers synchronization completed for corporation ${corporationId}`);
-          console.log(`Results: ${insertedOffers} inserted, ${updatedOffers} updated, ${totalOffers - processedOffers} failed`);
+
+          console.log(`[${datasource}] Loyalty offers synchronization completed for corporation ${corporationId}`);
+          console.log(`[${datasource}] Results: ${insertedOffers} inserted, ${updatedOffers} updated, ${totalOffers - processedOffers} failed`);
         } catch (error) {
-          console.error(`Error in background syncing loyalty offers for corporation ${corporationId}:`, error.message);
+          console.error(`[${datasource}] Error in background syncing loyalty offers for corporation ${corporationId}:`, error.message);
           console.error('Error stack:', error.stack);
         }
       })();
     } catch (error) {
       console.error('Error starting loyalty offers sync:', error.message);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  // 同步所有公司所有数据源的忠诚度商店商品
+  static async syncAllLoyaltyOffers(req, res) {
+    try {
+      // 直接返回成功给前端，任务在后台执行
+      res.status(202).json({
+        message: 'All loyalty offers synchronization has started in background',
+        status: 'started'
+      });
+
+      // 在后台异步执行同步
+      (async () => {
+        try {
+          console.log('Starting all loyalty offers synchronization in background...');
+
+          const datasources = ['serenity', 'infinity', 'tranquility'];
+          const corporationIds = [1000180, 1000179, 1000181, 1000182, 1000436, 1000437];
+
+          for (const datasource of datasources) {
+            console.log(`\n=== Starting loyalty offers synchronization for datasource: ${datasource} ===`);
+
+            for (const corporationId of corporationIds) {
+              console.log(`[${datasource}] Syncing corporation ${corporationId}...`);
+
+              try {
+                const loyaltyOffers = await eveApiService.getLoyaltyStoreOffers(corporationId, datasource);
+                let totalOffers = loyaltyOffers.length;
+                let processedOffers = 0;
+
+                for (const offer of loyaltyOffers) {
+                  try {
+                    const offerData = {
+                      offer_id: offer.offer_id,
+                      corporation_id: corporationId,
+                      type_id: offer.type_id,
+                      quantity: offer.quantity,
+                      lp_cost: offer.lp_cost,
+                      isk_cost: offer.isk_cost,
+                      ak_cost: offer.ak_cost || 0,
+                      required_items: offer.required_items
+                    };
+
+                    await LoyaltyOffer.insertOrUpdate(offerData, datasource);
+                    await LoyaltyOffer.insertRequiredItems(offer.offer_id, corporationId, offer.required_items, datasource);
+                    processedOffers++;
+                  } catch (dbError) {
+                    console.error(`[${datasource}] Error processing loyalty offer ${offer.offer_id}:`, dbError.message);
+                  }
+                }
+
+                console.log(`[${datasource}] Corporation ${corporationId}: ${processedOffers}/${totalOffers} offers processed`);
+              } catch (error) {
+                console.error(`[${datasource}] Error syncing corporation ${corporationId}:`, error.message);
+              }
+
+              // 每处理一个公司后暂停1秒，避免API调用过于频繁
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            console.log(`=== Completed datasource: ${datasource} ===\n`);
+          }
+
+          console.log('All loyalty offers synchronization completed');
+        } catch (error) {
+          console.error('Error in background syncing all loyalty offers:', error.message);
+          console.error('Error stack:', error.stack);
+        }
+      })();
+    } catch (error) {
+      console.error('Error starting all loyalty offers sync:', error.message);
       res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -96,22 +171,23 @@ class LoyaltyController {
       const limit = parseInt(req.query.limit) || 10;
       const search = req.query.search || '';
       const corporationId = req.query.corporationId ? parseInt(req.query.corporationId) : null;
-      
-      console.log('getLoyaltyOffers params:', { page, limit, search, corporationId });
-      
+      const datasource = req.query.datasource || 'serenity';
+
+      console.log('getLoyaltyOffers params:', { page, limit, search, corporationId, datasource });
+
       // 计算偏移量
       const offset = (page - 1) * limit;
-      
+
       let offers;
       let total;
-      
+
       if (corporationId) {
         // 按公司筛选
-        offers = await LoyaltyOffer.findAll(page, limit, search, corporationId, 'serenity');
+        offers = await LoyaltyOffer.findAll(page, limit, search, corporationId, datasource);
         total = offers.total;
       } else {
         // 获取所有
-        offers = await LoyaltyOffer.findAll(page, limit, search, null, 'serenity');
+        offers = await LoyaltyOffer.findAll(page, limit, search, null, datasource);
         total = offers.total;
       }
       
