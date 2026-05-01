@@ -384,18 +384,24 @@ class LoyaltyController {
     
     console.log(`=== Starting LP profit calculation for ${datasource} ===`);
     console.log(`Total offers to process: ${totalOffersCount}`);
-    console.log(`Already skipping ${skipItemIds.length} items from skip table`);
-    
+    console.log(`Skip list contains ${skipItemIds.length} items from skip table`);
+
     // 遍历处理每个offer（仅处理没有required_items的offer）
     let processedOffers = 0;
     let savedOffers = 0;
     let syncedOffers = 0;
     let skippedOffers = 0;
-    
+    const skipReasons = {
+      inSkipTable: 0,
+      hasRequiredItems: 0,
+      noBuyOrders: 0,
+      profitBelowThreshold: 0
+    };
+
     for (const offer of offers) {
       processedOffers++;
       const progress = ((processedOffers / totalOffersCount) * 100).toFixed(1);
-      
+
       try {
         // 每处理10个打印一次进度，或者在关键节点打印
         if (processedOffers % 20 === 0 || processedOffers === 1 || processedOffers === totalOffersCount) {
@@ -405,19 +411,21 @@ class LoyaltyController {
         // 检查是否在跳过列表中
         if (skipItemIds.includes(offer.type_id)) {
           skippedOffers++;
+          skipReasons.inSkipTable++;
           continue;
         }
 
         // 检查是否有required_items，如果有则跳过
         if (offer.required_items && offer.required_items.length > 0) {
           skippedOffers++;
+          skipReasons.hasRequiredItems++;
           continue;
         }
         // 检查是否已有该regionId和typeId的buy订单数据
         const existingOrderCount = await Order.countByRegionAndType(regionId, offer.type_id, 'buy', datasource);
-        
+
         let shouldSync = existingOrderCount === 0;
-        
+
         // 如果有订单数据，检查更新时间是否超过1小时
         if (!shouldSync) {
           const latestUpdate = await Order.getLatestUpdateTime(regionId, offer.type_id, 'buy', datasource);
@@ -426,7 +434,7 @@ class LoyaltyController {
             const updateTime = new Date(latestUpdate);
             const timeDiff = now - updateTime;
             const hoursDiff = timeDiff / (1000 * 60 * 60);
-            
+
             if (hoursDiff > 1) {
               shouldSync = true;
             }
@@ -435,17 +443,17 @@ class LoyaltyController {
             shouldSync = true;
           }
         }
-        
+
         if (shouldSync) {
           // 先删除该区域和类型的现有订单数据（如果有）
           await Order.deleteByRegionAndType(regionId, offer.type_id, datasource);
-          
+
           // 对于 LP 收益计算，只获取第一页买单通常已经足够（1000条数据足以包含最高出价）
-          // 这样可以避免不必要的翻页尝试和“Page 2 does not exist”的冗余日志
+          // 这样可以避免不必要的翻页尝试和"Page 2 does not exist"的冗余日志
           const orders = await eveApiService.getMarketOrdersByRegionAndType(
-            regionId, 
-            offer.type_id, 
-            'buy', 
+            regionId,
+            offer.type_id,
+            'buy',
             1, // page 1
             datasource
           );
@@ -457,57 +465,69 @@ class LoyaltyController {
               region_id: regionId,
               type_id: offer.type_id
             }));
-            
+
             // 批量插入或更新数据库
             await Order.insertOrUpdate(ordersWithRegionAndType, datasource);
           }
-          
+
           syncedOffers++;
         }
-        
+
         // 查询该type_id在特定区域的最高价买单
         const buyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1, datasource);
-        
+
+        if (buyOrders.length === 0) {
+          skippedOffers++;
+          skipReasons.noBuyOrders++;
+          // 记录到跳过表
+          await LoyaltySkipItem.addSkipItem(offer.type_id, datasource, 'no_buy_orders');
+          continue;
+        }
+
         if (buyOrders.length > 0) {
           const highestBuyPrice = buyOrders[0].price;
-          
+
           // 计算总收益和每LP收益
           const totalRevenue = highestBuyPrice * offer.quantity;
           const totalProfit = totalRevenue - offer.isk_cost;
           const profitPerLp = offer.lp_cost > 0 ? totalProfit / offer.lp_cost : 0;
-          
+
           // 根据不同服务器设置不同的存储门槛
           // 晨曦/无限服务器每LP收益1300以上，欧服(tranquility)560以上
           const profitThreshold = datasource.toLowerCase() === 'tranquility' ? 560 : 1300;
           // 总利润门槛：1000W
           const minTotalProfit = 10000000;
 
-          if (profitPerLp > profitThreshold && totalProfit >= minTotalProfit) {
-            // 准备数据
-            const lpIskData = {
-              type_id: offer.type_id,
-              corporation_id: corporationId,
-              region_id: regionId,
-              lp_cost: offer.lp_cost,
-              isk_cost: offer.isk_cost,
-              sell_price: highestBuyPrice,
-              quantity: offer.quantity,
-              total_profit: totalProfit,
-              profit_per_lp: profitPerLp
-            };
-            
-            // 插入或更新数据库
-            const saved = await LoyaltyTypeLpIsk.insertOrUpdate(lpIskData, datasource);
-            if (saved) {
-              savedOffers++;
+          if (profitPerLp <= profitThreshold || totalProfit < minTotalProfit) {
+            skippedOffers++;
+            skipReasons.profitBelowThreshold++;
+            // 前5个打印详情
+            if (skipReasons.profitBelowThreshold <= 5) {
+              console.log(`[${datasource}] Skip reason: profitBelowThreshold | type_id=${offer.type_id} | profitPerLp=${profitPerLp.toFixed(2)} (threshold=${profitThreshold}) | totalProfit=${totalProfit.toFixed(0)} (min=${minTotalProfit})`);
             }
+            continue;
           }
-        } else {
-          // 如果没有买单，记录到跳过表
-          await LoyaltySkipItem.addSkipItem(offer.type_id, datasource, 'no_buy_orders');
-          skippedOffers++;
+
+          // 准备数据
+          const lpIskData = {
+            type_id: offer.type_id,
+            corporation_id: corporationId,
+            region_id: regionId,
+            lp_cost: offer.lp_cost,
+            isk_cost: offer.isk_cost,
+            sell_price: highestBuyPrice,
+            quantity: offer.quantity,
+            total_profit: totalProfit,
+            profit_per_lp: profitPerLp
+          };
+
+          // 插入或更新数据库
+          const saved = await LoyaltyTypeLpIsk.insertOrUpdate(lpIskData, datasource);
+          if (saved) {
+            savedOffers++;
+          }
         }
-        
+
         // 每处理100个offers暂停1秒，避免API调用过于频繁
         if (processedOffers % 100 === 0) {
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -528,10 +548,10 @@ class LoyaltyController {
         }
       }
     }
-    
     process.stdout.write('\n'); // 进度条结束后换行
     console.log(`LP profit calculation completed for corporation ${corporationId} (${datasource})`);
     console.log(`Statistics: Saved ${savedOffers} records, Synced ${syncedOffers} order sets, Skipped ${skippedOffers} items`);
+    console.log(`Skip reasons breakdown: inSkipTable=${skipReasons.inSkipTable}, hasRequiredItems=${skipReasons.hasRequiredItems}, noBuyOrders=${skipReasons.noBuyOrders}, profitBelowThreshold=${skipReasons.profitBelowThreshold}`);
     console.log('-----------------------------------');
   }
 

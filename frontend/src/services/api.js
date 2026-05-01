@@ -239,10 +239,16 @@ export const loyaltyApi = {
     const response = await apiClient.post(`/loyalty/offers/sync`, { corporationId, datasource });
     return response;
   },
-  
+
+  // 同步所有数据源的忠诚度商店商品
+  async syncAllLoyaltyOffers() {
+    const response = await apiClient.post(`/loyalty/offers/sync-all`);
+    return response;
+  },
+
   // 获取所有忠诚度商店商品
-  async getLoyaltyOffers(page = 1, limit = 10, corporationId = null, search = '') {
-    const params = { page, limit };
+  async getLoyaltyOffers(page = 1, limit = 10, corporationId = null, search = '', datasource = 'serenity') {
+    const params = { page, limit, datasource };
     if (corporationId) {
       params.corporationId = corporationId;
     }

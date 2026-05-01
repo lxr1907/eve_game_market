@@ -35,6 +35,11 @@
                   同步数据
                 </el-button>
 
+                <el-button type="warning" @click="syncAllLoyaltyOffers">
+                  <el-icon><RefreshRight /></el-icon>
+                  同步所有数据源
+                </el-button>
+
               </div>
             </div>
           </template>
@@ -46,13 +51,29 @@
             style="width: 100%"
           >
             <el-table-column prop="id" label="商品ID" width="100" />
-            <el-table-column prop="corporation_id" label="公司ID" width="120" />
+            <el-table-column label="公司" width="180">
+              <template #default="scope">
+                {{ getCorporationName(scope.row.corporation_id) }} ({{ scope.row.corporation_id }})
+              </template>
+            </el-table-column>
             <el-table-column prop="type_name" label="物品名称" width="200" />
             <el-table-column prop="type_id" label="物品类型ID" width="120" />
             <el-table-column prop="quantity" label="数量" width="100" />
-            <el-table-column prop="lp_cost" label="LP成本" width="100" />
-            <el-table-column prop="isk_cost" label="ISK成本" width="120" />
-            <el-table-column prop="ak_cost" label="AK成本" width="100" />
+            <el-table-column label="LP成本" width="120">
+              <template #default="scope">
+                {{ formatCost(scope.row.lp_cost) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="ISK成本" width="140">
+              <template #default="scope">
+                {{ formatCost(scope.row.isk_cost) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="AK成本" width="120">
+              <template #default="scope">
+                {{ formatCost(scope.row.ak_cost) }}
+              </template>
+            </el-table-column>
             <el-table-column label="所需物品" min-width="200">
               <template #default="scope">
                 <el-tag v-if="!scope.row.required_items || scope.row.required_items.length === 0" type="info">
@@ -152,7 +173,7 @@ async function syncLoyaltyOffers() {
     loading.value = true
     const response = await loyaltyApi.syncLoyaltyOffers(selectedCorporationId.value)
     ElMessage.success(response.message)
-    
+
     // 同步完成后刷新数据
     setTimeout(() => {
       fetchLoyaltyOffers()
@@ -165,6 +186,48 @@ async function syncLoyaltyOffers() {
   } finally {
     loading.value = false
   }
+}
+
+// 同步所有数据源的忠诚度商店商品
+async function syncAllLoyaltyOffers() {
+  try {
+    await ElMessageBox.confirm(
+      '此操作将同步所有数据源（晨曦、曙光、欧服）的忠诚度商店商品，可能需要较长时间，是否继续？',
+      '同步所有数据源',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    loading.value = true
+    const response = await loyaltyApi.syncAllLoyaltyOffers()
+    ElMessage.success(response.data?.message || response.message || '同步任务已开始')
+
+    // 延迟刷新数据
+    setTimeout(() => {
+      fetchLoyaltyOffers()
+    }, 3000)
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('同步所有数据源失败:', error)
+      ElMessage.error('同步所有数据源失败')
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+// 格式化成本显示
+function formatCost(value) {
+  if (value === null || value === undefined) return '-'
+  if (value >= 10000000) {
+    return (value / 10000).toFixed(0) + 'KW'
+  } else if (value >= 10000) {
+    return (value / 10000).toFixed(1) + 'W'
+  }
+  return value.toLocaleString()
 }
 
 
