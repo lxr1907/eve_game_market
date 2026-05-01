@@ -78,7 +78,7 @@ class TypeController {
 
       if (regionId) {
         // 检查该 region 是否有数据
-        const rows = await Type.findByRegionId(regionId);
+        const rows = await Type.findByRegionId(regionId, datasource);
 
         // 如果没有数据，先同步
         if (rows.length === 0) {
@@ -86,7 +86,7 @@ class TypeController {
           try {
             await Type.updateRegionTypes(parseInt(regionId), datasource);
             // 重新查询
-            const newRows = await Type.findByRegionId(regionId);
+            const newRows = await Type.findByRegionId(regionId, datasource);
             if (newRows.length > 0) {
               hierarchy = buildTreeFromRows(newRows);
             }

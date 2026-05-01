@@ -5,6 +5,21 @@ const Stargate = require('../models/Stargate');
 const Constellation = require('../models/Constellation');
 const LoyaltySkipItem = require('../models/LoyaltySkipItem');
 
+async function addColumnIfNotExists(table, column, definition) {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?
+    `, [table, column]);
+
+    if (rows.length === 0) {
+      await pool.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      console.log(`Added column ${column} to ${table}`);
+    }
+  } catch (error) {
+    console.error(`Error adding column ${column} to ${table}:`, error.message);
+  }
+}
 
 /**
  * 数据库表结构同步工具
@@ -91,13 +106,15 @@ async function syncDatabaseStructure() {
     `);
     
     // 6. 创建或更新 region_types 表
+    await addColumnIfNotExists('region_types', 'datasource', 'VARCHAR(20) NOT NULL DEFAULT "serenity"');
     await createOrUpdateTable('region_types', `
       CREATE TABLE IF NOT EXISTS region_types (
         region_id INT,
         type_id INT,
+        datasource VARCHAR(20) NOT NULL DEFAULT "serenity",
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (region_id, type_id)
+        PRIMARY KEY (region_id, type_id, datasource)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
     

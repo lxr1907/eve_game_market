@@ -223,7 +223,7 @@ export default {
       try {
         loadingTree.value = true
         console.log('开始加载物品树（根据区域过滤）...')
-        const response = await typeApi.getHierarchy(selectedRegionId.value)
+        const response = await typeApi.getHierarchy(selectedRegionId.value, datasource.value)
         console.log('物品树加载成功，数据长度:', response?.length || 0)
         treeData.value = response
       } catch (error) {

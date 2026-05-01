@@ -18,15 +18,15 @@ class Type {
   }
 
   // 检查 region_types 表中某个 region 的数据是否超过指定小时数未更新
-  static async isRegionTypesStale(regionId, staleHours = 3) {
+  static async isRegionTypesStale(regionId, staleHours = 3, datasource = 'serenity') {
     const sql = `
-      SELECT updated_at FROM region_types 
-      WHERE region_id = ? 
-      ORDER BY updated_at asc 
+      SELECT updated_at FROM region_types
+      WHERE region_id = ? AND datasource = ?
+      ORDER BY updated_at asc
       LIMIT 1
     `;
     try {
-      const [rows] = await pool.execute(sql, [regionId]);
+      const [rows] = await pool.execute(sql, [regionId, datasource]);
       if (rows.length === 0) {
         return true; // 没有数据，视为过期
       }
@@ -44,51 +44,51 @@ class Type {
     const eveApiService = require('../services/eveApiService');
 
     try {
-      console.log(`Starting update for region ${regionId} market types...`);
+      console.log(`Starting update for region ${regionId} market types for datasource ${datasource}...`);
 
       // 先删除所有2周前的旧数据
       await pool.execute('DELETE FROM region_types WHERE updated_at < DATE_SUB(NOW(), INTERVAL 2 WEEK)');
       console.log(`Deleted region_types data older than 2 weeks`);
 
-      // 再删除该 region 的所有旧数据
-      await pool.execute('DELETE FROM region_types WHERE region_id = ?', [regionId]);
-      console.log(`Deleted old data for region ${regionId}`);
+      // 再删除该 region 和 datasource 的所有旧数据
+      await pool.execute('DELETE FROM region_types WHERE region_id = ? AND datasource = ?', [regionId, datasource]);
+      console.log(`Deleted old data for region ${regionId} and datasource ${datasource}`);
 
       let page = 1;
       let hasMore = true;
       let totalTypes = 0;
-      
+
       while (hasMore) {
         const typeIds = await eveApiService.getMarketRegionTypes(regionId, page, datasource);
-        
+
         if (!typeIds || typeIds.length === 0) {
           hasMore = false;
           break;
         }
-        
+
         // 批量插入或更新 region_types
         for (const typeId of typeIds) {
           try {
             await pool.execute(`
-              INSERT INTO region_types (region_id, type_id, updated_at)
-              VALUES (?, ?, NOW())
+              INSERT INTO region_types (region_id, type_id, datasource, updated_at)
+              VALUES (?, ?, ?, NOW())
               ON DUPLICATE KEY UPDATE updated_at = NOW()
-            `, [regionId, typeId]);
+            `, [regionId, typeId, datasource]);
             totalTypes++;
           } catch (err) {
             console.error(`Error inserting region_type (${regionId}, ${typeId}):`, err.message);
           }
         }
-        
+
         console.log(`Region ${regionId} page ${page}: inserted ${typeIds.length} types (total: ${totalTypes})`);
         page++;
-        
+
         // 如果返回的数量少于1000，说明是最后一页
         if (typeIds.length < 1000) {
           hasMore = false;
         }
       }
-      
+
       console.log(`Region ${regionId} update completed: ${totalTypes} types`);
       return { success: true, totalTypes };
     } catch (error) {
@@ -434,7 +434,7 @@ class Type {
   }
 
   // 根据 regionId 获取该区域下的所有类型及其层层级结构
-  static async findByRegionId(regionId) {
+  static async findByRegionId(regionId, datasource) {
     const sql = `
       SELECT DISTINCT
         c.category_id, c.name as category_name,
@@ -444,11 +444,11 @@ class Type {
       JOIN types t ON rt.type_id = t.id
       JOIN item_groups g ON t.group_id = g.group_id
       JOIN item_categories c ON g.category_id = c.category_id
-      WHERE rt.region_id = ? AND t.name IS NOT NULL AND t.name != ''
+      WHERE rt.region_id = ? AND rt.datasource = ? AND t.name IS NOT NULL AND t.name != ''
       ORDER BY c.name, g.name, t.name
     `;
     try {
-      const [rows] = await pool.execute(sql, [regionId]);
+      const [rows] = await pool.execute(sql, [regionId, datasource]);
       return rows;
     } catch (error) {
       console.error('Error in Type.findByRegionId:', error);
@@ -457,7 +457,7 @@ class Type {
   }
 
   // 根据 regionId 获取该区域下的所有分类
-  static async findCategoriesByRegion(regionId, search = '') {
+  static async findCategoriesByRegion(regionId, datasource, search = '') {
     let sql = `
       SELECT DISTINCT
         c.category_id, c.name as category_name
@@ -465,9 +465,9 @@ class Type {
       JOIN types t ON rt.type_id = t.id
       JOIN item_groups g ON t.group_id = g.group_id
       JOIN item_categories c ON g.category_id = c.category_id
-      WHERE rt.region_id = ? AND t.name IS NOT NULL AND t.name != ''
+      WHERE rt.region_id = ? AND rt.datasource = ? AND t.name IS NOT NULL AND t.name != ''
     `;
-    const params = [regionId];
+    const params = [regionId, datasource];
 
     if (search) {
       sql += ' AND c.name LIKE ?';
@@ -486,16 +486,16 @@ class Type {
   }
 
   // 根据 regionId 和 categoryId 获取该分类在该区域下的所有组
-  static async findGroupsByCategoryAndRegion(categoryId, regionId, search = '') {
+  static async findGroupsByCategoryAndRegion(categoryId, regionId, datasource, search = '') {
     let sql = `
       SELECT DISTINCT
         g.group_id, g.name as group_name, g.category_id
       FROM region_types rt
       JOIN types t ON rt.type_id = t.id
       JOIN item_groups g ON t.group_id = g.group_id
-      WHERE rt.region_id = ? AND g.category_id = ? AND t.name IS NOT NULL AND t.name != ''
+      WHERE rt.region_id = ? AND rt.datasource = ? AND g.category_id = ? AND t.name IS NOT NULL AND t.name != ''
     `;
-    const params = [regionId, categoryId];
+    const params = [regionId, datasource, categoryId];
 
     if (search) {
       sql += ' AND g.name LIKE ?';
@@ -514,16 +514,16 @@ class Type {
   }
 
   // 根据 regionId 和 groupId 获取该组在该区域下的所有类型
-  static async findTypesByGroupAndRegion(groupId, regionId, search = '') {
+  static async findTypesByGroupAndRegion(groupId, regionId, datasource, search = '') {
     let sql = `
       SELECT DISTINCT
         t.id as type_id, t.name as type_name, t.group_id, g.category_id
       FROM region_types rt
       JOIN types t ON rt.type_id = t.id
       JOIN item_groups g ON t.group_id = g.group_id
-      WHERE rt.region_id = ? AND t.group_id = ? AND t.name IS NOT NULL AND t.name != ''
+      WHERE rt.region_id = ? AND rt.datasource = ? AND t.group_id = ? AND t.name IS NOT NULL AND t.name != ''
     `;
-    const params = [regionId, groupId];
+    const params = [regionId, datasource, groupId];
 
     if (search) {
       sql += ' AND t.name LIKE ?';
