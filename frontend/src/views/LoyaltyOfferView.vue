@@ -309,13 +309,20 @@ onMounted(() => {
 
 :deep(.input-white .el-input__wrapper) {
   background-color: #333;
+  box-shadow: 0 0 0 1px #444 inset;
 }
 
 :deep(.input-white .el-input__inner) {
   color: #fff;
 }
 
-:deep(.input-white .el-input__wrapper::placeholder) {
+:deep(.input-white .el-input__inner::placeholder) {
   color: #999;
+}
+
+:deep(.input-white .el-input-group__append) {
+  background-color: #444;
+  color: #fff;
+  border-color: #444;
 }
 </style>
