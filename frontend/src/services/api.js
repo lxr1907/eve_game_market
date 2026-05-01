@@ -3,7 +3,7 @@ import axios from 'axios'
 // 创建axios实例
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
-  timeout: 10000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -92,6 +92,49 @@ export const typeApi = {
     const params = {};
     if (regionId) params.regionId = regionId;
     const response = await apiClient.get(`/types/hierarchy`, { params });
+    return response;
+  },
+
+  // 懒加载相关API
+  async getCategories(search = '') {
+    const params = {};
+    if (search) params.search = search;
+    const response = await apiClient.get(`/types/categories`, { params });
+    return response;
+  },
+
+  async getCategoriesByRegion(regionId, search = '') {
+    const params = { regionId };
+    if (search) params.search = search;
+    const response = await apiClient.get(`/types/categories-by-region`, { params });
+    return response;
+  },
+
+  async getGroupsByCategory(categoryId, search = '') {
+    const params = { categoryId };
+    if (search) params.search = search;
+    const response = await apiClient.get(`/types/groups-by-category`, { params });
+    return response;
+  },
+
+  async getGroupsByCategoryAndRegion(categoryId, regionId, search = '') {
+    const params = { categoryId, regionId };
+    if (search) params.search = search;
+    const response = await apiClient.get(`/types/groups-by-category-region`, { params });
+    return response;
+  },
+
+  async getTypesByGroup(groupId, search = '') {
+    const params = { groupId };
+    if (search) params.search = search;
+    const response = await apiClient.get(`/types/types-by-group`, { params });
+    return response;
+  },
+
+  async getTypesByGroupAndRegion(groupId, regionId, search = '') {
+    const params = { groupId, regionId };
+    if (search) params.search = search;
+    const response = await apiClient.get(`/types/types-by-group-region`, { params });
     return response;
   },
 

@@ -57,11 +57,25 @@ class Category {
   }
 
   // 获取所有Category
-  static async findAll(page = 1, limit = 10) {
-    const offset = (page - 1) * limit;
-    const sql = 'SELECT * FROM item_categories ORDER BY category_id LIMIT ? OFFSET ?';
+  static async findAll(page = 1, limit = 10, search = '') {
+    let sql = 'SELECT * FROM item_categories';
+    const params = [];
+
+    if (search) {
+      sql += ' WHERE name LIKE ?';
+      params.push(`%${search}%`);
+    }
+
+    sql += ' ORDER BY name';
+
+    if (limit !== null) {
+      const offset = (page - 1) * limit;
+      sql += ' LIMIT ? OFFSET ?';
+      params.push(limit, offset);
+    }
+
     try {
-      const [rows] = await pool.execute(sql, [limit, offset]);
+      const [rows] = await pool.execute(sql, params);
       return rows;
     } catch (error) {
       console.error('Error finding all categories:', error);

@@ -61,7 +61,7 @@
             prefix-icon="Search"
           />
         </div>
-        
+
         <div class="tree-wrapper" v-loading="loadingTree">
           <el-tree
             ref="treeRef"
@@ -222,10 +222,13 @@ export default {
     const loadHierarchy = async () => {
       try {
         loadingTree.value = true
+        console.log('开始加载物品树（根据区域过滤）...')
         const response = await typeApi.getHierarchy(selectedRegionId.value)
+        console.log('物品树加载成功，数据长度:', response?.length || 0)
         treeData.value = response
       } catch (error) {
-        ElMessage.error('加载物品树失败')
+        console.error('加载物品树失败:', error)
+        ElMessage.error('加载物品树失败: ' + (error.message || error))
       } finally {
         loadingTree.value = false
       }

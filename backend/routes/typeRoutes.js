@@ -4,6 +4,13 @@ const router = express.Router();
 
 // Type Routes
 router.get('/types/hierarchy', TypeController.getHierarchy);
+// 懒加载相关路由（支持区域过滤）
+router.get('/types/categories', TypeController.getCategories);
+router.get('/types/categories-by-region', TypeController.getCategoriesByRegion);
+router.get('/types/groups-by-category', TypeController.getGroupsByCategory);
+router.get('/types/groups-by-category-region', TypeController.getGroupsByCategoryAndRegion);
+router.get('/types/types-by-group', TypeController.getTypesByGroup);
+router.get('/types/types-by-group-region', TypeController.getTypesByGroupAndRegion);
 router.get('/types', TypeController.getTypes);
 router.get('/types/sync-ids', TypeController.syncTypeIds);
 router.get('/types/sync-details', TypeController.syncTypeDetails);

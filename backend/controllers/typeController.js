@@ -16,64 +16,258 @@ let syncTaskStatus = {
 };
 
 class TypeController {
-  // 获取层级结构
+  // 获取层级结构（支持根据 regionId 过滤）
   static async getHierarchy(req, res) {
     try {
       const { regionId } = req.query;
-      const rows = await Type.getHierarchyData(regionId);
       
-      // 在后端构建树形结构
-      const hierarchy = [];
-      const categoryMap = new Map();
-      const groupMap = new Map();
+      let hierarchy = [];
+      
+      if (regionId) {
+        // 根据 regionId 过滤
+        const rows = await Type.findByRegionId(regionId);
+        
+        // 在后端构建树形结构
+        const categoryMap = new Map();
+        const groupMap = new Map();
 
-      for (const row of rows) {
-        // 处理 Category
-        let category = categoryMap.get(row.category_id);
-        if (!category) {
-          category = {
-            id: `c${row.category_id}`,
-            realId: row.category_id,
-            name: row.category_name,
-            label: `${row.category_name} (${row.category_id})`,
-            children: [],
-            type: 'category'
-          };
-          categoryMap.set(row.category_id, category);
-          hierarchy.push(category);
-        }
+        for (const row of rows) {
+          // 处理 Category
+          let category = categoryMap.get(row.category_id);
+          if (!category) {
+            category = {
+              id: `c${row.category_id}`,
+              realId: row.category_id,
+              name: row.category_name,
+              label: `${row.category_name} (${row.category_id})`,
+              children: [],
+              type: 'category'
+            };
+            categoryMap.set(row.category_id, category);
+            hierarchy.push(category);
+          }
 
-        // 处理 Group
-        let group = groupMap.get(row.group_id);
-        if (!group) {
-          group = {
-            id: `g${row.group_id}`,
-            realId: row.group_id,
-            name: row.group_name,
-            label: `${row.group_name} (${row.group_id})`,
-            children: [],
-            type: 'group',
+          // 处理 Group
+          let group = groupMap.get(row.group_id);
+          if (!group) {
+            group = {
+              id: `g${row.group_id}`,
+              realId: row.group_id,
+              name: row.group_name,
+              label: `${row.group_name} (${row.group_id})`,
+              children: [],
+              type: 'group',
+              category_id: row.category_id
+            };
+            groupMap.set(row.group_id, group);
+            category.children.push(group);
+          }
+
+          // 处理 Type
+          group.children.push({
+            id: row.type_id,
+            realId: row.type_id,
+            name: row.type_name,
+            label: `${row.type_name} (${row.type_id})`,
+            type: 'type',
+            isLeaf: true,
             category_id: row.category_id
-          };
-          groupMap.set(row.group_id, group);
-          category.children.push(group);
+          });
         }
+      } else {
+        // 不带 regionId，使用原有逻辑
+        const rows = await Type.getHierarchyData(regionId);
+        
+        // 在后端构建树形结构
+        const categoryMap = new Map();
+        const groupMap = new Map();
 
-        // 处理 Type
-        group.children.push({
-          id: row.type_id,
-          realId: row.type_id,
-          name: row.type_name,
-          label: `${row.type_name} (${row.type_id})`,
-          type: 'type',
-          isLeaf: true,
-          category_id: row.category_id
-        });
+        for (const row of rows) {
+          // 处理 Category
+          let category = categoryMap.get(row.category_id);
+          if (!category) {
+            category = {
+              id: `c${row.category_id}`,
+              realId: row.category_id,
+              name: row.category_name,
+              label: `${row.category_name} (${row.category_id})`,
+              children: [],
+              type: 'category'
+            };
+            categoryMap.set(row.category_id, category);
+            hierarchy.push(category);
+          }
+
+          // 处理 Group
+          let group = groupMap.get(row.group_id);
+          if (!group) {
+            group = {
+              id: `g${row.group_id}`,
+              realId: row.group_id,
+              name: row.group_name,
+              label: `${row.group_name} (${row.group_id})`,
+              children: [],
+              type: 'group',
+              category_id: row.category_id
+            };
+            groupMap.set(row.group_id, group);
+            category.children.push(group);
+          }
+
+          // 处理 Type
+          group.children.push({
+            id: row.type_id,
+            realId: row.type_id,
+            name: row.type_name,
+            label: `${row.type_name} (${row.type_id})`,
+            type: 'type',
+            isLeaf: true,
+            category_id: row.category_id
+          });
+        }
       }
 
       res.status(200).json(hierarchy);
     } catch (error) {
       console.error('Error in getHierarchy:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  // 获取所有分类（懒加载根节点）
+  static async getCategories(req, res) {
+    try {
+      const { search } = req.query;
+      const categories = await Category.findAll(1, null, search);
+      const result = categories.map(cat => ({
+        id: `c${cat.category_id}`,
+        realId: cat.category_id,
+        name: cat.name,
+        label: `${cat.name} (${cat.category_id})`,
+        type: 'category',
+        isLeaf: false
+      }));
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in getCategories:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  // 根据 regionId 获取分类（懒加载根节点，支持区域过滤）
+  static async getCategoriesByRegion(req, res) {
+    try {
+      const { regionId, datasource = 'serenity' } = req.query;
+      
+      // 检查数据是否过期（超过3小时）
+      const isStale = await Type.isRegionTypesStale(parseInt(regionId), 3);
+      
+      if (isStale) {
+        console.log(`Region ${regionId} types data is stale, updating in background...`);
+        // 在后台更新数据，不阻塞请求
+        Type.updateRegionTypes(parseInt(regionId), datasource).catch(err => {
+          console.error(`Background update failed for region ${regionId}:`, err);
+        });
+      }
+      
+      const categories = await Type.findCategoriesByRegion(regionId);
+      const result = categories.map(cat => ({
+        id: `c${cat.category_id}`,
+        realId: cat.category_id,
+        name: cat.category_name,
+        label: `${cat.category_name} (${cat.category_id})`,
+        type: 'category',
+        isLeaf: false
+      }));
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in getCategoriesByRegion:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  // 根据分类ID和regionId获取该分类下的所有组
+  static async getGroupsByCategoryAndRegion(req, res) {
+    try {
+      const { categoryId, regionId, search } = req.query;
+      const groups = await Type.findGroupsByCategoryAndRegion(parseInt(categoryId), regionId, search);
+      const result = groups.map(group => ({
+        id: `g${group.group_id}`,
+        realId: group.group_id,
+        name: group.group_name,
+        label: `${group.group_name} (${group.group_id})`,
+        type: 'group',
+        isLeaf: false,
+        category_id: group.category_id
+      }));
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in getGroupsByCategoryAndRegion:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  // 根据组ID和regionId获取该组下的所有类型
+  static async getTypesByGroupAndRegion(req, res) {
+    try {
+      const { groupId, regionId, search } = req.query;
+      const types = await Type.findTypesByGroupAndRegion(parseInt(groupId), regionId, search);
+      const result = types.map(type => ({
+        id: type.type_id,
+        realId: type.type_id,
+        name: type.type_name,
+        label: `${type.type_name} (${type.type_id})`,
+        type: 'type',
+        isLeaf: true,
+        group_id: type.group_id,
+        category_id: type.category_id
+      }));
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in getTypesByGroupAndRegion:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  // 根据分类ID获取该分类下的所有组
+  static async getGroupsByCategory(req, res) {
+    try {
+      const { categoryId, search } = req.query;
+      const groups = await Group.findByCategoryId(parseInt(categoryId), search);
+      const result = groups.map(group => ({
+        id: `g${group.group_id}`,
+        realId: group.group_id,
+        name: group.name,
+        label: `${group.name} (${group.group_id})`,
+        type: 'group',
+        isLeaf: false,
+        category_id: group.category_id
+      }));
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in getGroupsByCategory:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  // 根据组ID获取该组下的所有类型
+  static async getTypesByGroup(req, res) {
+    try {
+      const { groupId, search } = req.query;
+      const types = await Type.findByGroupId(parseInt(groupId), search);
+      const result = types.map(type => ({
+        id: type.id,
+        realId: type.id,
+        name: type.name,
+        label: `${type.name} (${type.id})`,
+        type: 'type',
+        isLeaf: true,
+        group_id: type.group_id,
+        category_id: type.category_id
+      }));
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in getTypesByGroup:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   }

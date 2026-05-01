@@ -1,6 +1,83 @@
 const pool = require('../config/database');
 
 class Type {
+  // 检查 region_types 表中某个 region 的数据是否超过指定小时数未更新
+  static async isRegionTypesStale(regionId, staleHours = 3) {
+    const sql = `
+      SELECT updated_at FROM region_types 
+      WHERE region_id = ? 
+      ORDER BY updated_at DESC 
+      LIMIT 1
+    `;
+    try {
+      const [rows] = await pool.execute(sql, [regionId]);
+      if (rows.length === 0) {
+        return true; // 没有数据，视为过期
+      }
+      const lastUpdate = new Date(rows[0].updated_at);
+      const now = new Date();
+      const hoursDiff = (now - lastUpdate) / (1000 * 60 * 60);
+      return hoursDiff >= staleHours;
+    } catch (error) {
+      console.error('Error checking region_types freshness:', error);
+      return true; // 出错时返回过期，触发更新
+    }
+  }
+
+  // 更新指定 region 的 region_types 数据
+  static async updateRegionTypes(regionId, datasource = 'serenity') {
+    const eveApiService = require('../services/eveApiService');
+    
+    try {
+      console.log(`Starting update for region ${regionId} market types...`);
+      
+      // 先删除该 region 的所有旧数据
+      await pool.execute('DELETE FROM region_types WHERE region_id = ?', [regionId]);
+      console.log(`Deleted old data for region ${regionId}`);
+      
+      let page = 1;
+      let hasMore = true;
+      let totalTypes = 0;
+      
+      while (hasMore) {
+        const typeIds = await eveApiService.getMarketRegionTypes(regionId, page, datasource);
+        
+        if (!typeIds || typeIds.length === 0) {
+          hasMore = false;
+          break;
+        }
+        
+        // 批量插入或更新 region_types
+        for (const typeId of typeIds) {
+          try {
+            await pool.execute(`
+              INSERT INTO region_types (region_id, type_id, updated_at)
+              VALUES (?, ?, NOW())
+              ON DUPLICATE KEY UPDATE updated_at = NOW()
+            `, [regionId, typeId]);
+            totalTypes++;
+          } catch (err) {
+            console.error(`Error inserting region_type (${regionId}, ${typeId}):`, err.message);
+          }
+        }
+        
+        console.log(`Region ${regionId} page ${page}: inserted ${typeIds.length} types (total: ${totalTypes})`);
+        page++;
+        
+        // 如果返回的数量少于1000，说明是最后一页
+        if (typeIds.length < 1000) {
+          hasMore = false;
+        }
+      }
+      
+      console.log(`Region ${regionId} update completed: ${totalTypes} types`);
+      return { success: true, totalTypes };
+    } catch (error) {
+      console.error(`Error updating region_types for region ${regionId}:`, error);
+      throw error;
+    }
+  }
+
   static async createTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS types (
@@ -312,6 +389,135 @@ class Type {
       return { success: true };
     } catch (error) {
       console.error('Error updating type:', error);
+      throw error;
+    }
+  }
+
+  // 根据组ID获取该组下的所有类型
+  static async findByGroupId(groupId, search = '') {
+    let sql = 'SELECT * FROM types WHERE group_id = ? AND name IS NOT NULL AND name != \'\'';
+    const params = [groupId];
+
+    if (search) {
+      sql += ' AND name LIKE ?';
+      params.push(`%${search}%`);
+    }
+
+    sql += ' ORDER BY name';
+
+    try {
+      const [rows] = await pool.execute(sql, params);
+      return rows;
+    } catch (error) {
+      console.error('Error in Type.findByGroupId:', error);
+      throw error;
+    }
+  }
+
+  // 根据 regionId 获取该区域下的所有类型及其层层级结构
+  static async findByRegionId(regionId) {
+    const sql = `
+      SELECT DISTINCT
+        c.category_id, c.name as category_name,
+        g.group_id, g.name as group_name,
+        t.id as type_id, t.name as type_name
+      FROM region_types rt
+      JOIN types t ON rt.type_id = t.id
+      JOIN item_groups g ON t.group_id = g.group_id
+      JOIN item_categories c ON g.category_id = c.category_id
+      WHERE rt.region_id = ? AND t.name IS NOT NULL AND t.name != ''
+      ORDER BY c.name, g.name, t.name
+    `;
+    try {
+      const [rows] = await pool.execute(sql, [regionId]);
+      return rows;
+    } catch (error) {
+      console.error('Error in Type.findByRegionId:', error);
+      throw error;
+    }
+  }
+
+  // 根据 regionId 获取该区域下的所有分类
+  static async findCategoriesByRegion(regionId, search = '') {
+    let sql = `
+      SELECT DISTINCT
+        c.category_id, c.name as category_name
+      FROM region_types rt
+      JOIN types t ON rt.type_id = t.id
+      JOIN item_groups g ON t.group_id = g.group_id
+      JOIN item_categories c ON g.category_id = c.category_id
+      WHERE rt.region_id = ? AND t.name IS NOT NULL AND t.name != ''
+    `;
+    const params = [regionId];
+
+    if (search) {
+      sql += ' AND c.name LIKE ?';
+      params.push(`%${search}%`);
+    }
+
+    sql += ' ORDER BY c.name';
+
+    try {
+      const [rows] = await pool.execute(sql, params);
+      return rows;
+    } catch (error) {
+      console.error('Error in Type.findCategoriesByRegion:', error);
+      throw error;
+    }
+  }
+
+  // 根据 regionId 和 categoryId 获取该分类在该区域下的所有组
+  static async findGroupsByCategoryAndRegion(categoryId, regionId, search = '') {
+    let sql = `
+      SELECT DISTINCT
+        g.group_id, g.name as group_name, g.category_id
+      FROM region_types rt
+      JOIN types t ON rt.type_id = t.id
+      JOIN item_groups g ON t.group_id = g.group_id
+      WHERE rt.region_id = ? AND g.category_id = ? AND t.name IS NOT NULL AND t.name != ''
+    `;
+    const params = [regionId, categoryId];
+
+    if (search) {
+      sql += ' AND g.name LIKE ?';
+      params.push(`%${search}%`);
+    }
+
+    sql += ' ORDER BY g.name';
+
+    try {
+      const [rows] = await pool.execute(sql, params);
+      return rows;
+    } catch (error) {
+      console.error('Error in Type.findGroupsByCategoryAndRegion:', error);
+      throw error;
+    }
+  }
+
+  // 根据 regionId 和 groupId 获取该组在该区域下的所有类型
+  static async findTypesByGroupAndRegion(groupId, regionId, search = '') {
+    let sql = `
+      SELECT DISTINCT
+        t.id as type_id, t.name as type_name, t.group_id, g.category_id
+      FROM region_types rt
+      JOIN types t ON rt.type_id = t.id
+      JOIN item_groups g ON t.group_id = g.group_id
+      WHERE rt.region_id = ? AND t.group_id = ? AND t.name IS NOT NULL AND t.name != ''
+    `;
+    const params = [regionId, groupId];
+
+    if (search) {
+      sql += ' AND t.name LIKE ?';
+      params.push(`%${search}%`);
+    }
+
+    sql += ' ORDER BY t.name';
+
+    try {
+      const [rows] = await pool.execute(sql, params);
+      return rows;
+    } catch (error) {
+      console.error('Error in Type.findTypesByGroupAndRegion:', error);
       throw error;
     }
   }

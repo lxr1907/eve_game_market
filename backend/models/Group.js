@@ -110,6 +110,27 @@ class Group {
       throw error;
     }
   }
+
+  // 根据分类ID获取该分类下的所有组
+  static async findByCategoryId(categoryId, search = '') {
+    let sql = 'SELECT * FROM item_groups WHERE category_id = ?';
+    const params = [categoryId];
+
+    if (search) {
+      sql += ' AND name LIKE ?';
+      params.push(`%${search}%`);
+    }
+
+    sql += ' ORDER BY name';
+
+    try {
+      const [rows] = await pool.execute(sql, params);
+      return rows;
+    } catch (error) {
+      console.error('Error in Group.findByCategoryId:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = Group;
