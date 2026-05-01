@@ -6,7 +6,7 @@ class Type {
     const sql = `
       SELECT updated_at FROM region_types 
       WHERE region_id = ? 
-      ORDER BY updated_at DESC 
+      ORDER BY updated_at asc 
       LIMIT 1
     `;
     try {
