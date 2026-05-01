@@ -90,7 +90,7 @@
           <section class="table-section profit-highlight">
             <div class="section-header">
               <h2 class="section-title">
-                <el-icon><TrendCharts /></el-icon> 收益概览
+                <el-icon><Money /></el-icon> 收益概览
               </h2>
             </div>
             <el-table
@@ -148,7 +148,7 @@
           <section class="table-section">
             <div class="section-header">
               <h2 class="section-title">
-                <el-icon><Calculator /></el-icon> 总成本统计
+                <el-icon><DataAnalysis /></el-icon> 总成本统计
               </h2>
             </div>
             <el-table 
@@ -178,6 +178,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { regionApi, typeApi, orderApi } from '../services/api'
 import { ElMessage } from 'element-plus'
+import { Folder, Collection, Document, List, DataAnalysis, Search, Money } from '@element-plus/icons-vue'
 
 export default {
   name: 'ManufacturingCostView',
