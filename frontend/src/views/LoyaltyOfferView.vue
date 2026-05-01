@@ -9,6 +9,7 @@
                 <el-input
                   v-model="searchKeyword"
                   placeholder="搜索物品名称"
+                  class="input-white"
                   style="width: 200px; margin-right: 10px"
                   @keyup.enter="fetchLoyaltyOffers"
                 >
@@ -304,5 +305,17 @@ onMounted(() => {
   background-color: #333;
   color: #fff;
   border-color: #444;
+}
+
+:deep(.input-white .el-input__wrapper) {
+  background-color: #333;
+}
+
+:deep(.input-white .el-input__inner) {
+  color: #fff;
+}
+
+:deep(.input-white .el-input__wrapper::placeholder) {
+  color: #999;
 }
 </style>
