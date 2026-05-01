@@ -1,6 +1,22 @@
 const pool = require('../config/database');
 
 class Type {
+  // 清理所有 region_types 表中2周前的旧数据
+  static async cleanupOldRegionTypes() {
+    try {
+      const [result] = await pool.execute(
+        'DELETE FROM region_types WHERE updated_at < DATE_SUB(NOW(), INTERVAL 2 WEEK)'
+      );
+      if (result.affectedRows > 0) {
+        console.log(`Cleaned up ${result.affectedRows} region_types records older than 2 weeks`);
+      }
+      return result.affectedRows;
+    } catch (error) {
+      console.error('Error cleaning up old region_types:', error);
+      return 0;
+    }
+  }
+
   // 检查 region_types 表中某个 region 的数据是否超过指定小时数未更新
   static async isRegionTypesStale(regionId, staleHours = 3) {
     const sql = `
@@ -24,7 +40,6 @@ class Type {
     }
   }
 
-  // 更新指定 region 的 region_types 数据
   static async updateRegionTypes(regionId, datasource = 'serenity') {
     const eveApiService = require('../services/eveApiService');
 
@@ -38,7 +53,7 @@ class Type {
       // 再删除该 region 的所有旧数据
       await pool.execute('DELETE FROM region_types WHERE region_id = ?', [regionId]);
       console.log(`Deleted old data for region ${regionId}`);
-      
+
       let page = 1;
       let hasMore = true;
       let totalTypes = 0;
