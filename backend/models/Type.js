@@ -27,11 +27,15 @@ class Type {
   // 更新指定 region 的 region_types 数据
   static async updateRegionTypes(regionId, datasource = 'serenity') {
     const eveApiService = require('../services/eveApiService');
-    
+
     try {
       console.log(`Starting update for region ${regionId} market types...`);
-      
-      // 先删除该 region 的所有旧数据
+
+      // 先删除所有2周前的旧数据
+      await pool.execute('DELETE FROM region_types WHERE updated_at < DATE_SUB(NOW(), INTERVAL 2 WEEK)');
+      console.log(`Deleted region_types data older than 2 weeks`);
+
+      // 再删除该 region 的所有旧数据
       await pool.execute('DELETE FROM region_types WHERE region_id = ?', [regionId]);
       console.log(`Deleted old data for region ${regionId}`);
       
