@@ -299,7 +299,7 @@ class LoyaltyController {
     const regionId = datasource === 'infinity' ? 10000016 : 10000002;
     
     // 获取该公司的所有loyalty_offers
-    const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId);
+    const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId, datasource);
     const offers = allOffers.offers;
     const totalOffersCount = offers.length;
     

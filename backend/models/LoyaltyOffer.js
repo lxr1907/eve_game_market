@@ -165,76 +165,78 @@ class LoyaltyOffer {
 
   static async findAll(page = 1, limit = 10, search = '', corporationId = null, datasource = 'serenity') {
     const offset = (page - 1) * limit;
-    
+
     try {
       // 使用预处理语句的另一种方式
       let offers, countResult;
-      
+
       if (search && corporationId) {
         // 同时有搜索条件和公司ID
         const [offersResult] = await pool.query(
-          `SELECT lo.*, t.name as type_name FROM loyalty_offers lo 
-           LEFT JOIN types t ON lo.type_id = t.id 
-           WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?) AND lo.corporation_id = ? 
+          `SELECT lo.*, t.name as type_name FROM loyalty_offers lo
+           LEFT JOIN types t ON lo.type_id = t.id
+           WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?) AND lo.corporation_id = ? AND lo.datasource = ?
            ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
-          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(corporationId, 10), parseInt(limit, 10), parseInt(offset, 10)]
+          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(corporationId, 10), datasource, parseInt(limit, 10), parseInt(offset, 10)]
         );
         offers = offersResult;
-        
+
         const [countResultData] = await pool.query(
-          `SELECT COUNT(*) as count FROM loyalty_offers lo 
-           LEFT JOIN types t ON lo.type_id = t.id 
-           WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?) AND lo.corporation_id = ?`,
-          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(corporationId, 10)]
+          `SELECT COUNT(*) as count FROM loyalty_offers lo
+           LEFT JOIN types t ON lo.type_id = t.id
+           WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?) AND lo.corporation_id = ? AND lo.datasource = ?`,
+          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(corporationId, 10), datasource]
         );
         countResult = countResultData;
       } else if (search) {
         // 只有搜索条件
         const [offersResult] = await pool.query(
-          `SELECT lo.*, t.name as type_name FROM loyalty_offers lo 
-           LEFT JOIN types t ON lo.type_id = t.id 
-           WHERE lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ? 
+          `SELECT lo.*, t.name as type_name FROM loyalty_offers lo
+           LEFT JOIN types t ON lo.type_id = t.id
+           WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?) AND lo.datasource = ?
            ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
-          [`%${search}%`, `%${search}%`, `%${search}%`, parseInt(limit, 10), parseInt(offset, 10)]
+          [`%${search}%`, `%${search}%`, `%${search}%`, datasource, parseInt(limit, 10), parseInt(offset, 10)]
         );
         offers = offersResult;
-        
+
         const [countResultData] = await pool.query(
-          `SELECT COUNT(*) as count FROM loyalty_offers lo 
-           LEFT JOIN types t ON lo.type_id = t.id 
-           WHERE lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?`,
-          [`%${search}%`, `%${search}%`, `%${search}%`]
+          `SELECT COUNT(*) as count FROM loyalty_offers lo
+           LEFT JOIN types t ON lo.type_id = t.id
+           WHERE (lo.offer_id LIKE ? OR lo.type_id LIKE ? OR t.name LIKE ?) AND lo.datasource = ?`,
+          [`%${search}%`, `%${search}%`, `%${search}%`, datasource]
         );
         countResult = countResultData;
       } else if (corporationId) {
         // 只有公司ID
-        console.log('Only corporationId:', corporationId, limit, offset);
+        console.log('Only corporationId:', corporationId, limit, offset, 'datasource:', datasource);
         const [offersResult] = await pool.query(
-          `SELECT lo.*, t.name as type_name FROM loyalty_offers lo 
-           LEFT JOIN types t ON lo.type_id = t.id 
-           WHERE lo.corporation_id = ? 
+          `SELECT lo.*, t.name as type_name FROM loyalty_offers lo
+           LEFT JOIN types t ON lo.type_id = t.id
+           WHERE lo.corporation_id = ? AND lo.datasource = ?
            ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
-          [parseInt(corporationId, 10), parseInt(limit, 10), parseInt(offset, 10)]
+          [parseInt(corporationId, 10), datasource, parseInt(limit, 10), parseInt(offset, 10)]
         );
         offers = offersResult;
-        
+
         const [countResultData] = await pool.query(
-          `SELECT COUNT(*) as count FROM loyalty_offers lo WHERE lo.corporation_id = ?`,
-          [parseInt(corporationId, 10)]
+          `SELECT COUNT(*) as count FROM loyalty_offers lo WHERE lo.corporation_id = ? AND lo.datasource = ?`,
+          [parseInt(corporationId, 10), datasource]
         );
         countResult = countResultData;
       } else {
         // 没有条件
         const [offersResult] = await pool.query(
-          `SELECT lo.*, t.name as type_name FROM loyalty_offers lo 
-           LEFT JOIN types t ON lo.type_id = t.id 
+          `SELECT lo.*, t.name as type_name FROM loyalty_offers lo
+           LEFT JOIN types t ON lo.type_id = t.id
+           WHERE lo.datasource = ?
            ORDER BY lo.offer_id DESC LIMIT ? OFFSET ?`,
-          [parseInt(limit, 10), parseInt(offset, 10)]
+          [datasource, parseInt(limit, 10), parseInt(offset, 10)]
         );
         offers = offersResult;
-        
+
         const [countResultData] = await pool.query(
-          `SELECT COUNT(*) as count FROM loyalty_offers lo`
+          `SELECT COUNT(*) as count FROM loyalty_offers lo WHERE lo.datasource = ?`,
+          [datasource]
         );
         countResult = countResultData;
       }

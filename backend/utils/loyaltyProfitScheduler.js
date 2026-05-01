@@ -37,22 +37,29 @@ function startLoyaltyProfitScheduler() {
  */
 async function syncAllFactionProfits() {
   console.log('\n=== Starting LP profit sync for all factions ===');
-  
+
+  const datasources = ['serenity', 'infinity', 'tranquility'];
+
   try {
-    for (const corporationId of factionCorporations) {
-      console.log(`\nSyncing LP profit for corporation ${corporationId}...`);
-      try {
-        // 使用晨曦服务器（serenity）
-        await LoyaltyController.calculateProfitInternal(corporationId, 'serenity');
-        console.log(`✅ LP profit sync completed for corporation ${corporationId}`);
-      } catch (error) {
-        console.error(`❌ Error syncing LP profit for corporation ${corporationId}:`, error.message);
+    for (const datasource of datasources) {
+      console.log(`\n>>> Processing datasource: ${datasource} >>>`);
+
+      for (const corporationId of factionCorporations) {
+        console.log(`\nSyncing LP profit for corporation ${corporationId} (${datasource})...`);
+        try {
+          await LoyaltyController.calculateProfitInternal(corporationId, datasource);
+          console.log(`✅ LP profit sync completed for corporation ${corporationId} (${datasource})`);
+        } catch (error) {
+          console.error(`❌ Error syncing LP profit for corporation ${corporationId} (${datasource}):`, error.message);
+        }
+
+        // 每处理一个势力，暂停2秒，避免API调用过于频繁
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
-      
-      // 每处理一个势力，暂停2秒，避免API调用过于频繁
-      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      console.log(`\n>>> Completed datasource: ${datasource} <<<`);
     }
-    
+
     console.log('\n=== All factions LP profit sync completed ===');
   } catch (error) {
     console.error('❌ Error in LP profit scheduler:', error.message);

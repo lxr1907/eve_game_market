@@ -6,23 +6,24 @@ class RegionType {
       CREATE TABLE IF NOT EXISTS region_types (
         region_id INT,
         type_id INT,
+        datasource VARCHAR(20) NOT NULL DEFAULT 'serenity',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (region_id, type_id)
+        PRIMARY KEY (region_id, type_id, datasource)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query);
   }
 
-  static async insertOrUpdate(regionId, typeIds) {
+  static async insertOrUpdate(regionId, typeIds, datasource = 'serenity') {
     if (!typeIds || typeIds.length === 0) {
       return;
     }
 
     // 构建批量插入语句
-    const values = typeIds.map(typeId => `(${regionId}, ${typeId})`).join(', ');
+    const values = typeIds.map(typeId => `(${regionId}, ${typeId}, '${datasource}')`).join(', ');
     const query = `
-      INSERT INTO region_types (region_id, type_id)
+      INSERT INTO region_types (region_id, type_id, datasource)
       VALUES ${values}
       ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP
     `;
@@ -36,8 +37,7 @@ class RegionType {
     }
   }
 
-  static async findByRegionId(regionId, page = 1, limit = 10) {
-    // 将page和limit转换为整数
+  static async findByRegionId(regionId, datasource = 'serenity', page = 1, limit = 10) {
     const pageInt = parseInt(page) || 1;
     const limitInt = parseInt(limit) || 10;
     const offset = (pageInt - 1) * limitInt;
@@ -46,28 +46,27 @@ class RegionType {
       SELECT rt.region_id, rt.type_id, t.name as type_name
       FROM region_types rt
       LEFT JOIN types t ON rt.type_id = t.id
-      WHERE rt.region_id = ?
+      WHERE rt.region_id = ? AND rt.datasource = ?
       ORDER BY rt.type_id
       LIMIT ${limitInt} OFFSET ${offset}
     `;
 
-    const [rows] = await pool.execute(query, [regionId]);
+    const [rows] = await pool.execute(query, [regionId, datasource]);
     return rows;
   }
 
-  static async countByRegionId(regionId) {
+  static async countByRegionId(regionId, datasource = 'serenity') {
     const query = `
       SELECT COUNT(*) as count
       FROM region_types
-      WHERE region_id = ?
+      WHERE region_id = ? AND datasource = ?
     `;
 
-    const [rows] = await pool.execute(query, [regionId]);
+    const [rows] = await pool.execute(query, [regionId, datasource]);
     return rows[0].count;
   }
 
   static async findAll(page = 1, limit = 10) {
-    // 将page和limit转换为整数
     const pageInt = parseInt(page) || 1;
     const limitInt = parseInt(limit) || 10;
     const offset = (pageInt - 1) * limitInt;
@@ -91,9 +90,9 @@ class RegionType {
     return rows[0].count;
   }
 
-  static async deleteByRegionId(regionId) {
-    const query = `DELETE FROM region_types WHERE region_id = ?`;
-    const [result] = await pool.execute(query, [regionId]);
+  static async deleteByRegionId(regionId, datasource = 'serenity') {
+    const query = `DELETE FROM region_types WHERE region_id = ? AND datasource = ?`;
+    const [result] = await pool.execute(query, [regionId, datasource]);
     return result.affectedRows;
   }
 }

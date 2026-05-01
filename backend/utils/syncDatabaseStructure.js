@@ -133,6 +133,7 @@ async function syncDatabaseStructure() {
     `);
     
     // 8. 创建或更新 loyalty_offers 表
+    await addColumnIfNotExists('loyalty_offers', 'datasource', 'VARCHAR(20) NOT NULL DEFAULT "serenity"');
     await createOrUpdateTable('loyalty_offers', `
       CREATE TABLE IF NOT EXISTS loyalty_offers (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -144,13 +145,15 @@ async function syncDatabaseStructure() {
         isk_cost BIGINT NOT NULL,
         ak_cost INT,
         status VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT "pending",
+        datasource VARCHAR(20) NOT NULL DEFAULT "serenity",
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_offer (offer_id, corporation_id)
+        UNIQUE KEY unique_offer (offer_id, corporation_id, datasource)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    
+
     // 9. 创建或更新 loyalty_offer_required_items 表
+    await addColumnIfNotExists('loyalty_offer_required_items', 'datasource', 'VARCHAR(20) NOT NULL DEFAULT "serenity"');
     await createOrUpdateTable('loyalty_offer_required_items', `
       CREATE TABLE IF NOT EXISTS loyalty_offer_required_items (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -158,6 +161,7 @@ async function syncDatabaseStructure() {
         corporation_id INT NOT NULL,
         type_id INT NOT NULL,
         quantity INT NOT NULL,
+        datasource VARCHAR(20) NOT NULL DEFAULT "serenity",
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci

@@ -260,10 +260,20 @@ class LoyaltyTypeLpIsk {
       
       // 执行主查询
       const [rows] = await pool.execute(query, queryParams);
-      
+
       console.log('Debug - Main query result length:', rows.length);
       console.log('Debug - Total from count query:', total);
-      
+
+      // 检查第一个结果的订单数据
+      if (rows.length > 0) {
+        console.log('Debug - First row order data:', {
+          type_id: rows[0].type_id,
+          region_id: rows[0].region_id,
+          max_buy_order_volume_remaining: rows[0].max_buy_order_volume_remaining,
+          max_buy_order_total_profit: rows[0].max_buy_order_total_profit
+        });
+      }
+
       return {
         data: rows,
         total,

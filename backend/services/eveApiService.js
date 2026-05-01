@@ -436,9 +436,9 @@ class EveApiService {
         console.log(`Timeout fetching region details for ID ${regionId}, retrying (${retries} left)...`);
         // 指数退避策略，每次重试等待时间增加
         await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
-        return this.getRegionDetails(regionId, retries - 1);
+        return this.getRegionDetails(regionId, datasource, retries - 1);
       } else {
-        console.error(`Error fetching region details for ID ${regionId}: ${error.message}`);
+        console.error(`Error fetching region details for ID ${regionId}, datasource ${datasource}: ${error.message}`);
         if (error.response) {
           console.error('Response status:', error.response.status);
           console.error('Response data:', error.response.data);
@@ -484,9 +484,9 @@ class EveApiService {
         console.log(`Timeout fetching market region types for region ID ${regionId}, page ${page}, retrying (${retries} left)...`);
         // 指数退避策略，每次重试等待时间增加
         await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
-        return this.getMarketRegionTypes(regionId, page, retries - 1);
+        return this.getMarketRegionTypes(regionId, page, datasource, retries - 1);
       } else {
-        console.error(`Error fetching market region types for region ID ${regionId}, page ${page}: ${error.message}`);
+        console.error(`Error fetching market region types for region ID ${regionId}, page ${page}, datasource ${datasource}: ${error.message}`);
         if (error.response) {
           console.error('Response status:', error.response.status);
           console.error('Response data:', error.response.data);
@@ -699,7 +699,7 @@ class EveApiService {
       console.log(`Finished fetching all ${orderType} orders for region ${regionId}, type ${typeId}`);
       return page - 1; // 返回总页数
     } catch (error) {
-      console.error(`Error in recursive fetching of ${orderType} orders for region ${regionId}, type ${typeId}:`, error.message);
+      console.error(`Error in recursive fetching of ${orderType} orders for region ${regionId}, type ${typeId}, datasource ${datasource}:`, error.message);
       console.error('Error stack:', error.stack);
       throw error;
     }
@@ -739,7 +739,7 @@ class EveApiService {
         await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
         return this.getMarketOrdersByRegionAndType(regionId, typeId, orderType, page, datasource, retries -1);
       } else {
-        console.error(`Error fetching ${orderType} orders for region ${regionId}, type ${typeId}: ${error.message}`);
+        console.error(`Error fetching ${orderType} orders for region ${regionId}, type ${typeId}, datasource ${datasource}: ${error.message}`);
         return []; // 返回空数组表示获取失败
       }
     }

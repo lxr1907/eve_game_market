@@ -124,7 +124,8 @@ class RegionController {
   static async syncRegionTypes(req, res) {
     try {
       const { regionId } = req.params;
-      
+      const { datasource = 'serenity' } = req.query;
+
       // 验证regionId参数
       if (!regionId) {
         return res.status(400).json({
@@ -132,7 +133,7 @@ class RegionController {
           status: 'error'
         });
       }
-      
+
       // 直接返回成功给前端
       res.status(202).json({
         message: `Region ${regionId}类型同步任务已开始，将在后台执行`,
@@ -140,7 +141,7 @@ class RegionController {
       });
 
       // 在后台异步执行Region Types同步
-      await RegionController.syncRegionTypesInBackground(regionId);
+      await RegionController.syncRegionTypesInBackground(regionId, datasource);
     } catch (error) {
       console.error('Error starting region types synchronization:', error.message);
       res.status(500).json({
@@ -149,7 +150,7 @@ class RegionController {
       });
     }
   }
-  
+
   // 同步所有Region Types
   static async syncAllRegionTypes(req, res) {
     try {
@@ -163,49 +164,57 @@ class RegionController {
       (async () => {
         try {
           console.log('Starting all region types synchronization in background...');
-          
-          // 获取所有region的列表（分页获取）
-          let page = 1;
-          const pageSize = 100;
-          let hasMoreRegions = true;
-          let totalRegions = 0;
-          let processedRegions = 0;
-          
-          // 先获取总数
-          const regionsCount = await Region.count();
-          totalRegions = regionsCount;
-          console.log(`Total regions to process: ${totalRegions}`);
-          
-          while (hasMoreRegions) {
-            // 获取当前页的region列表
-            const regions = await Region.findAll(page, pageSize);
-            
-            if (regions.length === 0) {
-              hasMoreRegions = false;
-              break;
-            }
-            
-            // 遍历每个region并同步types
-            for (const region of regions) {
-              const regionId = region.id;
-              console.log(`Processing region ${regionId} (${processedRegions + 1}/${totalRegions})...`);
-              
-              try {
-                await RegionController.syncRegionTypesInBackground(regionId);
-                processedRegions++;
-                console.log(`Processed region ${regionId} (${processedRegions}/${totalRegions})`);
-              } catch (error) {
-                console.error(`Error syncing region ${regionId} types:`, error.message);
+
+          const datasources = ['serenity', 'infinity', 'tranquility'];
+
+          for (const datasource of datasources) {
+            console.log(`\n=== Starting region types synchronization for datasource: ${datasource} ===`);
+
+            // 获取所有region的列表（分页获取）
+            let page = 1;
+            const pageSize = 100;
+            let hasMoreRegions = true;
+            let totalRegions = 0;
+            let processedRegions = 0;
+
+            // 先获取总数
+            const regionsCount = await Region.count();
+            totalRegions = regionsCount;
+            console.log(`Total regions to process: ${totalRegions} for datasource ${datasource}`);
+
+            while (hasMoreRegions) {
+              // 获取当前页的region列表
+              const regions = await Region.findAll(page, pageSize);
+
+              if (regions.length === 0) {
+                hasMoreRegions = false;
+                break;
               }
-              
-              // 每处理一个region后稍作延迟，避免API请求过于频繁
-              await new Promise(resolve => setTimeout(resolve, 1000));
+
+              // 遍历每个region并同步types
+              for (const region of regions) {
+                const regionId = region.id;
+                console.log(`[${datasource}] Processing region ${regionId} (${processedRegions + 1}/${totalRegions})...`);
+
+                try {
+                  await RegionController.syncRegionTypesInBackground(regionId, datasource);
+                  processedRegions++;
+                  console.log(`[${datasource}] Processed region ${regionId} (${processedRegions}/${totalRegions})`);
+                } catch (error) {
+                  console.error(`[${datasource}] Error syncing region ${regionId} types:`, error.message);
+                }
+
+                // 每处理一个region后稍作延迟，避免API请求过于频繁
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+
+              page++;
             }
-            
-            page++;
+
+            console.log(`[${datasource}] Completed. Processed ${processedRegions}/${totalRegions} regions.`);
           }
-          
-          console.log(`All region types synchronization completed. Processed ${processedRegions}/${totalRegions} regions.`);
+
+          console.log('\n=== All region types synchronization completed ===');
         } catch (error) {
           console.error('Error in background syncing all region types:', error.message);
           console.error('Error stack:', error.stack);
@@ -221,34 +230,34 @@ class RegionController {
   }
   
   // 内部方法：在后台同步单个Region的Types
-  static async syncRegionTypesInBackground(regionId) {
+  static async syncRegionTypesInBackground(regionId, datasource = 'serenity') {
     try {
-      console.log(`Starting region types synchronization for region ${regionId} in background...`);
-      
+      console.log(`Starting region types synchronization for region ${regionId}, datasource ${datasource}...`);
+
       let totalTypeIds = 0;
       let insertedIds = 0;
-      
+
       // 先清除该区域的所有现有类型
-      console.log(`Clearing existing types for region ${regionId}...`);
-      await RegionType.deleteByRegionId(regionId);
-      
+      console.log(`Clearing existing types for region ${regionId}, datasource ${datasource}...`);
+      await RegionType.deleteByRegionId(regionId, datasource);
+
       await eveApiService.getAllMarketRegionTypesRecursively(regionId, 1, async (typeIds, page) => {
-        console.log(`Fetched ${typeIds.length} type IDs for region ${regionId} from page ${page}`);
+        console.log(`[${datasource}] Fetched ${typeIds.length} type IDs for region ${regionId} from page ${page}`);
         totalTypeIds += typeIds.length;
-        
+
         try {
-          await RegionType.insertOrUpdate(regionId, typeIds);
+          await RegionType.insertOrUpdate(regionId, typeIds, datasource);
           insertedIds += typeIds.length;
-          console.log(`Progress for region ${regionId}: ${insertedIds}/${totalTypeIds} type IDs inserted`);
+          console.log(`[${datasource}] Progress for region ${regionId}: ${insertedIds}/${totalTypeIds} type IDs inserted`);
         } catch (dbError) {
-          console.error(`Error inserting type IDs to database for region ${regionId}:`, dbError.message);
+          console.error(`[${datasource}] Error inserting type IDs to database for region ${regionId}:`, dbError.message);
         }
-      });
-      
-      console.log(`${insertedIds} type IDs inserted into database for region ${regionId}`);
-      console.log(`Region ${regionId} types synchronization completed successfully.`);
+      }, datasource);
+
+      console.log(`[${datasource}] ${insertedIds} type IDs inserted into database for region ${regionId}`);
+      console.log(`[${datasource}] Region ${regionId} types synchronization completed successfully.`);
     } catch (error) {
-      console.error(`Error in background syncing region ${regionId} types:`, error.message);
+      console.error(`[${datasource}] Error in background syncing region ${regionId} types:`, error.message);
       console.error('Error stack:', error.stack);
     }
   }
