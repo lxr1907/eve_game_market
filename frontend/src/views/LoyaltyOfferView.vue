@@ -74,11 +74,6 @@
                 {{ formatCost(scope.row.isk_cost) }}
               </template>
             </el-table-column>
-            <el-table-column label="AK成本" width="120">
-              <template #default="scope">
-                {{ formatCost(scope.row.ak_cost) }}
-              </template>
-            </el-table-column>
             <el-table-column label="所需物品" min-width="200">
               <template #default="scope">
                 <el-tag v-if="!scope.row.required_items || scope.row.required_items.length === 0" type="info">
