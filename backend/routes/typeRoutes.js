@@ -14,6 +14,7 @@ router.get('/types/types-by-group-region', TypeController.getTypesByGroupAndRegi
 router.get('/types', TypeController.getTypes);
 router.get('/types/sync-ids', TypeController.syncTypeIds);
 router.get('/types/sync-details', TypeController.syncTypeDetails);
+router.post('/types/sync-one', TypeController.syncOneType);
 // 获取name不为null的数据总数（放在动态路由之前）
 router.get('/types/count-with-name-not-null', TypeController.getCountWithNameNotNull);
 router.get('/types/:id', TypeController.getTypeById);

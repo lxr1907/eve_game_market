@@ -50,14 +50,19 @@
             :data="loyaltyOffers"
             style="width: 100%"
           >
-            <el-table-column prop="id" label="商品ID" width="100" />
             <el-table-column label="公司" width="180">
               <template #default="scope">
                 {{ getCorporationName(scope.row.corporation_id) }} ({{ scope.row.corporation_id }})
               </template>
             </el-table-column>
-            <el-table-column prop="type_name" label="物品名称" width="200" />
-            <el-table-column prop="type_id" label="物品类型ID" width="120" />
+            <el-table-column label="物品" width="260">
+              <template #default="scope">
+                <span v-if="scope.row.type_name">{{ scope.row.type_name }} ({{ scope.row.type_id }})</span>
+                <el-button v-else type="warning" size="small" @click="syncOneType(scope.row.type_id, scope.row.datasource)">
+                  同步 {{ scope.row.type_id }}
+                </el-button>
+              </template>
+            </el-table-column>
             <el-table-column prop="quantity" label="数量" width="100" />
             <el-table-column label="LP成本" width="120">
               <template #default="scope">
@@ -111,7 +116,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { RefreshRight, CirclePlus, Search } from '@element-plus/icons-vue'
-import { loyaltyApi } from '../services/api'
+import { loyaltyApi, typeApi } from '../services/api'
 
 // 数据
 const loyaltyOffers = ref([])
@@ -217,6 +222,31 @@ async function syncAllLoyaltyOffers() {
   } finally {
     loading.value = false
   }
+}
+
+// 同步单个Type详情
+async function syncOneType(typeId, datasource) {
+  try {
+    loading.value = true
+    await typeApi.syncOneType(typeId, datasource)
+    ElMessage.success(`物品 ${typeId} 同步成功`)
+
+    // 延迟刷新数据
+    setTimeout(() => {
+      fetchLoyaltyOffers()
+    }, 1000)
+  } catch (error) {
+    console.error('同步单个Type失败:', error)
+    ElMessage.error(`同步物品 ${typeId} 失败`)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 获取公司名称
+function getCorporationName(id) {
+  const corp = corporations.value.find(c => c.id === id)
+  return corp ? corp.name : `公司${id}`
 }
 
 // 格式化成本显示

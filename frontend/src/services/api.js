@@ -50,7 +50,13 @@ export const typeApi = {
     const response = await apiClient.get(`/types/sync-details`);
     return response;
   },
-  
+
+  // 同步单个Type详情
+  async syncOneType(typeId, datasource = 'serenity') {
+    const response = await apiClient.post(`/types/sync-one`, { typeId, datasource });
+    return response;
+  },
+
   // 获取单个类型数据
   async getTypeById(id) {
     const response = await apiClient.get(`/types/${id}`);

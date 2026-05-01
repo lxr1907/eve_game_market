@@ -474,6 +474,59 @@ class TypeController {
     }
   }
 
+  // 同步单个Type详情
+  static async syncOneType(req, res) {
+    try {
+      const { typeId, datasource = 'serenity' } = req.body;
+
+      if (!typeId) {
+        return res.status(400).json({ message: 'typeId is required' });
+      }
+
+      console.log(`[${datasource}] Syncing single type: ${typeId}`);
+
+      // 获取类型详情
+      const typeData = await eveApiService.getTypeDetails(typeId, datasource);
+
+      if (!typeData) {
+        return res.status(404).json({ message: 'Type not found in EVE API' });
+      }
+
+      // 同步group信息
+      if (typeData.group_id) {
+        await Group.insertOrUpdate(typeData.group_id, typeData.group_id.toString(), datasource);
+      }
+
+      // 同步category信息
+      if (typeData.category_id) {
+        await Category.insertOrUpdate(typeData.category_id, typeData.category_id.toString(), datasource);
+      }
+
+      // 保存类型数据
+      const typeRecord = {
+        id: typeId,
+        name: typeData.name || `Type ${typeId}`,
+        group_id: typeData.group_id,
+        category_id: typeData.category_id,
+        volume: typeData.volume,
+        portion_size: typeData.portion_size,
+        published: typeData.published
+      };
+
+      await Type.insertOrUpdate(typeRecord);
+
+      res.status(200).json({
+        success: true,
+        message: `Type ${typeId} synced successfully`,
+        data: { type_id: typeId, name: typeData.name }
+      });
+
+    } catch (error) {
+      console.error(`Error syncing type ${req.body.typeId}:`, error);
+      res.status(500).json({ message: 'Failed to sync type', error: error.message });
+    }
+  }
+
   static async getTypeById(req, res) {
     try {
       const { id } = req.params;
