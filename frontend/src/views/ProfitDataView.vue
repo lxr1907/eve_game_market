@@ -114,8 +114,6 @@
                   :data="sellOrders" 
                   style="width: 100%" 
                   height="400px"
-                  border
-                  stripe
                   size="small"
                 >
                   <el-table-column prop="price" label="价格 (ISK)" sortable min-width="120">
@@ -144,8 +142,6 @@
                   :data="buyOrders" 
                   style="width: 100%" 
                   height="400px"
-                  border
-                  stripe
                   size="small"
                 >
                   <el-table-column prop="price" label="价格 (ISK)" sortable min-width="120">
