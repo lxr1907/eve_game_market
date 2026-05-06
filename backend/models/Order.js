@@ -36,11 +36,17 @@ class Order {
       // 构建合并键：price_regionId_typeId_isBuyOrder
       const mergeKey = `${order.price}_${order.region_id}_${order.type_id}_${order.is_buy_order ? 1 : 0}`;
       
+      // 兼容 API 返回的字段名 (volume_remain vs volume_remaining 等)
+      const volRemain = order.volume_remain !== undefined ? order.volume_remain : (order.volume_remaining || 0);
+      const volTotal = order.volume_total || 0;
+      const minVol = order.min_volume !== undefined ? order.min_volume : (order.minimum_volume || 0);
+      const orderRange = order.range !== undefined ? order.range : (order.order_range || null);
+
       if (mergedOrdersMap.has(mergeKey)) {
         // 合并订单：累加数量
         const existingOrder = mergedOrdersMap.get(mergeKey);
-        existingOrder.volume_remaining += order.volume_remaining;
-        existingOrder.volume_total += order.volume_total;
+        existingOrder.volume_remaining += volRemain;
+        existingOrder.volume_total += volTotal;
         
         // 保留最小的order_id作为合并后的order_id
         if (order.order_id < existingOrder.order_id) {
@@ -50,8 +56,10 @@ class Order {
         // 添加新订单
         mergedOrdersMap.set(mergeKey, {
           ...order,
-          volume_remaining: order.volume_remaining,
-          volume_total: order.volume_total
+          volume_remaining: volRemain,
+          volume_total: volTotal,
+          minimum_volume: minVol,
+          order_range: orderRange
         });
       }
     });
@@ -70,10 +78,10 @@ class Order {
         order.type_id || null,
         order.is_buy_order ? 1 : 0,
         order.price || 0,
-        order.volume_remaining || 0,
-        order.volume_total || 0,
-        order.minimum_volume || 0,
-        order.order_range || null,
+        order.volume_remaining,
+        order.volume_total,
+        order.minimum_volume,
+        order.order_range,
         order.location_id || null,
         order.duration || 0,
         order.is_active !== undefined ? (order.is_active ? 1 : 0) : 1,
