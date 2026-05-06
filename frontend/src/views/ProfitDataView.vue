@@ -63,6 +63,16 @@
               <template #default="scope">
                 <div class="item-name-container">
                   <el-link type="primary" @click="showOrderDetails(scope.row)">{{ scope.row.type_name }}</el-link>
+                  <el-button 
+                    type="primary" 
+                    link 
+                    size="small" 
+                    style="margin-left: 5px; padding: 0;"
+                    @click="showTypeDetails(scope.row.type_id)"
+                    title="查看物品详情"
+                  >
+                    <el-icon><Warning /></el-icon>
+                  </el-button>
                   <el-icon v-if="scope.row.is_unique === 1" class="unique-icon" title="独特物品"><Star /></el-icon>
                   <el-tag type="info" size="small" style="margin-left: 10px">每LP: {{ formatNumber(scope.row.profit_per_lp) }}</el-tag>
                 </div>
@@ -161,15 +171,55 @@
             </el-row>
           </div>
         </el-dialog>
+
+        <!-- 物品详情弹窗 -->
+        <el-dialog
+          v-model="typeDialogVisible"
+          :title="`${selectedTypeData?.name || '物品'} - 详情`"
+          width="50%"
+          destroy-on-close
+          class="dark-dialog"
+        >
+          <div v-loading="loadingType" class="dark-dialog-content">
+            <div v-if="selectedTypeData" class="type-info">
+              <el-descriptions :column="2" class="dark-descriptions">
+                <el-descriptions-item label="ID">{{ selectedTypeData.id }}</el-descriptions-item>
+                <el-descriptions-item label="名称">{{ selectedTypeData.name }}</el-descriptions-item>
+                <el-descriptions-item label="组ID">{{ selectedTypeData.group_id }}</el-descriptions-item>
+                <el-descriptions-item label="分类ID">{{ selectedTypeData.category_id }}</el-descriptions-item>
+                <el-descriptions-item label="质量">{{ selectedTypeData.mass }}</el-descriptions-item>
+                <el-descriptions-item label="体积">{{ selectedTypeData.volume }}</el-descriptions-item>
+                <el-descriptions-item label="容量">{{ selectedTypeData.capacity }}</el-descriptions-item>
+                <el-descriptions-item label="描述">{{ selectedTypeData.description }}</el-descriptions-item>
+                <el-descriptions-item label="发布状态">
+                  <el-tag :type="selectedTypeData.published ? 'success' : 'info'" size="small">
+                    {{ selectedTypeData.published ? '已发布' : '未发布' }}
+                  </el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="半径">{{ selectedTypeData.radius }}</el-descriptions-item>
+                <el-descriptions-item label="图形ID">{{ selectedTypeData.graphic_id }}</el-descriptions-item>
+                <el-descriptions-item label="图标ID">{{ selectedTypeData.icon_id }}</el-descriptions-item>
+                <el-descriptions-item label="市场组ID">{{ selectedTypeData.market_group_id }}</el-descriptions-item>
+                <el-descriptions-item label="蓝图制造时间(秒)">{{ selectedTypeData.portion_size }}</el-descriptions-item>
+              </el-descriptions>
+            </div>
+            <div v-else class="empty">
+              <el-empty description="未找到物品数据" />
+            </div>
+          </div>
+        </el-dialog>
     </el-main>
   </div>
 </template>
 
 <script setup>// 导入
 import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Star, CirclePlus, Top, Bottom } from '@element-plus/icons-vue'
-import { loyaltyApi, orderApi } from '../services/api'
+import { Search, Star, CirclePlus, Top, Bottom, Warning } from '@element-plus/icons-vue'
+import { loyaltyApi, orderApi, typeApi } from '../services/api'
+
+const router = useRouter()
 
 // 数据
 const profitData = ref([])
@@ -184,6 +234,11 @@ const selectedOrderData = ref(null)
 const queryingOrders = ref(false)
 const buyOrders = ref([])
 const sellOrders = ref([])
+
+// 物品详情弹窗数据
+const typeDialogVisible = ref(false)
+const selectedTypeData = ref(null)
+const loadingType = ref(false)
 
 // 过滤器
 const filters = ref({
@@ -337,6 +392,23 @@ const formatISK = (value) => {
   })
 }
 
+// 显示物品详情弹窗
+async function showTypeDetails(id) {
+  typeDialogVisible.value = true
+  loadingType.value = true
+  selectedTypeData.value = null
+  
+  try {
+    const response = await typeApi.getTypeById(id)
+    selectedTypeData.value = response
+  } catch (error) {
+    console.error('获取物品详情失败:', error)
+    ElMessage.error('获取物品详情失败')
+  } finally {
+    loadingType.value = false
+  }
+}
+
 // 显示订单详情
 async function showOrderDetails(row) {
   selectedOrderData.value = row
@@ -417,5 +489,43 @@ onMounted(() => {
 
 .section-title.buy {
   color: #67c23a;
+}
+
+/* 深色主题弹窗和描述列表样式 */
+:deep(.dark-dialog) {
+  background-color: #1d1e1f !important;
+}
+
+:deep(.dark-dialog) .el-dialog__title {
+  color: #e5eaf3;
+}
+
+:deep(.dark-dialog) .el-dialog__header {
+  border-bottom: 1px solid #36364a;
+}
+
+:deep(.dark-dialog) .el-dialog__body {
+  background-color: #1d1e1f !important;
+}
+
+.dark-dialog-content {
+  color: #e5eaf3;
+}
+
+:deep(.dark-descriptions) {
+  background-color: transparent;
+}
+
+:deep(.dark-descriptions) .el-descriptions__body {
+  background-color: transparent !important;
+}
+
+:deep(.dark-descriptions) .el-descriptions__label {
+  color: #a3a6ad;
+  font-weight: bold;
+}
+
+:deep(.dark-descriptions) .el-descriptions__content {
+  color: #e5eaf3;
 }
 </style>
