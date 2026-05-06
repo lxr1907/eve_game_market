@@ -62,7 +62,7 @@
             <el-table-column label="物品名称" min-width="250">
               <template #default="scope">
                 <div class="item-name-container">
-                  <span>{{ scope.row.type_name }}</span>
+                  <el-link type="primary" @click="showOrderDetails(scope.row)">{{ scope.row.type_name }}</el-link>
                   <el-icon v-if="scope.row.is_unique === 1" class="unique-icon" title="独特物品"><Star /></el-icon>
                   <el-tag type="info" size="small" style="margin-left: 10px">每LP: {{ formatNumber(scope.row.profit_per_lp) }}</el-tag>
                 </div>
@@ -93,6 +93,78 @@
             />
           </div>
         </el-card>
+
+        <!-- 订单详情弹窗 -->
+        <el-dialog
+          v-model="orderDialogVisible"
+          :title="`${selectedOrderData?.type_name || ''} - 订单详情`"
+          width="70%"
+          destroy-on-close
+        >
+          <div v-loading="queryingOrders">
+            <el-row :gutter="20">
+              <!-- 卖单表格 -->
+              <el-col :span="12">
+                <div class="section-header">
+                  <h3 class="section-title sell">
+                    <el-icon><Top /></el-icon> 卖出订单 (Sell)
+                  </h3>
+                </div>
+                <el-table 
+                  :data="sellOrders" 
+                  style="width: 100%" 
+                  height="400px"
+                  border
+                  stripe
+                  size="small"
+                >
+                  <el-table-column prop="price" label="价格 (ISK)" sortable min-width="120">
+                    <template #default="{ row }">
+                      <span style="color: #f56c6c; font-weight: bold;">{{ formatISK(row.price) }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="volume_total" label="数量" sortable width="100" />
+                  <el-table-column prop="location_id" label="位置 ID" width="100" />
+                  <el-table-column prop="created_at" label="创建时间" sortable min-width="140">
+                    <template #default="{ row }">
+                      {{ formatDate(row.created_at) }}
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </el-col>
+
+              <!-- 买单表格 -->
+              <el-col :span="12">
+                <div class="section-header">
+                  <h3 class="section-title buy">
+                    <el-icon><Bottom /></el-icon> 买入订单 (Buy)
+                  </h3>
+                </div>
+                <el-table 
+                  :data="buyOrders" 
+                  style="width: 100%" 
+                  height="400px"
+                  border
+                  stripe
+                  size="small"
+                >
+                  <el-table-column prop="price" label="价格 (ISK)" sortable min-width="120">
+                    <template #default="{ row }">
+                      <span style="color: #67c23a; font-weight: bold;">{{ formatISK(row.price) }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="volume_total" label="数量" sortable width="100" />
+                  <el-table-column prop="location_id" label="位置 ID" width="100" />
+                  <el-table-column prop="created_at" label="创建时间" sortable min-width="140">
+                    <template #default="{ row }">
+                      {{ formatDate(row.created_at) }}
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </el-col>
+            </el-row>
+          </div>
+        </el-dialog>
     </el-main>
   </div>
 </template>
@@ -100,8 +172,8 @@
 <script setup>// 导入
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Star, CirclePlus } from '@element-plus/icons-vue'
-import { loyaltyApi } from '../services/api'
+import { Search, Star, CirclePlus, Top, Bottom } from '@element-plus/icons-vue'
+import { loyaltyApi, orderApi } from '../services/api'
 
 // 数据
 const profitData = ref([])
@@ -109,6 +181,13 @@ const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+
+// 订单弹窗数据
+const orderDialogVisible = ref(false)
+const selectedOrderData = ref(null)
+const queryingOrders = ref(false)
+const buyOrders = ref([])
+const sellOrders = ref([])
 
 // 过滤器
 const filters = ref({
@@ -253,6 +332,39 @@ function handleCurrentChange(page) {
   fetchProfitData()
 }
 
+// 格式化 ISK (用于订单详情)
+const formatISK = (value) => {
+  if (value === null || value === undefined) return '0.00'
+  return Number(value).toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
+
+// 显示订单详情
+async function showOrderDetails(row) {
+  selectedOrderData.value = row
+  orderDialogVisible.value = true
+  queryingOrders.value = true
+  buyOrders.value = []
+  sellOrders.value = []
+  
+  try {
+    const response = await orderApi.getOrders({
+      regionId: row.region_id || filters.value.regionId,
+      typeId: row.type_id,
+      datasource: filters.value.datasource
+    })
+    buyOrders.value = response.buyOrders.data || []
+    sellOrders.value = response.sellOrders.data || []
+  } catch (error) {
+    console.error('获取订单详情失败:', error)
+    ElMessage.error('获取订单详情失败')
+  } finally {
+    queryingOrders.value = false
+  }
+}
+
 // 组件挂载时获取数据
 onMounted(() => {
   fetchProfitData()
@@ -286,5 +398,28 @@ onMounted(() => {
   font-size: 16px;
   margin-left: 5px;
   vertical-align: middle;
+}
+
+/* 订单弹窗样式 */
+.section-header {
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title.sell {
+  color: #f56c6c;
+}
+
+.section-title.buy {
+  color: #67c23a;
 }
 </style>
