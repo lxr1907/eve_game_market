@@ -12,6 +12,7 @@ import SystemDetailView from '../views/SystemDetailView.vue'
 import SystemKillView from '../views/SystemKillView.vue'
 import StarMapView from '../views/StarMapView.vue'
 import ManufacturingCostView from '../views/ManufacturingCostView.vue'
+import LoginView from '../views/LoginView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -20,6 +21,11 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: OnlinePlayerStatsView
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginView
     },
     {
       path: '/types',

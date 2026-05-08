@@ -1,58 +1,66 @@
 <template>
   <el-container class="navbar-container">
     <el-header class="navbar-header">
-      <el-menu :default-active="activeIndex" mode="horizontal" @select="handleSelect" style="width: 100%">
-        <el-menu-item index="1">
-          <el-icon><House /></el-icon>
-          首页
-        </el-menu-item>
-        <el-sub-menu index="2">
-          <template #title>
-            <el-icon><Collection /></el-icon>
-            <span>基础数据</span>
-          </template>
-          <el-menu-item index="2-1">
-            <el-icon><Collection /></el-icon>
-            Type列表
+      <div class="navbar-inner">
+        <el-menu :default-active="activeIndex" mode="horizontal" @select="handleSelect" class="navbar-menu">
+          <el-menu-item index="1">
+            <el-icon><House /></el-icon>
+            首页
           </el-menu-item>
-          <el-menu-item index="2-2">
+          <el-sub-menu index="2">
+            <template #title>
+              <el-icon><Collection /></el-icon>
+              <span>基础数据</span>
+            </template>
+            <el-menu-item index="2-1">
+              <el-icon><Collection /></el-icon>
+              Type列表
+            </el-menu-item>
+            <el-menu-item index="2-2">
+              <el-icon><MapLocation /></el-icon>
+              Region列表
+            </el-menu-item>
+            <el-menu-item index="2-3">
+              <el-icon><MapLocation /></el-icon>
+              System列表
+            </el-menu-item>
+          </el-sub-menu>
+          <el-menu-item index="4">
+            <el-icon><Document /></el-icon>
+            订单查询
+          </el-menu-item>
+          <el-menu-item index="10">
+            <el-icon><Money /></el-icon>
+            制造成本
+          </el-menu-item>
+          <el-menu-item index="5">
+            <el-icon><Star /></el-icon>
+            Loyalty商店
+          </el-menu-item>
+          <el-menu-item index="6">
+            <el-icon><Money /></el-icon>
+            LP收益数据
+          </el-menu-item>
+          <el-menu-item index="7">
+            <el-icon><UserFilled /></el-icon>
+            在线玩家统计
+          </el-menu-item>
+          <el-menu-item index="8">
             <el-icon><MapLocation /></el-icon>
-            Region列表
+            星系击毁统计
           </el-menu-item>
-          <el-menu-item index="2-3">
+          <el-menu-item index="9">
             <el-icon><MapLocation /></el-icon>
-            System列表
+            星图
           </el-menu-item>
-        </el-sub-menu>
-        <el-menu-item index="4">
-          <el-icon><Document /></el-icon>
-          订单查询
-        </el-menu-item>
-        <el-menu-item index="10">
-          <el-icon><Money /></el-icon>
-          制造成本
-        </el-menu-item>
-        <el-menu-item index="5">
-          <el-icon><Star /></el-icon>
-          Loyalty商店
-        </el-menu-item>
-        <el-menu-item index="6">
-          <el-icon><Money /></el-icon>
-          LP收益数据
-        </el-menu-item>
-        <el-menu-item index="7">
-          <el-icon><UserFilled /></el-icon>
-          在线玩家统计
-        </el-menu-item>
-        <el-menu-item index="8">
-          <el-icon><MapLocation /></el-icon>
-          星系击毁统计
-        </el-menu-item>
-        <el-menu-item index="9">
-          <el-icon><MapLocation /></el-icon>
-          星图
-        </el-menu-item>
-      </el-menu>
+        </el-menu>
+        <div class="navbar-actions">
+          <el-button type="primary" size="small" @click="goToLogin" class="login-btn">
+            <el-icon><UserFilled /></el-icon>
+            登录
+          </el-button>
+        </div>
+      </div>
     </el-header>
   </el-container>
 </template>
@@ -81,6 +89,10 @@ const activeIndex = computed(() => {
   if (path === '/star-map') return '9'
   return '1'
 })
+
+const goToLogin = () => {
+  router.push('/login')
+}
 
 // 菜单选择处理
 const handleSelect = (key, keyPath) => {
@@ -122,6 +134,34 @@ const handleSelect = (key, keyPath) => {
   padding: 0;
   background-color: #1a1c26;
   border-bottom: 1px solid #2d303e;
+}
+
+.navbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.navbar-menu {
+  flex: 1;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  padding-right: 20px;
+}
+
+.login-btn {
+  background-color: #409eff;
+  border-color: #409eff;
+  font-weight: 500;
+}
+
+.login-btn:hover {
+  background-color: #66b1ff;
+  border-color: #66b1ff;
 }
 
 :deep(.el-menu) {
