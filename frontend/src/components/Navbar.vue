@@ -41,6 +41,10 @@
             <el-icon><Money /></el-icon>
             LP收益数据
           </el-menu-item>
+          <el-menu-item index="11">
+            <el-icon><Star /></el-icon>
+            LP蓝图制造
+          </el-menu-item>
           <el-menu-item index="7">
             <el-icon><UserFilled /></el-icon>
             在线玩家统计
@@ -136,6 +140,7 @@ const activeIndex = computed(() => {
   if (path === '/manufacturing-cost') return '10'
   if (path === '/loyalty') return '5'
   if (path === '/profit-data') return '6'
+  if (path === '/lp-blueprint') return '11'
   if (path === '/online-player-stats') return '7'
   if (path === '/system-kills') return '8'
   return '1'
@@ -178,6 +183,8 @@ const handleSelect = (key, keyPath) => {
     router.push('/loyalty')
   } else if (key === '6') {
     router.push('/profit-data')
+  } else if (key === '11') {
+    router.push('/lp-blueprint')
   } else if (key === '7') {
     router.push('/online-player-stats')
   } else if (key === '8') {

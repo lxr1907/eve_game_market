@@ -313,6 +313,17 @@ export const loyaltyApi = {
       } 
     });
     return response;
+  },
+
+  // 获取LP商店中的蓝图列表
+  async getLoyaltyBlueprints(corporationId = null, datasource = 'serenity', search = '', hasBuyOrder = false, regionId = '10000002') {
+    const params = { datasource };
+    if (corporationId) params.corporationId = corporationId;
+    if (search) params.search = search;
+    if (hasBuyOrder) params.hasBuyOrder = 'true';
+    params.regionId = regionId;
+    const response = await apiClient.get(`/loyalty/blueprints`, { params });
+    return response;
   }
 };
 

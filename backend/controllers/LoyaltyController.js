@@ -585,6 +585,79 @@ class LoyaltyController {
       res.status(500).json({ message: 'Internal server error' });
     }
   }
+
+  // 获取LP商店中的蓝图列表（用于LP蓝图制造模块）
+  static async getLoyaltyBlueprints(req, res) {
+    try {
+      const pool = require('../config/database');
+      const { corporationId, datasource = 'serenity', search = '', hasBuyOrder = 'false', regionId = '10000002' } = req.query;
+
+      // 如果需要过滤有买单的蓝图，先检查 region_types 更新时间
+      if (hasBuyOrder === 'true') {
+        const [updateCheck] = await pool.execute(
+          `SELECT MAX(updated_at) as last_update FROM region_types WHERE region_id = ? AND datasource = ?`,
+          [regionId, datasource]
+        );
+        const lastUpdate = updateCheck[0]?.last_update;
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        if (!lastUpdate || new Date(lastUpdate) < oneDayAgo) {
+          // 数据超过1天，触发后台同步
+          console.log(`region_types for region ${regionId} is outdated, triggering sync...`);
+          const RegionController = require('./RegionController');
+          RegionController.syncRegionTypesInBackground(regionId, datasource).catch(err => {
+            console.error('Failed to sync region_types:', err.message);
+          });
+        }
+      }
+
+      let query = `
+        SELECT DISTINCT lo.offer_id, lo.corporation_id, lo.type_id, lo.quantity, lo.lp_cost, lo.isk_cost, lo.ak_cost,
+               t.name as type_name
+        FROM loyalty_offers lo
+        LEFT JOIN types t ON lo.type_id = t.id
+        WHERE lo.datasource = ?
+          AND lo.type_id IN (SELECT DISTINCT blueprint_type_id FROM blueprint_products)
+          AND lo.lp_cost > 0
+          AND lo.isk_cost > 0
+          AND lo.type_id NOT IN (
+            SELECT DISTINCT lor.type_id FROM loyalty_offer_required_items lor
+          )
+      `;
+      const params = [datasource];
+
+      if (corporationId) {
+        query += ` AND lo.corporation_id = ?`;
+        params.push(corporationId);
+      }
+
+      if (search) {
+        query += ` AND t.name LIKE ?`;
+        params.push(`%${search}%`);
+      }
+
+      // 过滤有买单的蓝图（使用 region_types 表判断）
+      if (hasBuyOrder === 'true') {
+        query += `
+          AND lo.type_id IN (
+            SELECT bp.blueprint_type_id 
+            FROM blueprint_products bp 
+            JOIN region_types rt ON rt.type_id = bp.product_type_id 
+            WHERE rt.region_id = ? AND rt.datasource = ?
+          )
+        `;
+        params.push(regionId, datasource);
+      }
+
+      query += ` ORDER BY t.name ASC`;
+
+      const [rows] = await pool.execute(query, params);
+      res.status(200).json(rows);
+    } catch (error) {
+      console.error('Error getting loyalty blueprints:', error);
+      res.status(500).json({ message: 'Failed to get loyalty blueprints', error: error.message });
+    }
+  }
 }
 
 module.exports = LoyaltyController;

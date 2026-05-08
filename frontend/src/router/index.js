@@ -13,6 +13,7 @@ import ProfileView from '../views/ProfileView.vue'
 import OrderQueryView from '../views/OrderQueryView.vue'
 import LoyaltyOfferView from '../views/LoyaltyOfferView.vue'
 import ProfitDataView from '../views/ProfitDataView.vue'
+import LpBlueprintView from '../views/LpBlueprintView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -91,6 +92,11 @@ const router = createRouter({
       path: '/manufacturing-cost',
       name: 'manufacturing-cost',
       component: ManufacturingCostView
+    },
+    {
+      path: '/lp-blueprint',
+      name: 'lp-blueprint',
+      component: LpBlueprintView
     }
   ]
 })

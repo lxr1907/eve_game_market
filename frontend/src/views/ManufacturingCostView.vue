@@ -187,7 +187,7 @@ export default {
     
     // 状态定义
     const regions = ref([])
-    const selectedRegionId = ref('10000002')
+    const selectedRegionId = ref(10000002)
     const datasource = ref('serenity')
     const lpToIskRatio = ref(1300)
     const treeData = ref([])
