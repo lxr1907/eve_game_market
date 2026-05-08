@@ -35,7 +35,7 @@
           </el-menu-item>
           <el-menu-item index="5">
             <el-icon><Star /></el-icon>
-            Loyalty商店
+            LP商店
           </el-menu-item>
           <el-menu-item index="6">
             <el-icon><Money /></el-icon>
