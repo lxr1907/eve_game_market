@@ -1,18 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import TypeListView from '../views/TypeListView.vue'
-import TypeDetailView from '../views/TypeDetailView.vue'
-import RegionListView from '../views/RegionListView.vue'
-import RegionDetailView from '../views/RegionDetailView.vue'
-import OrderQueryView from '../views/OrderQueryView.vue'
-import LoyaltyOfferView from '../views/LoyaltyOfferView.vue'
-import ProfitDataView from '../views/ProfitDataView.vue'
 import OnlinePlayerStatsView from '../views/OnlinePlayerStatsView.vue'
+import TypeListView from '../views/TypeListView.vue'
+import RegionListView from '../views/RegionListView.vue'
 import SystemListView from '../views/SystemListView.vue'
+import TypeDetailView from '../views/TypeDetailView.vue'
+import RegionDetailView from '../views/RegionDetailView.vue'
 import SystemDetailView from '../views/SystemDetailView.vue'
 import SystemKillView from '../views/SystemKillView.vue'
 import StarMapView from '../views/StarMapView.vue'
 import ManufacturingCostView from '../views/ManufacturingCostView.vue'
 import LoginView from '../views/LoginView.vue'
+import ProfileView from '../views/ProfileView.vue'
+import OrderQueryView from '../views/OrderQueryView.vue'
+import LoyaltyOfferView from '../views/LoyaltyOfferView.vue'
+import ProfitDataView from '../views/ProfitDataView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,6 +27,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: ProfileView
     },
     {
       path: '/types',

@@ -53,7 +53,7 @@
       <el-divider />
 
       <div class="serenity-section">
-        <h2 class="section-title">针对国服用户的特殊授权步骤</h2>
+        <h2 class="section-title">国服用户授权登录</h2>
         <el-alert
           title="国服授权说明"
           type="info"
@@ -61,31 +61,110 @@
           show-icon
         >
           <template #default>
-            <p>因国服官方暂未正式开放API授权，因此需要此特殊步骤进行授权。</p>
-            <p>请将完成授权后的空白页地址贴于下方文本框然后点击登录</p>
+            <p><strong>步骤1：</strong>点击下方按钮生成授权链接</p>
+            <p><strong>步骤2：</strong>复制授权链接，在浏览器中打开并完成授权</p>
+            <p><strong>步骤3：</strong>授权完成后，将跳转页面的URL粘贴到下方输入框</p>
+            <p><strong>步骤4：</strong>点击"授权登录"按钮完成登录</p>
           </template>
         </el-alert>
 
-        <div class="serenity-form">
-          <el-input
-            v-model="serenityCallbackUrl"
-            placeholder="请粘贴授权回调后的空白页地址"
-            size="large"
-            clearable
-          >
-            <template #prefix>
-              <el-icon><Link /></el-icon>
-            </template>
-          </el-input>
-          <el-button
-            type="success"
-            size="large"
-            class="serenity-login-btn"
-            @click="handleSerenityLogin"
-            :disabled="!serenityCallbackUrl.trim()"
-          >
-            EVE国服授权登录
-          </el-button>
+        <!-- 步骤1: 生成授权URL -->
+        <div class="step-section">
+          <div class="step-header">
+            <el-tag type="primary" effect="dark" size="small">步骤1</el-tag>
+            <span class="step-title">生成授权链接</span>
+          </div>
+          <div class="step-content">
+            <el-button
+              type="primary"
+              @click="generateAuthUrl"
+              :icon="Link"
+            >
+              生成授权链接
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 步骤2: 显示并复制授权URL -->
+        <div class="step-section" v-if="generatedAuthUrl">
+          <div class="step-header">
+            <el-tag type="success" effect="dark" size="small">步骤2</el-tag>
+            <span class="step-title">复制授权链接并在浏览器中打开</span>
+          </div>
+          <div class="step-content">
+            <div class="auth-url-display">
+              <el-input
+                v-model="generatedAuthUrl"
+                type="textarea"
+                :rows="3"
+                readonly
+                class="auth-url-input"
+              />
+              <div class="auth-url-actions">
+                <el-button
+                  type="success"
+                  @click="copyAuthUrl"
+                  :icon="DocumentCopy"
+                >
+                  复制链接
+                </el-button>
+                <el-button
+                  type="primary"
+                  @click="openAuthUrl"
+                  :icon="Position"
+                >
+                  打开链接
+                </el-button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 步骤3: 粘贴回调URL -->
+        <div class="step-section" v-if="generatedAuthUrl">
+          <div class="step-header">
+            <el-tag type="warning" effect="dark" size="small">步骤3</el-tag>
+            <span class="step-title">粘贴授权完成后的URL</span>
+          </div>
+          <div class="step-content">
+            <el-input
+              v-model="serenityCallbackUrl"
+              placeholder="请粘贴授权完成后的回调URL（包含code参数的地址）"
+              size="large"
+              clearable
+              class="callback-input"
+            >
+              <template #prefix>
+                <el-icon><Link /></el-icon>
+              </template>
+            </el-input>
+            <div class="callback-hint">
+              <el-text type="info" size="small">
+                示例：https://ali-esi.evepc.163.com/ui/oauth2-redirect.html?code=xxx&state=xxx
+              </el-text>
+            </div>
+          </div>
+        </div>
+
+        <!-- 步骤4: 授权登录按钮 -->
+        <div class="step-section" v-if="generatedAuthUrl">
+          <div class="step-header">
+            <el-tag effect="dark" size="small">步骤4</el-tag>
+            <span class="step-title">完成授权登录</span>
+          </div>
+          <div class="step-content">
+            <el-button
+              type="success"
+              size="large"
+              class="serenity-login-btn"
+              @click="handleSerenityLogin"
+              :disabled="!serenityCallbackUrl.trim()"
+              :loading="loginLoading"
+            >
+              <el-icon><User /></el-icon>
+              授权登录
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -94,11 +173,17 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Key, Link } from '@element-plus/icons-vue'
+import { Key, Link, DocumentCopy, Position, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const serenityCallbackUrl = ref('')
 const selectedIndices = ref([])
+const generatedAuthUrl = ref('')
+const loginLoading = ref(false)
+
+// 国服ESI内置的client_id
+const SERENITY_CLIENT_ID = 'bc90aa496a404724a93f41b4f4e97761'
+const SERENITY_REDIRECT_URI = 'https://ali-esi.evepc.163.com/ui/oauth2-redirect.html'
 
 const authOptions = [
   {
@@ -136,6 +221,50 @@ onMounted(() => {
   selectedIndices.value = authOptions.map((_, index) => index).filter(i => i !== 1)
 })
 
+// 生成国服授权URL (参考其他网站实现)
+const generateAuthUrl = () => {
+  const state = generateState()
+  sessionStorage.setItem('eve_sso_state', state)
+  
+  // 构建回调URL (双重URL编码)
+  const callbackUrl = `https://login.evepc.163.com/v2/account/callback?provider=netease&state=${state}:kb_ceve_market`
+  const encodedCallback = encodeURIComponent(encodeURIComponent(callbackUrl))
+  
+  // 使用网易登录页面授权方式
+  const params = new URLSearchParams({
+    game_id: 'aecfu6bgiuaaaal2-g-ma79',
+    device_id: 'kb_ceve_market',
+    client_id: '7014295958',
+    redirect_uri: encodedCallback,
+    relogin: '0'
+  })
+  
+  generatedAuthUrl.value = `https://login.evepc.163.com/account/neteaselogon?${params.toString()}`
+  ElMessage.success('授权链接已生成！')
+}
+
+// 复制授权URL
+const copyAuthUrl = async () => {
+  try {
+    await navigator.clipboard.writeText(generatedAuthUrl.value)
+    ElMessage.success('授权链接已复制到剪贴板！')
+  } catch (e) {
+    // 降级方案
+    const textarea = document.createElement('textarea')
+    textarea.value = generatedAuthUrl.value
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    ElMessage.success('授权链接已复制！')
+  }
+}
+
+// 打开授权URL
+const openAuthUrl = () => {
+  window.open(generatedAuthUrl.value, '_blank')
+}
+
 const handleAuth = () => {
   const allScopes = selectedIndices.value.map(i => authOptions[i].scopes).flat()
   const scopes = allScopes.join(' ')
@@ -164,6 +293,8 @@ const handleSerenityLogin = async () => {
     return
   }
 
+  loginLoading.value = true
+
   try {
     const parsedUrl = new URL(url)
     const code = parsedUrl.searchParams.get('code')
@@ -174,7 +305,7 @@ const handleSerenityLogin = async () => {
       return
     }
 
-    const response = await fetch('/api/save-code', {
+    const response = await fetch('/api/eve-sso/save-code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -185,17 +316,28 @@ const handleSerenityLogin = async () => {
     const result = await response.json()
 
     if (response.ok && result.success) {
+      const characterInfo = {
+        character_id: result.character_id,
+        character_name: result.character_name,
+        access_token: result.access_token,
+        token_saved: result.token_saved
+      }
+      localStorage.setItem('eve_character', JSON.stringify(characterInfo))
+
       ElMessage.success('授权成功！' + (result.character_name ? `欢迎 ${result.character_name}` : ''))
       serenityCallbackUrl.value = ''
+      
       setTimeout(() => {
-        window.location.href = '/'
-      }, 1500)
+        window.location.href = '/profile'
+      }, 1000)
     } else {
       ElMessage.error(result.error || '保存授权信息失败')
     }
   } catch (e) {
     console.error('Serenity login error:', e)
     ElMessage.error('处理失败：' + e.message)
+  } finally {
+    loginLoading.value = false
   }
 }
 
@@ -203,47 +345,6 @@ const generateState = () => {
   const array = new Uint8Array(16)
   crypto.getRandomValues(array)
   return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
-}
-
-const exchangeCodeForToken = async (code) => {
-  const clientId = import.meta.env.VITE_EVE_CLIENT_ID || ''
-  const clientSecret = import.meta.env.VITE_EVE_CLIENT_SECRET || ''
-  const redirectUri = import.meta.env.VITE_EVE_REDIRECT_URI || window.location.origin + '/login/callback'
-
-  try {
-    const tokenUrl = 'https://login.evepc.163.com/v2/oauth/token'
-    const body = new URLSearchParams()
-    body.append('grant_type', 'authorization_code')
-    body.append('code', code)
-    body.append('client_id', clientId)
-    body.append('client_secret', clientSecret)
-    body.append('redirect_uri', redirectUri)
-
-    const response = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: body.toString()
-    })
-
-    if (!response.ok) {
-      throw new Error('Token exchange failed')
-    }
-
-    const data = await response.json()
-    localStorage.setItem('eve_access_token', data.access_token)
-    localStorage.setItem('eve_refresh_token', data.refresh_token)
-    localStorage.setItem('eve_token_expires', String(Date.now() + data.expires_in * 1000))
-
-    ElMessage.success('登录成功！')
-    setTimeout(() => {
-      window.location.href = '/'
-    }, 1500)
-  } catch (error) {
-    console.error('Token exchange error:', error)
-    ElMessage.error('Token 交换失败，请重试')
-  }
 }
 </script>
 
@@ -256,7 +357,7 @@ const exchangeCodeForToken = async (code) => {
 }
 
 .login-container {
-  max-width: 720px;
+  max-width: 800px;
   width: 100%;
 }
 
@@ -354,25 +455,72 @@ const exchangeCodeForToken = async (code) => {
   margin-top: 8px;
 }
 
-.serenity-section p {
+.serenity-section :deep(.el-alert__content p) {
   margin: 4px 0;
-  line-height: 1.6;
+  line-height: 1.8;
 }
 
-.serenity-form {
+.step-section {
   margin-top: 20px;
+  padding: 16px;
+  background-color: #1e1e2e;
+  border-radius: 8px;
+  border: 1px solid #2d3040;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.step-title {
+  color: #e0e0e0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.step-content {
+  padding-left: 4px;
+}
+
+.auth-url-display {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-url-input :deep(.el-textarea__inner) {
+  background-color: #252636 !important;
+  border-color: #2d3040 !important;
+  color: #67c23a !important;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.auth-url-actions {
   display: flex;
   gap: 12px;
-  align-items: center;
 }
 
-.serenity-form .el-input {
-  flex: 1;
+.callback-input {
+  width: 100%;
+}
+
+.callback-input :deep(.el-input__inner) {
+  background-color: #252636 !important;
+  border-color: #2d3040 !important;
+  color: #e0e0e0 !important;
+  font-family: monospace;
+}
+
+.callback-hint {
+  margin-top: 8px;
 }
 
 .serenity-login-btn {
-  flex-shrink: 0;
-  min-width: 160px;
+  width: 100%;
 }
 
 :deep(.el-divider) {
@@ -389,22 +537,12 @@ const exchangeCodeForToken = async (code) => {
   color: #e0e0e0;
 }
 
-:deep(.el-input__inner) {
-  background-color: #252636 !important;
-  border-color: #2d3040 !important;
-  color: #e0e0e0 !important;
-}
-
-:deep(.el-input__inner::placeholder) {
-  color: #666 !important;
-}
-
 @media (max-width: 640px) {
-  .serenity-form {
+  .auth-url-actions {
     flex-direction: column;
   }
-
-  .serenity-login-btn {
+  
+  .auth-url-actions .el-button {
     width: 100%;
   }
 }

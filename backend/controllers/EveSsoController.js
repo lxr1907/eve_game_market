@@ -11,23 +11,37 @@ const exchangeCodeForToken = async (code) => {
     body.append('grant_type', 'authorization_code');
     body.append('code', code);
     body.append('client_id', clientId);
-    body.append('client_secret', clientSecret);
+    if (clientSecret) {
+      body.append('client_secret', clientSecret);
+    }
     body.append('redirect_uri', redirectUri);
 
-    const response = await fetch(tokenUrl, {
+    console.log('Exchanging code for token, clientId:', clientId, 'hasSecret:', !!clientSecret);
+
+    const fetchOptions = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: body.toString()
-    });
+    };
+
+    // 如果提供了 client_secret，也尝试用 Basic Auth 方式
+    if (clientSecret) {
+      const auth = Buffer.from(clientId + ':' + clientSecret).toString('base64');
+      fetchOptions.headers['Authorization'] = 'Basic ' + auth;
+    }
+
+    const response = await fetch(tokenUrl, fetchOptions);
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('Token exchange failed:', response.status, errorText);
       throw new Error(`Token exchange failed: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('Token exchange successful, access_token received:', data.access_token ? 'yes' : 'no');
 
     const tokenData = {
       access_token: data.access_token,
@@ -38,7 +52,7 @@ const exchangeCodeForToken = async (code) => {
 
     if (data.access_token) {
       try {
-        const verifyResponse = await fetch('https://esi.evepc.163.com/verify/', {
+        const verifyResponse = await fetch('https://ali-esi.evepc.163.com/verify', {
           headers: {
             'Authorization': `Bearer ${data.access_token}`
           }
@@ -46,9 +60,12 @@ const exchangeCodeForToken = async (code) => {
 
         if (verifyResponse.ok) {
           const verifyData = await verifyResponse.json();
+          console.log('Verify successful:', verifyData);
           tokenData.character_id = verifyData.CharacterID;
           tokenData.character_name = verifyData.CharacterName;
           tokenData.scopes = verifyData.Scopes;
+        } else {
+          console.error('Verify failed:', verifyResponse.status);
         }
       } catch (verifyError) {
         console.error('Verify error:', verifyError);
@@ -84,14 +101,19 @@ const saveSsoCode = async (req, res) => {
       return res.status(400).json({ error: 'URL中未找到授权码(code)' });
     }
 
+    console.log('Saving code:', code, 'state:', state);
+
     const id = await EveSsoCode.saveCode(code, state);
 
     let tokenData = null;
+    let tokenError = null;
     try {
       tokenData = await exchangeCodeForToken(code);
       await EveSsoCode.saveToken(code, tokenData);
+      console.log('Token saved successfully for code:', code);
     } catch (tokenError) {
-      console.error('Token exchange failed:', tokenError);
+      console.error('Token exchange failed:', tokenError.message);
+      tokenError = tokenError.message;
     }
 
     res.json({
@@ -101,7 +123,9 @@ const saveSsoCode = async (req, res) => {
       state,
       token_saved: !!tokenData,
       character_name: tokenData?.character_name,
-      character_id: tokenData?.character_id
+      character_id: tokenData?.character_id,
+      access_token: tokenData?.access_token,
+      error: tokenError
     });
 
   } catch (error) {

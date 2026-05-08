@@ -53,12 +53,37 @@
             <el-icon><MapLocation /></el-icon>
             星图
           </el-menu-item>
+          <el-menu-item v-if="isLoggedIn" index="profile">
+            <el-icon><User /></el-icon>
+            个人信息
+          </el-menu-item>
         </el-menu>
         <div class="navbar-actions">
-          <el-button type="primary" size="small" @click="goToLogin" class="login-btn">
-            <el-icon><UserFilled /></el-icon>
-            登录
-          </el-button>
+          <template v-if="!isLoggedIn">
+            <el-button type="primary" size="small" @click="goToLogin" class="login-btn">
+              <el-icon><UserFilled /></el-icon>
+              登录
+            </el-button>
+          </template>
+          <template v-else>
+            <el-dropdown trigger="click" class="user-dropdown">
+              <el-button type="success" size="small" class="profile-btn">
+                <el-icon><User /></el-icon>
+                {{ characterName || '个人信息' }}
+                <el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="goToProfile">
+                    <el-icon><User /></el-icon>个人信息
+                  </el-dropdown-item>
+                  <el-dropdown-item divided @click="handleLogout">
+                    <el-icon><SwitchButton /></el-icon>退出登录
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
         </div>
       </div>
     </el-header>
@@ -66,17 +91,48 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { House, Collection, MapLocation, Document, Star, Money, UserFilled } from '@element-plus/icons-vue'
+import { House, Collection, MapLocation, Document, Star, Money, UserFilled, User, ArrowDown, SwitchButton } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
+const isLoggedIn = ref(false)
+const characterName = ref('')
+
+const checkLoginStatus = () => {
+  try {
+    const saved = localStorage.getItem('eve_character')
+    if (saved) {
+      const info = JSON.parse(saved)
+      if (info && info.character_name) {
+        isLoggedIn.value = true
+        characterName.value = info.character_name
+        return
+      }
+    }
+    isLoggedIn.value = false
+    characterName.value = ''
+  } catch (e) {
+    console.error('Check login status error:', e)
+    isLoggedIn.value = false
+  }
+}
+
+onMounted(() => {
+  checkLoginStatus()
+})
+
+watch(() => route.path, () => {
+  checkLoginStatus()
+})
 
 // 根据当前路由动态设置默认激活菜单项
 const activeIndex = computed(() => {
   const path = route.path
   if (path === '/') return '1'
+  if (path === '/profile') return 'profile'
   if (path === '/types') return '2-1'
   if (path === '/regions') return '2-2'
   if (path === '/systems') return '2-3'
@@ -94,11 +150,25 @@ const goToLogin = () => {
   router.push('/login')
 }
 
+const goToProfile = () => {
+  router.push('/profile')
+}
+
+const handleLogout = () => {
+  localStorage.removeItem('eve_character')
+  isLoggedIn.value = false
+  characterName.value = ''
+  ElMessage.success('已退出登录')
+  router.push('/')
+}
+
 // 菜单选择处理
 const handleSelect = (key, keyPath) => {
   console.log(key, keyPath)
   if (key === '1') {
     router.push('/')
+  } else if (key === 'profile') {
+    router.push('/profile')
   } else if (key === '2-1') {
     router.push('/types')
   } else if (key === '2-2') {
@@ -162,6 +232,21 @@ const handleSelect = (key, keyPath) => {
 .login-btn:hover {
   background-color: #66b1ff;
   border-color: #66b1ff;
+}
+
+.user-dropdown {
+  margin-left: 10px;
+}
+
+.profile-btn {
+  background-color: #67c23a;
+  border-color: #67c23a;
+  font-weight: 500;
+}
+
+.profile-btn:hover {
+  background-color: #85ce61;
+  border-color: #85ce61;
 }
 
 :deep(.el-menu) {
