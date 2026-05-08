@@ -37,7 +37,7 @@
 
           <div class="filter-item">
             <span class="filter-label">LP兑换比例</span>
-            <el-input-number v-model="lpToIskRatio" @change="handleLpRatioChange" :min="500" :max="5000" :step="100" size="small" class="lp-ratio-input"></el-input-number>
+            <el-tag type="info" effect="plain" class="lp-ratio-tag">1300 ISK/LP</el-tag>
           </div>
         </div>
       </div>
@@ -288,7 +288,6 @@ export default {
     const regions = ref([])
     const selectedRegionId = ref(10000002)
     const datasource = ref('serenity')
-    const lpToIskRatio = ref(1300)
     const blueprints = ref([])
     const searchText = ref('')
     const filterPositiveProfit = ref(false)
@@ -395,10 +394,10 @@ export default {
       try {
         querying.value = true
 
-        // 1. LP兑换成本
+        // 1. LP兑换成本（固定比例 1300）
         const lpCost = bp.lp_cost
         const iskCost = bp.isk_cost
-        const lpToIskValue = lpCost * lpToIskRatio.value
+        const lpToIskValue = lpCost * 1300
         const lpTotalCost = lpToIskValue + iskCost
 
         lpCostDisplay.value = [
@@ -517,10 +516,6 @@ export default {
       totalCostDisplay.value = []
     }
 
-    const handleLpRatioChange = () => {
-      if (selectedBlueprint.value) queryBlueprintProfit(selectedBlueprint.value)
-    }
-
     // 显示订单弹窗
     const showOrderDialog = async () => {
       if (!productTypeId.value) {
@@ -554,14 +549,14 @@ export default {
     })
 
     return {
-      regions, selectedRegionId, datasource, lpToIskRatio,
+      regions, selectedRegionId, datasource,
       blueprints, searchText, filterPositiveProfit, filteredBlueprints, selectedBlueprint,
       materials, profitDisplay, lpCostDisplay, totalCostDisplay,
       querying, loadingList,
       orderDialogVisible, queryingOrders, buyOrders, sellOrders, productTypeName,
       formatISK, formatISKShort, formatNumber,
       handleSearch, handleFilterChange, handleRefresh, handleBlueprintClick,
-      handleRegionChange, handleDatasourceChange, handleLpRatioChange,
+      handleRegionChange, handleDatasourceChange,
       showOrderDialog
     }
   }
@@ -632,20 +627,9 @@ export default {
   width: 220px;
 }
 
-.lp-ratio-input {
-  width: 150px;
-}
-
-.lp-ratio-input :deep(.el-input-number__decrease),
-.lp-ratio-input :deep(.el-input-number__increase) {
-  background-color: #2d303e;
-  color: #fff;
-  border-color: #3d4050;
-}
-
-.lp-ratio-input :deep(.el-input__inner) {
-  background-color: #2d303e;
-  color: #fff;
+.lp-ratio-tag {
+  font-size: 14px;
+  padding: 4px 12px;
 }
 
 /* 主内容布局 */
