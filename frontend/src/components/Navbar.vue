@@ -49,10 +49,6 @@
             <el-icon><MapLocation /></el-icon>
             星系击毁统计
           </el-menu-item>
-          <el-menu-item index="9">
-            <el-icon><MapLocation /></el-icon>
-            星图
-          </el-menu-item>
           <el-menu-item v-if="isLoggedIn" index="profile">
             <el-icon><User /></el-icon>
             个人信息
@@ -142,7 +138,6 @@ const activeIndex = computed(() => {
   if (path === '/profit-data') return '6'
   if (path === '/online-player-stats') return '7'
   if (path === '/system-kills') return '8'
-  if (path === '/star-map') return '9'
   return '1'
 })
 
@@ -187,8 +182,6 @@ const handleSelect = (key, keyPath) => {
     router.push('/online-player-stats')
   } else if (key === '8') {
     router.push('/system-kills')
-  } else if (key === '9') {
-    router.push('/star-map')
   }
 }
 </script>

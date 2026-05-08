@@ -7,7 +7,6 @@ import TypeDetailView from '../views/TypeDetailView.vue'
 import RegionDetailView from '../views/RegionDetailView.vue'
 import SystemDetailView from '../views/SystemDetailView.vue'
 import SystemKillView from '../views/SystemKillView.vue'
-import StarMapView from '../views/StarMapView.vue'
 import ManufacturingCostView from '../views/ManufacturingCostView.vue'
 import LoginView from '../views/LoginView.vue'
 import ProfileView from '../views/ProfileView.vue'
@@ -87,11 +86,6 @@ const router = createRouter({
       path: '/system-kills',
       name: 'system-kills',
       component: SystemKillView
-    },
-    {
-      path: '/star-map',
-      name: 'star-map',
-      component: StarMapView
     },
     {
       path: '/manufacturing-cost',
