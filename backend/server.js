@@ -6,6 +6,7 @@ const systemDetailsScheduler = require('./utils/systemDetailsScheduler');
 const stargateScheduler = require('./utils/stargateScheduler');
 const systemDistanceScheduler = require('./utils/systemDistanceScheduler');
 const loyaltyProfitScheduler = require('./utils/loyaltyProfitScheduler');
+const lpBlueprintScheduler = require('./utils/lpBlueprintScheduler');
 const Type = require('./models/Type');
 
 
@@ -40,6 +41,9 @@ const server = app.listen(PORT, '127.0.0.1', async () => {
   
   // Start the LP profit scheduler
   loyaltyProfitScheduler.startLoyaltyProfitScheduler();
+
+  // Start the LP blueprint profit scheduler
+  lpBlueprintScheduler.startScheduler();
 });
 
 server.on('error', (err) => {

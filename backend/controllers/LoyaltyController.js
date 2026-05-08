@@ -613,9 +613,11 @@ class LoyaltyController {
 
       let query = `
         SELECT DISTINCT lo.offer_id, lo.corporation_id, lo.type_id, lo.quantity, lo.lp_cost, lo.isk_cost, lo.ak_cost,
-               t.name as type_name
+               t.name as type_name,
+               lbp.profit_per_lp, lbp.total_profit, lbp.updated_at as profit_updated_at
         FROM loyalty_offers lo
         LEFT JOIN types t ON lo.type_id = t.id
+        LEFT JOIN lp_blueprint_profits lbp ON lbp.type_id = lo.type_id AND lbp.region_id = ? AND lbp.datasource = ?
         WHERE lo.datasource = ?
           AND lo.type_id IN (SELECT DISTINCT blueprint_type_id FROM blueprint_products)
           AND lo.lp_cost > 0
@@ -624,7 +626,7 @@ class LoyaltyController {
             SELECT DISTINCT lor.type_id FROM loyalty_offer_required_items lor
           )
       `;
-      const params = [datasource];
+      const params = [regionId, datasource, datasource];
 
       if (corporationId) {
         query += ` AND lo.corporation_id = ?`;
@@ -649,7 +651,7 @@ class LoyaltyController {
         params.push(regionId, datasource);
       }
 
-      query += ` ORDER BY t.name ASC`;
+      query += ` ORDER BY lbp.profit_per_lp DESC, t.name ASC`;
 
       const [rows] = await pool.execute(query, params);
       res.status(200).json(rows);

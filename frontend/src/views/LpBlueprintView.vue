@@ -58,6 +58,9 @@
         </div>
         <div class="filter-switch">
           <el-checkbox v-model="filterHasBuyOrder" @change="handleFilterChange">仅显示有收购订单</el-checkbox>
+          <el-button type="primary" size="small" :loading="loadingList" @click="handleRefresh" class="refresh-btn">
+            <el-icon><Refresh /></el-icon> 刷新
+          </el-button>
         </div>
 
         <div class="blueprint-list" v-loading="loadingList">
@@ -72,6 +75,9 @@
             <div class="bp-info">
               <span class="bp-lp">{{ formatNumber(bp.lp_cost) }} LP</span>
               <span class="bp-isk">{{ formatISKShort(bp.isk_cost) }} ISK</span>
+              <span v-if="bp.profit_per_lp !== null && bp.profit_per_lp !== undefined" class="bp-profit" :class="{ 'profit-positive': bp.profit_per_lp > 0, 'profit-negative': bp.profit_per_lp <= 0 }">
+                {{ bp.profit_per_lp > 0 ? '+' : '' }}{{ formatISKShort(bp.profit_per_lp) }}/LP
+              </span>
             </div>
           </div>
           <div v-if="!loadingList && filteredBlueprints.length === 0" class="empty-list">
@@ -273,7 +279,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { regionApi, loyaltyApi, typeApi, orderApi } from '../services/api'
 import { ElMessage } from 'element-plus'
-import { List, DataAnalysis, Search, Money, Star, Top, Bottom } from '@element-plus/icons-vue'
+import { List, DataAnalysis, Search, Money, Star, Top, Bottom, Refresh } from '@element-plus/icons-vue'
 
 export default {
   name: 'LpBlueprintView',
@@ -359,6 +365,11 @@ export default {
 
     // 过滤开关变更
     const handleFilterChange = () => {
+      loadBlueprints()
+    }
+
+    // 刷新按钮
+    const handleRefresh = () => {
       loadBlueprints()
     }
 
@@ -548,7 +559,7 @@ export default {
       querying, loadingList,
       orderDialogVisible, queryingOrders, buyOrders, sellOrders, productTypeName,
       formatISK, formatISKShort, formatNumber,
-      handleSearch, handleFilterChange, handleBlueprintClick,
+      handleSearch, handleFilterChange, handleRefresh, handleBlueprintClick,
       handleRegionChange, handleDatasourceChange, handleLpRatioChange,
       showOrderDialog
     }
@@ -669,11 +680,18 @@ export default {
 .filter-switch {
   padding: 8px 16px;
   border-bottom: 1px solid #2d303e;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .filter-switch :deep(.el-checkbox__label) {
   color: #94a3b8;
   font-size: 13px;
+}
+
+.refresh-btn {
+  margin-left: auto;
 }
 
 /* 蓝图列表 */
@@ -724,6 +742,18 @@ export default {
 
 .bp-isk {
   color: #67c23a;
+}
+
+.bp-profit {
+  font-weight: 600;
+}
+
+.bp-profit.profit-positive {
+  color: #67c23a;
+}
+
+.bp-profit.profit-negative {
+  color: #f56c6c;
 }
 
 .empty-list {
