@@ -1,84 +1,23 @@
 <template>
   <div class="login-page">
     <div class="login-container">
-      <h1 class="login-title">EVE Online 统一账号登录 (SSO)</h1>
-
-      <div class="login-notice">
-        <el-alert
-          title="请确认授权网站和授权内容"
-          type="warning"
-          :closable="false"
-          show-icon
-        >
-          <template #default>
-            <p>点击下方按钮，将会带你到EVE Online官方网站登录并授权，请务必确认该网站确实是官方网站并确认授权内容是否正确。</p>
-          </template>
-        </el-alert>
-      </div>
-
-      <div class="auth-sections">
-        <el-checkbox-group v-model="selectedIndices" class="scope-checkbox-group">
-          <div class="scope-item" v-for="(auth, index) in authOptions" :key="index">
-            <el-checkbox :label="index">
-              <div class="scope-item-content">
-                <span class="scope-title">{{ auth.title }}</span>
-                <div class="scope-tags">
-                  <el-tag
-                    v-for="scope in auth.scopes"
-                    :key="scope"
-                    type="info"
-                    size="small"
-                    class="scope-tag"
-                  >
-                    {{ scope }}
-                  </el-tag>
-                </div>
-              </div>
-            </el-checkbox>
-          </div>
-        </el-checkbox-group>
-
-        <el-button
-          type="primary"
-          size="large"
-          class="auth-btn"
-          @click="handleAuth"
-          :disabled="selectedIndices.length === 0"
-        >
-          <el-icon><Key /></el-icon>
-          前往EVE官方网站授权
-        </el-button>
-      </div>
-
-      <el-divider />
-
-      <div class="serenity-section">
-        <h2 class="section-title">国服用户授权登录</h2>
-        <el-alert
-          title="国服授权说明"
-          type="info"
-          :closable="false"
-          show-icon
-        >
-          <template #default>
-            <p><strong>步骤1：</strong>点击下方按钮生成授权链接</p>
-            <p><strong>步骤2：</strong>复制授权链接，在浏览器中打开并完成授权</p>
-            <p><strong>步骤3：</strong>授权完成后，将跳转页面的URL粘贴到下方输入框</p>
-            <p><strong>步骤4：</strong>点击"授权登录"按钮完成登录</p>
-          </template>
-        </el-alert>
-
-        <!-- 步骤1: 生成授权URL -->
+      <!-- 所有步骤展示 -->
+      <div class="all-steps-section">
+        <h2 class="section-title">授权流程</h2>
+        
+        <!-- 步骤1: 选择权限并生成授权链接 -->
         <div class="step-section">
           <div class="step-header">
             <el-tag type="primary" effect="dark" size="small">步骤1</el-tag>
-            <span class="step-title">生成授权链接</span>
+            <span class="step-title">选择权限并生成授权链接</span>
           </div>
           <div class="step-content">
+            <p class="step-desc">点击下方按钮生成授权链接</p>
             <el-button
               type="primary"
               @click="generateAuthUrl"
               :icon="Link"
+              :disabled="selectedIndices.length === 0"
             >
               生成授权链接
             </el-button>
@@ -167,23 +106,33 @@
           </div>
         </div>
       </div>
+
+      <!-- 权限选择（缩小展示在最下面） -->
+      <div class="scopes-section">
+        <h3 class="scopes-title">授权权限选择</h3>
+        <el-checkbox-group v-model="selectedIndices" class="scope-checkbox-group">
+          <div class="scope-item" v-for="(auth, index) in authOptions" :key="index">
+            <el-checkbox :label="index" size="small">
+              <div class="scope-item-content">
+                <span class="scope-title-small">{{ auth.title }}</span>
+              </div>
+            </el-checkbox>
+          </div>
+        </el-checkbox-group>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Key, Link, DocumentCopy, Position, User } from '@element-plus/icons-vue'
+import { Link, DocumentCopy, Position, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const serenityCallbackUrl = ref('')
 const selectedIndices = ref([])
 const generatedAuthUrl = ref('')
 const loginLoading = ref(false)
-
-// 国服ESI内置的client_id
-const SERENITY_CLIENT_ID = 'bc90aa496a404724a93f41b4f4e97761'
-const SERENITY_REDIRECT_URI = 'https://ali-esi.evepc.163.com/ui/oauth2-redirect.html'
 
 const authOptions = [
   {
@@ -217,8 +166,8 @@ const authOptions = [
 ]
 
 onMounted(() => {
-  // 默认勾选除了军团击毁记录（index=1）外的所有权限
-  selectedIndices.value = authOptions.map((_, index) => index).filter(i => i !== 1)
+  // 默认勾选除了军团击毁记录（index=1）外的所有权限（最多4个）
+  selectedIndices.value = authOptions.map((_, index) => index).filter(i => i !== 1).slice(0, 4)
 })
 
 // 生成国服授权URL (使用PKCE模式)
@@ -253,7 +202,7 @@ const generateAuthUrl = async () => {
   })
 
   const authUrl = `https://login.evepc.163.com/v2/oauth/authorize?${params.toString()}`
-  
+
   // 先退出登录清除Cookie，再跳转授权链接
   generatedAuthUrl.value = `https://login.evepc.163.com/account/logoff?returnUrl=${encodeURIComponent(authUrl)}`
   ElMessage.success('授权链接已生成！')
@@ -291,7 +240,6 @@ const copyAuthUrl = async () => {
     await navigator.clipboard.writeText(generatedAuthUrl.value)
     ElMessage.success('授权链接已复制到剪贴板！')
   } catch (e) {
-    // 降级方案
     const textarea = document.createElement('textarea')
     textarea.value = generatedAuthUrl.value
     document.body.appendChild(textarea)
@@ -305,27 +253,6 @@ const copyAuthUrl = async () => {
 // 打开授权URL
 const openAuthUrl = () => {
   window.open(generatedAuthUrl.value, '_blank')
-}
-
-const handleAuth = () => {
-  const allScopes = selectedIndices.value.map(i => authOptions[i].scopes).flat()
-  const scopes = allScopes.join(' ')
-
-  if (allScopes.length === 0) {
-    ElMessage.warning('请至少选择一个授权权限')
-    return
-  }
-
-  const state = generateState()
-  sessionStorage.setItem('eve_sso_state', state)
-  sessionStorage.setItem('eve_sso_scopes', scopes)
-
-  const callbackUrl = 'https://login.evepc.163.com/v2/account/callback?provider=netease&state=' + state + ':kb_ceve_market'
-  const encodedCallback = encodeURIComponent(encodeURIComponent(callbackUrl))
-
-  const authUrl = 'https://login.evepc.163.com/account/neteaselogon?game_id=aecfu6bgiuaaaal2-g-ma79&device_id=kb_ceve_market&client_id=7014295958&redirect_uri=' + encodedCallback + '&relogin=0'
-
-  window.location.href = authUrl
 }
 
 const handleSerenityLogin = async () => {
@@ -349,13 +276,13 @@ const handleSerenityLogin = async () => {
 
     // 获取PKCE code_verifier
     const codeVerifier = sessionStorage.getItem('eve_code_verifier')
-    
+
     const response = await fetch('/api/eve-sso/save-code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         callback_url: url,
         code_verifier: codeVerifier
       })
@@ -374,7 +301,7 @@ const handleSerenityLogin = async () => {
 
       ElMessage.success('授权成功！' + (result.character_name ? `欢迎 ${result.character_name}` : ''))
       serenityCallbackUrl.value = ''
-      
+
       setTimeout(() => {
         window.location.href = '/profile'
       }, 1000)
@@ -418,7 +345,7 @@ const generateState = () => {
 }
 
 .login-notice {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .login-notice p {
@@ -426,70 +353,8 @@ const generateState = () => {
   line-height: 1.6;
 }
 
-.auth-sections {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-.scope-checkbox-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.scope-item {
-  background-color: #1e1e2e;
-  border: 1px solid #2d3040;
-  border-radius: 8px;
-  padding: 16px 20px;
-  transition: border-color 0.3s;
-}
-
-.scope-item:hover {
-  border-color: #409eff;
-}
-
-.scope-item :deep(.el-checkbox) {
-  width: 100%;
-  height: auto;
-}
-
-.scope-item :deep(.el-checkbox__label) {
-  width: 100%;
-  color: #e0e0e0;
-}
-
-.scope-item-content {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.scope-title {
-  font-size: 16px;
-  font-weight: 500;
-  color: #e0e0e0;
-}
-
-.scope-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.scope-tag {
-  background-color: #2d3040 !important;
-  border-color: #3d4060 !important;
-  color: #a0a0c0 !important;
-  font-family: monospace;
-  font-size: 12px;
-}
-
-.auth-btn {
-  width: 100%;
-  margin-top: 8px;
+.all-steps-section {
+  margin-bottom: 24px;
 }
 
 .section-title {
@@ -499,17 +364,8 @@ const generateState = () => {
   font-weight: 600;
 }
 
-.serenity-section {
-  margin-top: 8px;
-}
-
-.serenity-section :deep(.el-alert__content p) {
-  margin: 4px 0;
-  line-height: 1.8;
-}
-
 .step-section {
-  margin-top: 20px;
+  margin-bottom: 16px;
   padding: 16px;
   background-color: #1e1e2e;
   border-radius: 8px;
@@ -527,6 +383,12 @@ const generateState = () => {
   color: #e0e0e0;
   font-size: 15px;
   font-weight: 500;
+}
+
+.step-desc {
+  color: #999;
+  margin-bottom: 12px;
+  font-size: 14px;
 }
 
 .step-content {
@@ -571,17 +433,48 @@ const generateState = () => {
   width: 100%;
 }
 
-:deep(.el-divider) {
-  border-color: #2d3040;
-  margin: 32px 0;
+/* 权限选择区域（缩小展示） */
+.scopes-section {
+  margin-top: 24px;
+  padding: 16px;
+  background-color: #1e1e2e;
+  border-radius: 8px;
+  border: 1px solid #2d3040;
 }
 
-:deep(.el-alert) {
+.scopes-title {
+  font-size: 14px;
+  color: #999;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.scope-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.scope-item {
   background-color: #252636;
-  border-color: #2d3040;
+  border: 1px solid #2d3040;
+  border-radius: 4px;
+  padding: 8px 12px;
 }
 
-:deep(.el-alert__title) {
+.scope-item :deep(.el-checkbox) {
+  height: auto;
+  margin-right: 0;
+}
+
+.scope-item :deep(.el-checkbox__label) {
+  color: #e0e0e0;
+  font-size: 13px;
+  padding-left: 6px;
+}
+
+.scope-title-small {
+  font-size: 13px;
   color: #e0e0e0;
 }
 
@@ -589,7 +482,7 @@ const generateState = () => {
   .auth-url-actions {
     flex-direction: column;
   }
-  
+
   .auth-url-actions .el-button {
     width: 100%;
   }
