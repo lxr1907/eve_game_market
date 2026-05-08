@@ -17,33 +17,37 @@
       </div>
 
       <div class="auth-sections">
-        <div class="auth-card" v-for="(auth, index) in authOptions" :key="index">
-          <div class="auth-card-header">
-            <h3>{{ auth.title }}</h3>
+        <el-checkbox-group v-model="selectedIndices" class="scope-checkbox-group">
+          <div class="scope-item" v-for="(auth, index) in authOptions" :key="index">
+            <el-checkbox :label="index">
+              <div class="scope-item-content">
+                <span class="scope-title">{{ auth.title }}</span>
+                <div class="scope-tags">
+                  <el-tag
+                    v-for="scope in auth.scopes"
+                    :key="scope"
+                    type="info"
+                    size="small"
+                    class="scope-tag"
+                  >
+                    {{ scope }}
+                  </el-tag>
+                </div>
+              </div>
+            </el-checkbox>
           </div>
-          <div class="auth-card-body">
-            <div class="auth-scopes">
-              <el-tag
-                v-for="scope in auth.scopes"
-                :key="scope"
-                type="info"
-                size="small"
-                class="scope-tag"
-              >
-                {{ scope }}
-              </el-tag>
-            </div>
-            <el-button
-              type="primary"
-              size="large"
-              class="auth-btn"
-              @click="handleAuth(auth)"
-            >
-              <el-icon><Key /></el-icon>
-              授权登录
-            </el-button>
-          </div>
-        </div>
+        </el-checkbox-group>
+
+        <el-button
+          type="primary"
+          size="large"
+          class="auth-btn"
+          @click="handleAuth"
+          :disabled="selectedIndices.length === 0"
+        >
+          <el-icon><Key /></el-icon>
+          前往EVE官方网站授权
+        </el-button>
       </div>
 
       <el-divider />
@@ -89,11 +93,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Key, Link } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const serenityCallbackUrl = ref('')
+const selectedIndices = ref([])
 
 const authOptions = [
   {
@@ -126,13 +131,17 @@ const authOptions = [
   }
 ]
 
-const handleAuth = (auth) => {
-  const clientId = import.meta.env.VITE_EVE_CLIENT_ID || ''
-  const redirectUri = import.meta.env.VITE_EVE_REDIRECT_URI || window.location.origin + '/login/callback'
-  const scopes = auth.scopes.join(' ')
+onMounted(() => {
+  // 默认勾选除了军团击毁记录（index=1）外的所有权限
+  selectedIndices.value = authOptions.map((_, index) => index).filter(i => i !== 1)
+})
 
-  if (!clientId) {
-    ElMessage.warning('请先配置 EVE SSO Client ID（VITE_EVE_CLIENT_ID）')
+const handleAuth = () => {
+  const allScopes = selectedIndices.value.map(i => authOptions[i].scopes).flat()
+  const scopes = allScopes.join(' ')
+
+  if (allScopes.length === 0) {
+    ElMessage.warning('请至少选择一个授权权限')
     return
   }
 
@@ -140,17 +149,15 @@ const handleAuth = (auth) => {
   sessionStorage.setItem('eve_sso_state', state)
   sessionStorage.setItem('eve_sso_scopes', scopes)
 
-  const authUrl = new URL('https://login.evepc.163.com/v2/oauth/authorize/')
-  authUrl.searchParams.append('response_type', 'code')
-  authUrl.searchParams.append('redirect_uri', redirectUri)
-  authUrl.searchParams.append('client_id', clientId)
-  authUrl.searchParams.append('scope', scopes)
-  authUrl.searchParams.append('state', state)
+  const callbackUrl = 'https://login.evepc.163.com/v2/account/callback?provider=netease&state=' + state + ':kb_ceve_market'
+  const encodedCallback = encodeURIComponent(encodeURIComponent(callbackUrl))
 
-  window.location.href = authUrl.toString()
+  const authUrl = 'https://login.evepc.163.com/account/neteaselogon?game_id=aecfu6bgiuaaaal2-g-ma79&device_id=kb_ceve_market&client_id=7014295958&redirect_uri=' + encodedCallback + '&relogin=0'
+
+  window.location.href = authUrl
 }
 
-const handleSerenityLogin = () => {
+const handleSerenityLogin = async () => {
   const url = serenityCallbackUrl.value.trim()
   if (!url) {
     ElMessage.warning('请输入授权回调地址')
@@ -162,22 +169,33 @@ const handleSerenityLogin = () => {
     const code = parsedUrl.searchParams.get('code')
     const state = parsedUrl.searchParams.get('state')
 
-    if (!code || !state) {
-      ElMessage.error('无效的回调地址，请确认已正确粘贴完整URL')
+    if (!code) {
+      ElMessage.error('无效的回调地址，未找到授权码(code)')
       return
     }
 
-    const savedState = sessionStorage.getItem('eve_sso_state')
-    if (state !== savedState) {
-      ElMessage.error('State 验证失败，可能存在安全风险')
-      return
+    const response = await fetch('/api/save-code', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ callback_url: url })
+    })
+
+    const result = await response.json()
+
+    if (response.ok && result.success) {
+      ElMessage.success('授权成功！' + (result.character_name ? `欢迎 ${result.character_name}` : ''))
+      serenityCallbackUrl.value = ''
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 1500)
+    } else {
+      ElMessage.error(result.error || '保存授权信息失败')
     }
-
-    ElMessage.success('授权验证成功，正在处理登录...')
-
-    exchangeCodeForToken(code)
   } catch (e) {
-    ElMessage.error('URL格式不正确，请检查粘贴的地址')
+    console.error('Serenity login error:', e)
+    ElMessage.error('处理失败：' + e.message)
   }
 }
 
@@ -266,44 +284,50 @@ const exchangeCodeForToken = async (code) => {
   margin-bottom: 32px;
 }
 
-.auth-card {
+.scope-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scope-item {
   background-color: #1e1e2e;
   border: 1px solid #2d3040;
   border-radius: 8px;
-  overflow: hidden;
+  padding: 16px 20px;
   transition: border-color 0.3s;
 }
 
-.auth-card:hover {
+.scope-item:hover {
   border-color: #409eff;
 }
 
-.auth-card-header {
-  background-color: #252636;
-  padding: 16px 20px;
-  border-bottom: 1px solid #2d3040;
+.scope-item :deep(.el-checkbox) {
+  width: 100%;
+  height: auto;
 }
 
-.auth-card-header h3 {
-  margin: 0;
-  font-size: 16px;
+.scope-item :deep(.el-checkbox__label) {
+  width: 100%;
   color: #e0e0e0;
-  font-weight: 500;
 }
 
-.auth-card-body {
-  padding: 16px 20px;
+.scope-item-content {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.auth-scopes {
+.scope-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.scope-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  flex: 1;
 }
 
 .scope-tag {
@@ -315,8 +339,8 @@ const exchangeCodeForToken = async (code) => {
 }
 
 .auth-btn {
-  flex-shrink: 0;
-  min-width: 140px;
+  width: 100%;
+  margin-top: 8px;
 }
 
 .section-title {
@@ -376,15 +400,6 @@ const exchangeCodeForToken = async (code) => {
 }
 
 @media (max-width: 640px) {
-  .auth-card-body {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .auth-btn {
-    width: 100%;
-  }
-
   .serenity-form {
     flex-direction: column;
   }

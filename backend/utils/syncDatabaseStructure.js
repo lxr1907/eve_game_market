@@ -4,6 +4,7 @@ const System = require('../models/System');
 const Stargate = require('../models/Stargate');
 const Constellation = require('../models/Constellation');
 const LoyaltySkipItem = require('../models/LoyaltySkipItem');
+const EveSsoCode = require('../models/EveSsoCode');
 
 async function addColumnIfNotExists(table, column, definition) {
   try {
@@ -239,7 +240,11 @@ async function syncDatabaseStructure() {
     // 16. 创建或更新 loyalty_skip_items 表
     await LoyaltySkipItem.createTable();
     console.log(`✓ 表 loyalty_skip_items 创建或验证成功`);
-    
+
+    // 17. 创建或更新 eve_sso_codes 表
+    await EveSsoCode.createTable();
+    console.log(`✓ 表 eve_sso_codes 创建或验证成功`);
+
     console.log('所有表结构同步完成！');
 
   } catch (error) {

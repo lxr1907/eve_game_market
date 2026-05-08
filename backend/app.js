@@ -12,6 +12,7 @@ const onlinePlayerStatsRoutes = require('./routes/onlinePlayerStatsRoutes');
 const systemRoutes = require('./routes/systemRoutes');
 const systemKillRoutes = require('./routes/systemKillRoutes');
 const starMapRoutes = require('./routes/starMapRoutes');
+const eveSsoRoutes = require('./routes/eveSsoRoutes');
 const Type = require('./models/Type');
 const Region = require('./models/Region');
 const RegionType = require('./models/RegionType');
@@ -22,6 +23,7 @@ const Group = require('./models/Group');
 const Category = require('./models/Category');
 const OnlinePlayerStats = require('./models/OnlinePlayerStats');
 const System = require('./models/System');
+const EveSsoCode = require('./models/EveSsoCode');
 const { syncDatabaseStructure } = require('./utils/syncDatabaseStructure');
 
 const app = express();
@@ -54,6 +56,7 @@ app.use('/api', onlinePlayerStatsRoutes);
 app.use('/api', systemRoutes);
 app.use('/api', systemKillRoutes);
 app.use('/api', starMapRoutes);
+app.use('/api', eveSsoRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
