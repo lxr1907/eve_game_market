@@ -1,8 +1,9 @@
 const EveSsoCode = require('../models/EveSsoCode');
 
-const exchangeCodeForToken = async (code) => {
-  const clientId = process.env.EVE_CLIENT_ID || '7014295958';
-  const clientSecret = process.env.EVE_CLIENT_SECRET || '';
+const exchangeCodeForToken = async (code, codeVerifier = null) => {
+  // 使用PKCE模式的ESI UI client_id
+  const clientId = 'bc90aa496a404724a93f41b4f4e97761';
+  // 使用正确的回调地址
   const redirectUri = 'https://ali-esi.evepc.163.com/ui/oauth2-redirect.html';
 
   try {
@@ -11,26 +12,22 @@ const exchangeCodeForToken = async (code) => {
     body.append('grant_type', 'authorization_code');
     body.append('code', code);
     body.append('client_id', clientId);
-    if (clientSecret) {
-      body.append('client_secret', clientSecret);
-    }
     body.append('redirect_uri', redirectUri);
+    // PKCE模式需要code_verifier
+    if (codeVerifier) {
+      body.append('code_verifier', codeVerifier);
+    }
 
-    console.log('Exchanging code for token, clientId:', clientId, 'hasSecret:', !!clientSecret);
+    console.log('Exchanging code for token, clientId:', clientId, 'hasCodeVerifier:', !!codeVerifier);
 
     const fetchOptions = {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json'
       },
       body: body.toString()
     };
-
-    // 如果提供了 client_secret，也尝试用 Basic Auth 方式
-    if (clientSecret) {
-      const auth = Buffer.from(clientId + ':' + clientSecret).toString('base64');
-      fetchOptions.headers['Authorization'] = 'Basic ' + auth;
-    }
 
     const response = await fetch(tokenUrl, fetchOptions);
 
@@ -81,7 +78,7 @@ const exchangeCodeForToken = async (code) => {
 
 const saveSsoCode = async (req, res) => {
   try {
-    const { callback_url } = req.body;
+    const { callback_url, code_verifier } = req.body;
 
     if (!callback_url) {
       return res.status(400).json({ error: '缺少回调地址' });
@@ -101,14 +98,14 @@ const saveSsoCode = async (req, res) => {
       return res.status(400).json({ error: 'URL中未找到授权码(code)' });
     }
 
-    console.log('Saving code:', code, 'state:', state);
+    console.log('Saving code:', code, 'state:', state, 'hasCodeVerifier:', !!code_verifier);
 
     const id = await EveSsoCode.saveCode(code, state);
 
     let tokenData = null;
     let tokenError = null;
     try {
-      tokenData = await exchangeCodeForToken(code);
+      tokenData = await exchangeCodeForToken(code, code_verifier);
       await EveSsoCode.saveToken(code, tokenData);
       console.log('Token saved successfully for code:', code);
     } catch (tokenError) {

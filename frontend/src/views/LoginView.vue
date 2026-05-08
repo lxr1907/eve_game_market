@@ -221,26 +221,68 @@ onMounted(() => {
   selectedIndices.value = authOptions.map((_, index) => index).filter(i => i !== 1)
 })
 
-// 生成国服授权URL (参考其他网站实现)
-const generateAuthUrl = () => {
+// 生成国服授权URL (使用PKCE模式)
+const generateAuthUrl = async () => {
+  // 限制最多选择4个权限
+  const allScopes = selectedIndices.value.slice(0, 4).map(i => authOptions[i].scopes).flat()
+  const scopes = allScopes.join(' ')
+
+  if (allScopes.length === 0) {
+    ElMessage.warning('请至少选择一个授权权限')
+    return
+  }
+
   const state = generateState()
   sessionStorage.setItem('eve_sso_state', state)
-  
-  // 构建回调URL (双重URL编码)
-  const callbackUrl = `https://login.evepc.163.com/v2/account/callback?provider=netease&state=${state}:kb_ceve_market`
-  const encodedCallback = encodeURIComponent(encodeURIComponent(callbackUrl))
-  
-  // 使用网易登录页面授权方式
+
+  // 生成PKCE参数
+  const codeVerifier = generateCodeVerifier()
+  const codeChallenge = await generateCodeChallenge(codeVerifier)
+  sessionStorage.setItem('eve_code_verifier', codeVerifier)
+
+  // 使用PKCE模式参数
   const params = new URLSearchParams({
-    game_id: 'aecfu6bgiuaaaal2-g-ma79',
-    device_id: 'kb_ceve_market',
-    client_id: '7014295958',
-    redirect_uri: encodedCallback,
-    relogin: '0'
+    response_type: 'code',
+    client_id: 'bc90aa496a404724a93f41b4f4e97761',
+    redirect_uri: 'https://ali-esi.evepc.163.com/ui/oauth2-redirect.html',
+    scope: scopes,
+    state: state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
+    device_id: 'kb_ceve_market'
   })
+
+  const authUrl = `https://login.evepc.163.com/v2/oauth/authorize?${params.toString()}`
   
-  generatedAuthUrl.value = `https://login.evepc.163.com/account/neteaselogon?${params.toString()}`
+  // 先退出登录清除Cookie，再跳转授权链接
+  generatedAuthUrl.value = `https://login.evepc.163.com/account/logoff?returnUrl=${encodeURIComponent(authUrl)}`
   ElMessage.success('授权链接已生成！')
+}
+
+// 生成PKCE code_verifier
+const generateCodeVerifier = () => {
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  return base64URLEncode(array)
+}
+
+// 生成PKCE code_challenge
+const generateCodeChallenge = (verifier) => {
+  // 使用SHA-256哈希
+  const encoder = new TextEncoder()
+  const data = encoder.encode(verifier)
+  const hash = crypto.subtle.digest('SHA-256', data)
+  return hash.then(buffer => base64URLEncode(new Uint8Array(buffer)))
+}
+
+// Base64URL编码
+const base64URLEncode = (bytes) => {
+  let binary = ''
+  const len = bytes.byteLength || bytes.length
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
 
 // 复制授权URL
@@ -305,12 +347,18 @@ const handleSerenityLogin = async () => {
       return
     }
 
+    // 获取PKCE code_verifier
+    const codeVerifier = sessionStorage.getItem('eve_code_verifier')
+    
     const response = await fetch('/api/eve-sso/save-code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ callback_url: url })
+      body: JSON.stringify({ 
+        callback_url: url,
+        code_verifier: codeVerifier
+      })
     })
 
     const result = await response.json()
