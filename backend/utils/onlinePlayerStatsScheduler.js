@@ -14,7 +14,8 @@ const recordStats = async (datasource) => {
     const response = await apiClient.post('/online-player-stats/record', null, {
       params: { datasource: datasource }
     });
-    console.log(`${datasource} stats recorded successfully:`, response.data);
+    // 简化日志输出
+    console.log(`${datasource} stats recorded successfully: ${response.data.success}`);
   } catch (error) {
     console.error(`Error recording ${datasource} stats:`, error.message);
     if (error.response) {
