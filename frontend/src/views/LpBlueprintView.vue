@@ -301,15 +301,8 @@ export default {
     const productTypeId = ref(null)
     const productTypeName = ref('')
 
-    // 搜索过滤
-    const filteredBlueprints = computed(() => {
-      if (!searchText.value) return blueprints.value
-      const term = searchText.value.toLowerCase()
-      return blueprints.value.filter(bp =>
-        (bp.type_name && bp.type_name.toLowerCase().includes(term)) ||
-        String(bp.type_id).includes(term)
-      )
-    })
+    // 搜索过滤（现在由后端处理，此处保留用于模板兼容）
+    const filteredBlueprints = computed(() => blueprints.value)
 
     // 格式化工具
     const formatISK = (val) => {
@@ -351,7 +344,7 @@ export default {
         const data = await loyaltyApi.getLoyaltyBlueprints(
           null,
           datasource.value,
-          '',
+          searchText.value,
           filterHasBuyOrder.value,
           selectedRegionId.value
         )
@@ -369,13 +362,13 @@ export default {
       loadBlueprints()
     }
 
-    // 搜索处理（防抖）
+    // 搜索处理（防抖，调用后端API）
     let searchTimer = null
     const handleSearch = () => {
       clearTimeout(searchTimer)
       searchTimer = setTimeout(() => {
-        // filteredBlueprints 是 computed，自动更新
-      }, 300)
+        loadBlueprints()
+      }, 500)
     }
 
     // 选择蓝图
