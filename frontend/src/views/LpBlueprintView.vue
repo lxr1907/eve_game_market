@@ -57,7 +57,7 @@
           />
         </div>
         <div class="filter-switch">
-          <el-checkbox v-model="filterHasBuyOrder" @change="handleFilterChange">仅显示有收购订单</el-checkbox>
+          <el-checkbox v-model="filterPositiveProfit" @change="handleFilterChange">仅显示正收益</el-checkbox>
           <el-button type="primary" size="small" :loading="loadingList" @click="handleRefresh" class="refresh-btn">
             <el-icon><Refresh /></el-icon> 刷新
           </el-button>
@@ -291,7 +291,7 @@ export default {
     const lpToIskRatio = ref(1300)
     const blueprints = ref([])
     const searchText = ref('')
-    const filterHasBuyOrder = ref(false)
+    const filterPositiveProfit = ref(false)
     const selectedBlueprint = ref(null)
     const materials = ref([])
     const profitDisplay = ref([])
@@ -351,8 +351,9 @@ export default {
           null,
           datasource.value,
           searchText.value,
-          filterHasBuyOrder.value,
-          selectedRegionId.value
+          false,
+          selectedRegionId.value,
+          filterPositiveProfit.value
         )
         blueprints.value = data
       } catch (error) {
@@ -554,7 +555,7 @@ export default {
 
     return {
       regions, selectedRegionId, datasource, lpToIskRatio,
-      blueprints, searchText, filterHasBuyOrder, filteredBlueprints, selectedBlueprint,
+      blueprints, searchText, filterPositiveProfit, filteredBlueprints, selectedBlueprint,
       materials, profitDisplay, lpCostDisplay, totalCostDisplay,
       querying, loadingList,
       orderDialogVisible, queryingOrders, buyOrders, sellOrders, productTypeName,

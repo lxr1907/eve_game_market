@@ -590,7 +590,7 @@ class LoyaltyController {
   static async getLoyaltyBlueprints(req, res) {
     try {
       const pool = require('../config/database');
-      const { corporationId, datasource = 'serenity', search = '', hasBuyOrder = 'false', regionId = '10000002' } = req.query;
+      const { corporationId, datasource = 'serenity', search = '', hasBuyOrder = 'false', regionId = '10000002', positiveProfit = 'false' } = req.query;
 
       // 如果需要过滤有买单的蓝图，先检查 region_types 更新时间
       if (hasBuyOrder === 'true') {
@@ -649,6 +649,11 @@ class LoyaltyController {
           )
         `;
         params.push(regionId, datasource);
+      }
+
+      // 过滤正收益蓝图（必须有计算数据且收益大于0）
+      if (positiveProfit === 'true') {
+        query += ` AND lbp.profit_per_lp IS NOT NULL AND lbp.profit_per_lp > 0`;
       }
 
       query += ` ORDER BY lbp.profit_per_lp DESC, t.name ASC`;
