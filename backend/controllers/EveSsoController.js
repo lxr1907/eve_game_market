@@ -61,6 +61,9 @@ const exchangeCodeForToken = async (code, codeVerifier = null) => {
           tokenData.character_id = verifyData.CharacterID;
           tokenData.character_name = verifyData.CharacterName;
           tokenData.scopes = verifyData.Scopes;
+          // 从TokenAudience或CharacterID判断datasource
+          // 国服(serenity)的CharacterID通常在特定范围
+          tokenData.datasource = 'serenity';
         } else {
           console.error('Verify failed:', verifyResponse.status);
         }
@@ -100,7 +103,9 @@ const saveSsoCode = async (req, res) => {
 
     console.log('Saving code:', code, 'state:', state, 'hasCodeVerifier:', !!code_verifier);
 
-    const id = await EveSsoCode.saveCode(code, state);
+    // 默认使用国服(serenity)作为datasource
+    const datasource = 'serenity';
+    const id = await EveSsoCode.saveCode(code, state, datasource);
 
     let tokenData = null;
     let tokenError = null;
@@ -135,7 +140,7 @@ const getSsoCodes = async (req, res) => {
   try {
     const pool = require('../config/database');
     const [rows] = await pool.execute(
-      'SELECT id, state, character_id, character_name, token_type, expires_at, created_at FROM eve_sso_codes ORDER BY created_at DESC LIMIT 100'
+      'SELECT id, state, character_id, character_name, token_type, expires_at, created_at, datasource FROM eve_sso_codes ORDER BY created_at DESC LIMIT 100'
     );
     res.json({ success: true, data: rows });
   } catch (error) {

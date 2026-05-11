@@ -14,22 +14,24 @@ class EveSsoCode {
         character_name VARCHAR(255),
         scopes TEXT,
         token_type VARCHAR(50),
+        datasource VARCHAR(50) DEFAULT 'serenity',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_code (code),
         INDEX idx_state (state),
-        INDEX idx_character_id (character_id)
+        INDEX idx_character_id (character_id),
+        UNIQUE KEY idx_character_datasource (character_id, datasource)
       )
     `;
     await pool.execute(query);
   }
 
-  static async saveCode(code, state) {
+  static async saveCode(code, state, datasource = 'serenity') {
     const query = `
-      INSERT INTO eve_sso_codes (code, state)
-      VALUES (?, ?)
+      INSERT INTO eve_sso_codes (code, state, datasource)
+      VALUES (?, ?, ?)
     `;
-    const [result] = await pool.execute(query, [code, state]);
+    const [result] = await pool.execute(query, [code, state, datasource]);
     return result.insertId;
   }
 
@@ -42,7 +44,8 @@ class EveSsoCode {
           token_type = ?,
           scopes = ?,
           character_id = ?,
-          character_name = ?
+          character_name = ?,
+          datasource = ?
       WHERE code = ?
     `;
     const [result] = await pool.execute(query, [
@@ -53,6 +56,7 @@ class EveSsoCode {
       tokenData.scopes || null,
       tokenData.character_id || null,
       tokenData.character_name || null,
+      tokenData.datasource || 'serenity',
       code
     ]);
     return result.affectedRows > 0;
@@ -64,14 +68,14 @@ class EveSsoCode {
     return rows[0];
   }
 
-  static async getValidToken(characterId) {
+  static async getValidToken(characterId, datasource = 'serenity') {
     const query = `
       SELECT * FROM eve_sso_codes
-      WHERE character_id = ? AND expires_at > ?
+      WHERE character_id = ? AND datasource = ? AND expires_at > ?
       ORDER BY expires_at DESC LIMIT 1
     `;
     const now = Date.now();
-    const [rows] = await pool.execute(query, [characterId, now]);
+    const [rows] = await pool.execute(query, [characterId, datasource, now]);
     return rows[0];
   }
 }
