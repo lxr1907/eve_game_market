@@ -246,8 +246,14 @@ class System {
     let whereClause = [];
     
     if (search) {
-      whereClause.push(`name LIKE ?`);
-      params.push(`%${search}%`);
+      const isNumeric = /^\d+$/.test(search);
+      if (isNumeric) {
+        whereClause.push(`(name LIKE ? OR system_id = ?)`);
+        params.push(`%${search}%`, search);
+      } else {
+        whereClause.push(`name LIKE ?`);
+        params.push(`%${search}%`);
+      }
     }
     
     if (onlyEmptyName) {
@@ -283,8 +289,14 @@ class System {
     let whereClause = [];
     
     if (search) {
-      whereClause.push(`name LIKE ?`);
-      params.push(`%${search}%`);
+      const isNumeric = /^\d+$/.test(search);
+      if (isNumeric) {
+        whereClause.push(`(name LIKE ? OR system_id = ?)`);
+        params.push(`%${search}%`, search);
+      } else {
+        whereClause.push(`name LIKE ?`);
+        params.push(`%${search}%`);
+      }
     }
     
     if (onlyEmptyName) {

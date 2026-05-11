@@ -69,8 +69,14 @@ class Region {
     let params = [];
     
     if (search) {
-      query += ` WHERE name LIKE ? OR description LIKE ?`;
-      params.push(`%${search}%`, `%${search}%`);
+      const isNumeric = /^\d+$/.test(search);
+      if (isNumeric) {
+        query += ` WHERE (name LIKE ? OR id = ? OR description LIKE ?)`;
+        params.push(`%${search}%`, search, `%${search}%`);
+      } else {
+        query += ` WHERE (name LIKE ? OR description LIKE ?)`;
+        params.push(`%${search}%`, `%${search}%`);
+      }
     }
     
     query += ` ORDER BY id LIMIT ${limitInt} OFFSET ${offset}`;
@@ -84,8 +90,14 @@ class Region {
     let params = [];
     
     if (search) {
-      query += ` WHERE name LIKE ? OR description LIKE ?`;
-      params.push(`%${search}%`, `%${search}%`);
+      const isNumeric = /^\d+$/.test(search);
+      if (isNumeric) {
+        query += ` WHERE (name LIKE ? OR id = ? OR description LIKE ?)`;
+        params.push(`%${search}%`, search, `%${search}%`);
+      } else {
+        query += ` WHERE (name LIKE ? OR description LIKE ?)`;
+        params.push(`%${search}%`, `%${search}%`);
+      }
     }
     
     const [rows] = await pool.execute(query, params);

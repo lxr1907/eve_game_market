@@ -253,11 +253,19 @@ class Type {
   }
 
   static async findAll(page = 1, limit = 10, search = '') {
-    // 构建查询字符串，使用字符串拼接代替参数绑定
     let query = 'SELECT * FROM types';
+    const params = [];
 
     if (search) {
-      query += ` WHERE name LIKE '%${search}%'`;
+      // 纯数字则同时搜索ID和名称
+      const isNumeric = /^\d+$/.test(search);
+      if (isNumeric) {
+        query += ` WHERE (name LIKE ? OR id = ?)`;
+        params.push(`%${search}%`, search);
+      } else {
+        query += ` WHERE name LIKE ?`;
+        params.push(`%${search}%`);
+      }
     }
 
     query += ' ORDER BY id';
@@ -271,7 +279,7 @@ class Type {
       query += ` LIMIT ${limitInt} OFFSET ${offsetInt}`;
     }
 
-    const [rows] = await pool.query(query);
+    const [rows] = await pool.query(query, params);
     return rows;
   }
 
@@ -358,14 +366,21 @@ class Type {
   }
 
   static async count(search = '') {
-    // 构建查询字符串，使用字符串拼接代替参数绑定
     let query = 'SELECT COUNT(*) AS total FROM types';
+    const params = [];
 
     if (search) {
-      query += ` WHERE name LIKE '%${search}%'`;
+      const isNumeric = /^\d+$/.test(search);
+      if (isNumeric) {
+        query += ` WHERE (name LIKE ? OR id = ?)`;
+        params.push(`%${search}%`, search);
+      } else {
+        query += ` WHERE name LIKE ?`;
+        params.push(`%${search}%`);
+      }
     }
 
-    const [rows] = await pool.query(query);
+    const [rows] = await pool.query(query, params);
     return rows[0].total;
   }
 
