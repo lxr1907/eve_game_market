@@ -170,23 +170,13 @@
             <!-- 受害者物品 -->
             <el-card class="detail-card" shadow="hover">
               <template #header>
-                <span class="section-title-text victim-title">受害者物品 ({{ detailData.victim.items?.length || 0 }})</span>
+                <span class="section-title-text victim-title">物品列表 ({{ detailData.victim.items?.length || 0 }})</span>
               </template>
-              <el-table :data="detailData.victim.items || []" style="width: 100%" size="small" max-height="400">
+              <el-table :data="detailData.victim.items || []" style="width: 100%" size="small" max-height="400" :row-class-name="getItemRowClass">
                 <el-table-column label="物品" min-width="200">
                   <template #default="{ row }">
                     <span class="item-name">{{ row.type_name || '-' }}</span>
                     <span v-if="row.type_id" class="type-id"> ({{ row.type_id }})</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="数量" prop="quantity_dropped" width="100" align="center">
-                  <template #default="{ row }">
-                    <span class="qty-dropped">{{ row.quantity_dropped || 0 }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="摧毁" prop="quantity_destroyed" width="100" align="center">
-                  <template #default="{ row }">
-                    <span class="qty-destroyed">{{ row.quantity_destroyed || 0 }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="总数量" width="100" align="center">
@@ -199,18 +189,7 @@
                     {{ row.flag || '-' }}
                   </template>
                 </el-table-column>
-                <el-table-column label="容器" prop="container_id" width="120" align="center">
-                  <template #default="{ row }">
-                    {{ row.container_id || '-' }}
-                  </template>
-                </el-table-column>
-                <el-table-column label="singleton" width="80" align="center">
-                  <template #default="{ row }">
-                    <el-tag :type="row.singleton ? 'warning' : 'info'" size="small">
-                      {{ row.singleton ? '是' : '否' }}
-                    </el-tag>
-                  </template>
-                </el-table-column>
+
               </el-table>
             </el-card>
 
@@ -573,6 +552,17 @@ const getRowClass = ({ row }) => {
   return row.is_npc ? 'npc-row' : ''
 }
 
+const getItemRowClass = ({ row }) => {
+  const classes = []
+  if (row.quantity_dropped > 0) {
+    classes.push('has-dropped')
+  }
+  if (row.quantity_destroyed > 0) {
+    classes.push('has-destroyed')
+  }
+  return classes.join(' ')
+}
+
 const handleAvatarError = (e) => {
   e.target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0Ij48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1zaXplPSIyMCI+PzwvdGV4dD48L3N2Zz4='
 }
@@ -832,8 +822,11 @@ const handleImgError = (e) => {
 :deep(.el-table th) { background-color: #252636 !important; color: #999; }
 :deep(.el-table tr) { background-color: transparent; }
 :deep(.el-table td) { border-bottom-color: #2d3040; }
-:deep(.el-table--enable-row-hover .el-table__body tr:hover > td) { background-color: #252636 !important; }
+:deep(.el-table--enable-row-hover .el-table__body tr:hover:not(.has-dropped):not(.has-destroyed) > td) { background-color: #252636 !important; }
 :deep(.el-table__body tr.npc-row td) { opacity: 0.7; }
+:deep(.el-table__body tr.has-dropped td) { background-color: rgba(103, 194, 58, 0.1) !important; }
+:deep(.el-table__body tr.has-destroyed td) { background-color: rgba(245, 108, 108, 0.1) !important; }
+:deep(.el-table__body tr.has-dropped.has-destroyed td) { background-color: rgba(103, 194, 58, 0.05) !important; background-image: linear-gradient(45deg, rgba(103, 194, 58, 0.05) 25%, rgba(245, 108, 108, 0.05) 25%, rgba(245, 108, 108, 0.05) 50%, rgba(103, 194, 58, 0.05) 50%, rgba(103, 194, 58, 0.05) 75%, rgba(245, 108, 108, 0.05) 75%, rgba(245, 108, 108, 0.05) 100%) !important; background-size: 10px 10px !important; }
 
 :deep(.el-card__header) { background-color: #252636; border-bottom-color: #2d3040; color: #e0e0e0; }
 :deep(.el-card__body) { color: #e0e0e0; }
