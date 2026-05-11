@@ -184,9 +184,9 @@
                     {{ (row.quantity_dropped || 0) + (row.quantity_destroyed || 0) }}
                   </template>
                 </el-table-column>
-                <el-table-column label="装配槽位" prop="flag" min-width="120">
+                <el-table-column label="装配槽位" prop="flag_text" min-width="180">
                   <template #default="{ row }">
-                    {{ row.flag || '-' }}
+                    {{ row.flag_text || '-' }}
                   </template>
                 </el-table-column>
 

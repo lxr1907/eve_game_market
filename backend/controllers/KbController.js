@@ -319,6 +319,25 @@ const batchGetTypeNames = async (typeIds) => {
   return map;
 };
 
+// 批量查询槽位信息
+const batchGetSlotFlags = async (flagIds) => {
+  if (!flagIds || flagIds.length === 0) return {};
+  const uniqueIds = [...new Set(flagIds.filter(id => id != null))];
+  if (uniqueIds.length === 0) return {};
+  
+  const placeholders = uniqueIds.map(() => '?').join(',');
+  const [rows] = await pool.execute(
+    `SELECT flag_id, flag_text FROM eve_slot_flags WHERE flag_id IN (${placeholders})`,
+    uniqueIds
+  );
+  
+  const map = {};
+  for (const row of rows) {
+    map[row.flag_id] = row.flag_text;
+  }
+  return map;
+};
+
 // 获取killmail完整详情（直接查数据库）
 const getKillmailDetail = async (req, res) => {
   try {
@@ -339,6 +358,7 @@ const getKillmailDetail = async (req, res) => {
     
     // 2. 收集所有type_id用于批量查询名称
     const typeIds = [];
+    const flagIds = [];
     
     // victim ship
     if (km.victim_ship_type_id) typeIds.push(km.victim_ship_type_id);
@@ -348,10 +368,12 @@ const getKillmailDetail = async (req, res) => {
       for (const item of victimItemsRaw) {
         // 使用 item_type_id 而不是 type_id
         if (item.item_type_id) typeIds.push(item.item_type_id);
+        if (item.flag) flagIds.push(item.flag);
         // 嵌套items（集装箱内的物品）
         if (item.items) {
           for (const nestedItem of item.items) {
             if (nestedItem.item_type_id) typeIds.push(nestedItem.item_type_id);
+            if (nestedItem.flag) flagIds.push(nestedItem.flag);
           }
         }
       }
@@ -365,8 +387,11 @@ const getKillmailDetail = async (req, res) => {
       }
     }
     
-    // 3. 批量查询type名称
-    const typeNames = await batchGetTypeNames(typeIds);
+    // 3. 批量查询type名称和槽位信息
+    const [typeNames, slotFlags] = await Promise.all([
+      batchGetTypeNames(typeIds),
+      batchGetSlotFlags(flagIds)
+    ]);
     
     // 4. 解析JSON字段
     const victimItems = km.victim_items 
@@ -380,10 +405,12 @@ const getKillmailDetail = async (req, res) => {
     const items = victimItems.map(item => ({
       ...item,
       type_name: typeNames[item.item_type_id] || null,
+      flag_text: slotFlags[item.flag] ? `${slotFlags[item.flag]} (${item.flag})` : item.flag ? `未知槽位 (${item.flag})` : '无槽位',
       // 处理嵌套items
       items: (item.items || []).map(nestedItem => ({
         ...nestedItem,
-        type_name: typeNames[nestedItem.item_type_id] || null
+        type_name: typeNames[nestedItem.item_type_id] || null,
+        flag_text: slotFlags[nestedItem.flag] ? `${slotFlags[nestedItem.flag]} (${nestedItem.flag})` : nestedItem.flag ? `未知槽位 (${nestedItem.flag})` : '无槽位'
       }))
     }));
     
