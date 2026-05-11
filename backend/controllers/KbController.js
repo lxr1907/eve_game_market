@@ -135,12 +135,19 @@ const parseKillmailDetail = (detail, killmailHash) => {
   
   // victim items
   const victimItems = (victim.items || []).map(item => ({
-    item_id: item.item_id || null,
-    type_id: item.type_id || null,
+    item_type_id: item.item_type_id || null,
     quantity_dropped: item.quantity_dropped || 0,
     quantity_destroyed: item.quantity_destroyed || 0,
     flag: item.flag || null,
-    singleton: item.singleton || 0
+    singleton: item.singleton || 0,
+    // 嵌套items（集装箱内的物品）
+    items: (item.items || []).map(nestedItem => ({
+      item_type_id: nestedItem.item_type_id || null,
+      quantity_dropped: nestedItem.quantity_dropped || 0,
+      quantity_destroyed: nestedItem.quantity_destroyed || 0,
+      flag: nestedItem.flag || null,
+      singleton: nestedItem.singleton || 0
+    }))
   }));
   
   // 所有攻击者完整数据
@@ -337,15 +344,22 @@ const getKillmailDetail = async (req, res) => {
     if (km.victim_ship_type_id) typeIds.push(km.victim_ship_type_id);
     // victim items
     if (km.victim_items) {
-      const victimItems = typeof km.victim_items === 'string' ? JSON.parse(km.victim_items) : km.victim_items;
-      for (const item of victimItems) {
-        if (item.type_id) typeIds.push(item.type_id);
+      const victimItemsRaw = typeof km.victim_items === 'string' ? JSON.parse(km.victim_items) : km.victim_items;
+      for (const item of victimItemsRaw) {
+        // 使用 item_type_id 而不是 type_id
+        if (item.item_type_id) typeIds.push(item.item_type_id);
+        // 嵌套items（集装箱内的物品）
+        if (item.items) {
+          for (const nestedItem of item.items) {
+            if (nestedItem.item_type_id) typeIds.push(nestedItem.item_type_id);
+          }
+        }
       }
     }
     // attackers
     if (km.attackers) {
-      const attackers = typeof km.attackers === 'string' ? JSON.parse(km.attackers) : km.attackers;
-      for (const attacker of attackers) {
+      const attackersRaw = typeof km.attackers === 'string' ? JSON.parse(km.attackers) : km.attackers;
+      for (const attacker of attackersRaw) {
         if (attacker.ship_type_id) typeIds.push(attacker.ship_type_id);
         if (attacker.weapon_type_id) typeIds.push(attacker.weapon_type_id);
       }
@@ -362,10 +376,15 @@ const getKillmailDetail = async (req, res) => {
       ? (typeof km.attackers === 'string' ? JSON.parse(km.attackers) : km.attackers) 
       : [];
     
-    // 5. 处理victim items
+    // 5. 处理victim items（使用 item_type_id）
     const items = victimItems.map(item => ({
       ...item,
-      type_name: typeNames[item.type_id] || null
+      type_name: typeNames[item.item_type_id] || null,
+      // 处理嵌套items
+      items: (item.items || []).map(nestedItem => ({
+        ...nestedItem,
+        type_name: typeNames[nestedItem.item_type_id] || null
+      }))
     }));
     
     // 6. 处理attackers

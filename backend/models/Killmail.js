@@ -173,7 +173,7 @@ class Killmail {
         final_blow_character_id, final_blow_character_name, final_blow_corporation_id, final_blow_corporation_name,
         final_blow_alliance_id, final_blow_alliance_name, final_blow_ship_type_id, final_blow_ship_name, final_blow_damage_done,
         total_value, attackers_count, victim_items, attackers, supporter_count, is_npc
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE killmail_id = killmail_id
     `;
     
