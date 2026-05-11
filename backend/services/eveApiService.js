@@ -408,6 +408,113 @@ class EveApiService {
     }
   }
 
+  async getSystemDetails(systemId, datasource = 'serenity', retries = 3) {
+    // 节流控制：确保每1秒只请求1次
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.throttleInterval) {
+      const waitTime = this.throttleInterval - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastRequestTime = Date.now();
+
+    try {
+      const response = await this.client.get(`/universe/systems/${systemId}/`, {
+        params: {
+          datasource: datasource
+        },
+        timeout: 5000
+      });
+      return response.data;
+    } catch (error) {
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        console.log(`Timeout fetching system details for ID ${systemId}, retrying (${retries} left)...`);
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getSystemDetails(systemId, datasource, retries - 1);
+      } else {
+        console.error(`Error fetching system details for ID ${systemId}, datasource ${datasource}: ${error.message}`);
+        return null;
+      }
+    }
+  }
+
+  async getSystemIds(page = 1, datasource = 'serenity', retries = 3) {
+    try {
+      const response = await this.client.get(`/universe/systems/`, {
+        params: {
+          page: page,
+          datasource: datasource
+        },
+        timeout: 5000
+      });
+      return response.data;
+    } catch (error) {
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        console.log(`Timeout fetching system IDs page ${page}, retrying (${retries} left)...`);
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getSystemIds(page, datasource, retries - 1);
+      } else {
+        console.error(`Error fetching system IDs page ${page}:`, error.message);
+        return [];
+      }
+    }
+  }
+
+  async getAllSystemsRecursively(startPage = 1, callback, idsOnly = false, datasource = 'serenity') {
+    try {
+      let page = startPage;
+      let hasMoreData = true;
+
+      console.log('Starting recursive fetch of systems from page', startPage);
+
+      while (hasMoreData) {
+        console.log(`Fetching systems from page ${page}...`);
+        const systemIds = await this.getSystemIds(page, datasource);
+
+        if (systemIds.length === 0) {
+          hasMoreData = false;
+          break;
+        }
+
+        let processedData = [];
+
+        if (idsOnly) {
+          processedData = systemIds;
+          console.log(`Retrieved ${systemIds.length} system IDs from page ${page}`);
+        } else {
+          const systemDetails = [];
+          console.log(`Starting to fetch details for ${systemIds.length} system IDs from page ${page}`);
+          let processedIds = 0;
+          for (const id of systemIds) {
+            processedIds++;
+            if (processedIds % 50 === 0) {
+              console.log(`Processed ${processedIds} out of ${systemIds.length} system IDs from page ${page}`);
+            }
+            const details = await this.getSystemDetails(id, datasource);
+            if (details) {
+              systemDetails.push(details);
+            }
+          }
+
+          processedData = systemDetails;
+          console.log(`Fetched ${systemDetails.length} valid systems from page ${page}`);
+        }
+
+        if (callback && typeof callback === 'function') {
+          await callback(processedData, page);
+        }
+
+        page++;
+      }
+
+      console.log('Finished fetching all systems');
+      return page - 1;
+    } catch (error) {
+      console.error('Error in recursive fetching of systems:', error.message);
+      throw error;
+    }
+  }
+
   async getRegionDetails(regionId, datasource = 'serenity', retries = 3) {
     // 节流控制：确保每1秒只请求1次
     const now = Date.now();

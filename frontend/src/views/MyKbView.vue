@@ -103,7 +103,7 @@
                   <el-table-column label="受害者" min-width="150">
                     <template #default="{ row }">
                       <div class="victim-info">
-                        <span class="ship-name">{{ row.victim_ship_name || `舰船ID: ${row.victim_ship_type_id}` }}</span>
+                        <span class="ship-name clickable" @click="showDetail(row)">{{ row.victim_ship_name || `舰船ID: ${row.victim_ship_type_id}` }}</span>
                         <span class="char-name" v-if="row.victim_character_name">{{ row.victim_character_name }}</span>
                       </div>
                     </template>
@@ -140,7 +140,7 @@
                   <el-table-column label="损失舰船" min-width="150">
                     <template #default="{ row }">
                       <div class="victim-info">
-                        <span class="ship-name loss">{{ row.victim_ship_name || `舰船ID: ${row.victim_ship_type_id}` }}</span>
+                        <span class="ship-name loss clickable" @click="showDetail(row)">{{ row.victim_ship_name || `舰船ID: ${row.victim_ship_type_id}` }}</span>
                       </div>
                     </template>
                   </el-table-column>
@@ -168,6 +168,110 @@
         </el-card>
       </div>
     </div>
+
+    <!-- Killmail 详情弹窗 -->
+    <el-dialog
+      v-model="detailVisible"
+      :title="detailData ? `击毁详情 #${detailData.killmail_id}` : '击毁详情'"
+      width="720px"
+      class="detail-dialog"
+      destroy-on-close
+    >
+      <div v-if="detailData" class="detail-content">
+        <!-- 基本信息 -->
+        <el-descriptions :column="2" border size="small" class="detail-desc">
+          <el-descriptions-item label="Killmail ID">{{ detailData.killmail_id }}</el-descriptions-item>
+          <el-descriptions-item label="时间">{{ formatDate(detailData.killmail_time) }}</el-descriptions-item>
+          <el-descriptions-item label="太阳系">
+            {{ detailData.solar_system_name || '-' }} ({{ detailData.solar_system_id || '-' }})
+          </el-descriptions-item>
+          <el-descriptions-item label="总价值">
+            <span class="isk-value">{{ formatISK(detailData.total_value) }} ISK</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="攻击者数量">{{ detailData.attackers_count }}</el-descriptions-item>
+          <el-descriptions-item label="NPC击杀">
+            <el-tag :type="detailData.is_npc ? 'info' : 'success'" size="small">
+              {{ detailData.is_npc ? '是' : '否' }}
+            </el-tag>
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <!-- 受害者信息 -->
+        <div class="detail-section">
+          <h4 class="section-title victim-title">受害者</h4>
+          <el-descriptions :column="2" border size="small">
+            <el-descriptions-item label="角色">
+              <span v-if="detailData.victim_character_id">
+                {{ detailData.victim_character_name || '-' }} ({{ detailData.victim_character_id }})
+              </span>
+              <span v-else>-</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="公司">
+              <span v-if="detailData.victim_corporation_id">
+                {{ detailData.victim_corporation_name || '-' }} ({{ detailData.victim_corporation_id }})
+              </span>
+              <span v-else>-</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="联盟">
+              <span v-if="detailData.victim_alliance_id">
+                {{ detailData.victim_alliance_name || '-' }} ({{ detailData.victim_alliance_id }})
+              </span>
+              <span v-else>-</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="舰船">
+              <span class="ship-name loss">{{ detailData.victim_ship_name || '-' }}</span>
+              <span v-if="detailData.victim_ship_type_id" class="type-id"> ({{ detailData.victim_ship_type_id }})</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="承受伤害">{{ detailData.victim_damage_taken || 0 }}</el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <!-- 最后一击攻击者信息 -->
+        <div class="detail-section">
+          <h4 class="section-title killer-title">最后一击</h4>
+          <el-descriptions :column="2" border size="small">
+            <el-descriptions-item label="角色">
+              <span v-if="detailData.final_blow_character_id">
+                {{ detailData.final_blow_character_name || '-' }} ({{ detailData.final_blow_character_id }})
+              </span>
+              <span v-else-if="detailData.is_npc">NPC</span>
+              <span v-else>-</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="公司">
+              <span v-if="detailData.final_blow_corporation_id">
+                {{ detailData.final_blow_corporation_name || '-' }} ({{ detailData.final_blow_corporation_id }})
+              </span>
+              <span v-else>-</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="联盟">
+              <span v-if="detailData.final_blow_alliance_id">
+                {{ detailData.final_blow_alliance_name || '-' }} ({{ detailData.final_blow_alliance_id }})
+              </span>
+              <span v-else>-</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="舰船">
+              <span class="ship-name">{{ detailData.final_blow_ship_name || '-' }}</span>
+              <span v-if="detailData.final_blow_ship_type_id" class="type-id"> ({{ detailData.final_blow_ship_type_id }})</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="造成伤害">{{ detailData.final_blow_damage_done || 0 }}</el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <!-- 舰船图片 -->
+        <div class="ship-images" v-if="detailData.victim_ship_type_id || detailData.final_blow_ship_type_id">
+          <div class="ship-img-box" v-if="detailData.victim_ship_type_id">
+            <span class="img-label loss">受害者舰船</span>
+            <img :src="`https://images.evetech.net/types/${detailData.victim_ship_type_id}/render?size=256`" 
+                 @error="handleImgError" />
+          </div>
+          <div class="ship-img-box" v-if="detailData.final_blow_ship_type_id">
+            <span class="img-label">最后一击舰船</span>
+            <img :src="`https://images.evetech.net/types/${detailData.final_blow_ship_type_id}/render?size=256`" 
+                 @error="handleImgError" />
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -189,6 +293,8 @@ const losses = ref([])
 const loadingKills = ref(false)
 const loadingLosses = ref(false)
 const activeTab = ref('kills')
+const detailVisible = ref(false)
+const detailData = ref(null)
 
 // 检查是否有killmail权限
 const hasKillmailScope = computed(() => {
@@ -312,6 +418,15 @@ const getRowClass = ({ row }) => {
 
 const handleAvatarError = (e) => {
   e.target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0Ij48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1zaXplPSIyMCI+PzwvdGV4dD48L3N2Zz4='
+}
+
+const showDetail = (row) => {
+  detailData.value = row
+  detailVisible.value = true
+}
+
+const handleImgError = (e) => {
+  e.target.style.display = 'none'
 }
 </script>
 
@@ -502,6 +617,106 @@ const handleAvatarError = (e) => {
 .npc-tag {
   color: #909399;
   font-style: italic;
+}
+
+.clickable {
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.clickable:hover {
+  opacity: 0.8;
+}
+
+.detail-content {
+  color: #e0e0e0;
+}
+
+.detail-section {
+  margin-top: 20px;
+}
+
+.section-title {
+  font-size: 15px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #2d3040;
+}
+
+.victim-title {
+  color: #f56c6c;
+}
+
+.killer-title {
+  color: #67c23a;
+}
+
+.type-id {
+  color: #666;
+  font-size: 12px;
+}
+
+.ship-images {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.ship-img-box {
+  text-align: center;
+}
+
+.ship-img-box img {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+}
+
+.img-label {
+  display: block;
+  font-size: 12px;
+  color: #67c23a;
+  margin-bottom: 6px;
+}
+
+.img-label.loss {
+  color: #f56c6c;
+}
+
+:deep(.detail-dialog .el-dialog) {
+  background-color: #1e1e2e;
+  border: 1px solid #2d3040;
+}
+
+:deep(.detail-dialog .el-dialog__header) {
+  border-bottom: 1px solid #2d3040;
+}
+
+:deep(.detail-dialog .el-dialog__title) {
+  color: #e0e0e0;
+}
+
+:deep(.detail-dialog .el-dialog__body) {
+  color: #e0e0e0;
+}
+
+:deep(.detail-desc .el-descriptions__label) {
+  background-color: #252636 !important;
+  color: #999;
+}
+
+:deep(.detail-desc .el-descriptions__content) {
+  background-color: #1e1e2e !important;
+  color: #e0e0e0;
+}
+
+:deep(.detail-desc .el-descriptions__cell) {
+  border-color: #2d3040 !important;
 }
 
 :deep(.el-tabs__item) {

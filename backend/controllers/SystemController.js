@@ -139,51 +139,61 @@ class SystemController {
     })();
   }
 
-  // 同步所有System数据（完整数据，包括ID和详情）
+  // 同步所有System数据（只同步name为null或空的）
   static async syncAllSystems(req, res) {
     // 直接返回成功给前端
     res.status(202).json({
-      message: '所有System数据同步任务已开始，将在后台执行',
+      message: 'System数据同步任务已开始，将在后台执行',
       status: 'started'
     });
 
-    // 在后台异步执行所有System数据同步
+    // 在后台异步执行System数据同步
     (async () => {
       try {
-        console.log('Starting all systems synchronization in background...');
-        
-        await eveApiService.getAllSystemsRecursively(1, async (systemDetails, page) => {
-          console.log(`Fetched ${systemDetails.length} system details from API page ${page}`);
-          
-          let insertedSystems = 0;
-          
-          // 批量插入或更新系统详情
-          for (const system of systemDetails) {
+        console.log('Starting systems synchronization (missing details only)...');
+
+        // 每次处理50个name为空的系统
+        const batchSize = 50;
+        let hasMore = true;
+
+        while (hasMore) {
+          const systemsMissing = await System.findSystemsMissingDetails(batchSize);
+
+          if (systemsMissing.length === 0) {
+            hasMore = false;
+            console.log('All systems have names, synchronization complete.');
+            break;
+          }
+
+          console.log(`Found ${systemsMissing.length} systems missing names, fetching details...`);
+
+          for (const system of systemsMissing) {
             try {
-              await System.insertOrUpdate({
-                system_id: system.system_id,
-                constellation_id: system.constellation_id,
-                name: system.name || '',
-                position: system.position,
-                security_status: system.security_status,
-                stargates: system.stargates,
-                datasource: 'infinity'
-              });
-              insertedSystems++;
-            } catch (dbError) {
-              console.error(`Error inserting system ${system.system_id} to database:`, dbError.message);
+              const systemDetails = await eveApiService.getSystemDetails(system.system_id, 'serenity');
+
+              if (systemDetails) {
+                await System.insertOrUpdate({
+                  system_id: systemDetails.system_id,
+                  constellation_id: systemDetails.constellation_id,
+                  name: systemDetails.name || '',
+                  position: systemDetails.position,
+                  security_status: systemDetails.security_status,
+                  stargates: systemDetails.stargates,
+                  datasource: 'serenity'
+                });
+                console.log(`Updated system ${systemDetails.system_id} (${systemDetails.name || 'unnamed'})`);
+              }
+            } catch (e) {
+              console.error(`Error fetching details for system ID ${system.system_id}:`, e.message);
             }
           }
-          
-          console.log(`${insertedSystems} systems inserted/updated from page ${page}`);
-          
-          // 添加小延迟，避免API请求过于频繁
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }, false);
-        
-        console.log('All systems synchronization completed successfully.');
+
+          console.log(`Batch complete, checking for more...`);
+        }
+
+        console.log('Systems synchronization completed.');
       } catch (error) {
-        console.error('Error in background syncing all systems:', error.message);
+        console.error('Error in syncing systems:', error.message);
         console.error('Error stack:', error.stack);
       }
     })();

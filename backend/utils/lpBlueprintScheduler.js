@@ -193,13 +193,13 @@ function startScheduler() {
     console.error('[LP Blueprint Scheduler] Failed to create table:', err.message);
   });
 
-  // 立即执行一次
+  // 延迟5秒后执行一次
   setTimeout(() => {
     runCalculation();
   }, 5000);
 
-  // 每5秒执行一次
-  schedulerInterval = setInterval(runCalculation, 5000);
+  // 每5分钟执行一次
+  schedulerInterval = setInterval(runCalculation, 5 * 60 * 1000);
 }
 
 /**
