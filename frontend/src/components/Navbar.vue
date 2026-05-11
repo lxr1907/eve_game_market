@@ -7,24 +7,6 @@
             <el-icon><House /></el-icon>
             首页
           </el-menu-item>
-          <el-sub-menu index="2">
-            <template #title>
-              <el-icon><Collection /></el-icon>
-              <span>基础数据</span>
-            </template>
-            <el-menu-item index="2-1">
-              <el-icon><Collection /></el-icon>
-              Type列表
-            </el-menu-item>
-            <el-menu-item index="2-2">
-              <el-icon><MapLocation /></el-icon>
-              Region列表
-            </el-menu-item>
-            <el-menu-item index="2-3">
-              <el-icon><MapLocation /></el-icon>
-              System列表
-            </el-menu-item>
-          </el-sub-menu>
           <el-menu-item index="4">
             <el-icon><Document /></el-icon>
             订单查询
@@ -53,6 +35,24 @@
             <el-icon><MapLocation /></el-icon>
             星系击毁统计
           </el-menu-item>
+          <el-sub-menu index="2">
+            <template #title>
+              <el-icon><Collection /></el-icon>
+              <span>基础数据</span>
+            </template>
+            <el-menu-item index="2-1">
+              <el-icon><Collection /></el-icon>
+              Type列表
+            </el-menu-item>
+            <el-menu-item index="2-2">
+              <el-icon><MapLocation /></el-icon>
+              Region列表
+            </el-menu-item>
+            <el-menu-item index="2-3">
+              <el-icon><MapLocation /></el-icon>
+              System列表
+            </el-menu-item>
+          </el-sub-menu>
           <el-menu-item v-if="isLoggedIn" index="profile">
             <el-icon><User /></el-icon>
             个人信息
