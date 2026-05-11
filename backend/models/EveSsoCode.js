@@ -37,18 +37,22 @@ class EveSsoCode {
 
   static async saveToken(code, tokenData) {
     const query = `
-      UPDATE eve_sso_codes
-      SET access_token = ?,
-          refresh_token = ?,
-          expires_at = ?,
-          token_type = ?,
-          scopes = ?,
-          character_id = ?,
-          character_name = ?,
-          datasource = ?
-      WHERE code = ?
+      INSERT INTO eve_sso_codes (
+        code, access_token, refresh_token, expires_at,
+        token_type, scopes, character_id, character_name, datasource
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        access_token = VALUES(access_token),
+        refresh_token = VALUES(refresh_token),
+        expires_at = VALUES(expires_at),
+        token_type = VALUES(token_type),
+        scopes = VALUES(scopes),
+        character_id = VALUES(character_id),
+        character_name = VALUES(character_name),
+        datasource = VALUES(datasource)
     `;
     const [result] = await pool.execute(query, [
+      code,
       tokenData.access_token,
       tokenData.refresh_token,
       tokenData.expires_at,
@@ -56,10 +60,9 @@ class EveSsoCode {
       tokenData.scopes || null,
       tokenData.character_id || null,
       tokenData.character_name || null,
-      tokenData.datasource || 'serenity',
-      code
+      tokenData.datasource || 'serenity'
     ]);
-    return result.affectedRows > 0;
+    return result.affectedRows > 0 || result.insertId > 0;
   }
 
   static async getByState(state) {

@@ -53,6 +53,10 @@
               System列表
             </el-menu-item>
           </el-sub-menu>
+          <el-menu-item v-if="isLoggedIn" index="my-kb">
+            <el-icon><Aim /></el-icon>
+            我的KB
+          </el-menu-item>
           <el-menu-item v-if="isLoggedIn" index="profile">
             <el-icon><User /></el-icon>
             个人信息
@@ -77,6 +81,9 @@
                   <el-dropdown-item @click="goToProfile">
                     <el-icon><User /></el-icon>个人信息
                   </el-dropdown-item>
+                  <el-dropdown-item @click="goToMyKb">
+                    <el-icon><Aim /></el-icon>我的KB
+                  </el-dropdown-item>
                   <el-dropdown-item divided @click="handleLogout">
                     <el-icon><SwitchButton /></el-icon>退出登录
                   </el-dropdown-item>
@@ -93,7 +100,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { House, Collection, MapLocation, Document, Star, Money, UserFilled, User, ArrowDown, SwitchButton } from '@element-plus/icons-vue'
+import { House, Collection, MapLocation, Document, Star, Money, UserFilled, User, ArrowDown, SwitchButton, Aim } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -143,6 +150,7 @@ const activeIndex = computed(() => {
   if (path === '/lp-blueprint') return '11'
   if (path === '/online-player-stats') return '7'
   if (path === '/system-kills') return '8'
+  if (path === '/my-kb') return 'my-kb'
   return '1'
 })
 
@@ -152,6 +160,10 @@ const goToLogin = () => {
 
 const goToProfile = () => {
   router.push('/profile')
+}
+
+const goToMyKb = () => {
+  router.push('/my-kb')
 }
 
 const handleLogout = () => {
@@ -189,6 +201,8 @@ const handleSelect = (key, keyPath) => {
     router.push('/online-player-stats')
   } else if (key === '8') {
     router.push('/system-kills')
+  } else if (key === 'my-kb') {
+    router.push('/my-kb')
   }
 }
 </script>

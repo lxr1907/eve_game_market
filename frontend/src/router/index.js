@@ -15,6 +15,7 @@ import OrderQueryView from '../views/OrderQueryView.vue'
 import LoyaltyOfferView from '../views/LoyaltyOfferView.vue'
 import ProfitDataView from '../views/ProfitDataView.vue'
 import LpBlueprintView from '../views/LpBlueprintView.vue'
+import MyKbView from '../views/MyKbView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -98,6 +99,11 @@ const router = createRouter({
       path: '/lp-blueprint',
       name: 'lp-blueprint',
       component: LpBlueprintView
+    },
+    {
+      path: '/my-kb',
+      name: 'my-kb',
+      component: MyKbView
     }
   ]
 })

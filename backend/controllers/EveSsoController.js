@@ -105,22 +105,23 @@ const saveSsoCode = async (req, res) => {
 
     // 默认使用国服(serenity)作为datasource
     const datasource = 'serenity';
-    const id = await EveSsoCode.saveCode(code, state, datasource);
 
     let tokenData = null;
     let tokenError = null;
     try {
       tokenData = await exchangeCodeForToken(code, code_verifier);
+      // 直接保存完整token数据（包含code用于关联）
       await EveSsoCode.saveToken(code, tokenData);
       console.log('Token saved successfully for code:', code);
-    } catch (tokenError) {
-      console.error('Token exchange failed:', tokenError.message);
-      tokenError = tokenError.message;
+    } catch (tokenErr) {
+      console.error('Token exchange failed:', tokenErr.message);
+      tokenError = tokenErr.message;
+      // token交换失败时也保存code记录，方便排查
+      await EveSsoCode.saveCode(code, state, datasource);
     }
 
     res.json({
       success: true,
-      id,
       code,
       state,
       token_saved: !!tokenData,

@@ -291,11 +291,15 @@ const handleSerenityLogin = async () => {
     const result = await response.json()
 
     if (response.ok && result.success) {
+      // 获取选中的scopes
+      const allScopes = selectedIndices.value.slice(0, 4).map(i => authOptions[i].scopes).flat()
+      
       const characterInfo = {
         character_id: result.character_id,
         character_name: result.character_name,
         access_token: result.access_token,
-        token_saved: result.token_saved
+        token_saved: result.token_saved,
+        scopes: allScopes.join(' ')
       }
       localStorage.setItem('eve_character', JSON.stringify(characterInfo))
 

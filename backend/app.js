@@ -12,6 +12,7 @@ const onlinePlayerStatsRoutes = require('./routes/onlinePlayerStatsRoutes');
 const systemRoutes = require('./routes/systemRoutes');
 const systemKillRoutes = require('./routes/systemKillRoutes');
 const eveSsoRoutes = require('./routes/eveSsoRoutes');
+const kbRoutes = require('./routes/kbRoutes');
 const Type = require('./models/Type');
 const Region = require('./models/Region');
 const RegionType = require('./models/RegionType');
@@ -23,6 +24,7 @@ const Category = require('./models/Category');
 const OnlinePlayerStats = require('./models/OnlinePlayerStats');
 const System = require('./models/System');
 const EveSsoCode = require('./models/EveSsoCode');
+const Killmail = require('./models/Killmail');
 const { syncDatabaseStructure } = require('./utils/syncDatabaseStructure');
 
 const app = express();
@@ -38,6 +40,8 @@ app.use(express.urlencoded({ extended: true }));
 (async () => {
   try {
     await syncDatabaseStructure();
+    // 初始化KB相关表
+    await Killmail.createTables();
     console.log('Database tables initialized successfully');
   } catch (err) {
     console.error('Error initializing database tables:', err);
@@ -55,6 +59,7 @@ app.use('/api', onlinePlayerStatsRoutes);
 app.use('/api', systemRoutes);
 app.use('/api', systemKillRoutes);
 app.use('/api', eveSsoRoutes);
+app.use('/api/kb', kbRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
