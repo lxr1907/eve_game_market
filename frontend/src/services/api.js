@@ -399,6 +399,12 @@ export const systemApi = {
     return response;
   },
   
+  // 同步单条System数据
+  async syncOneSystem(system_id) {
+    const response = await apiClient.post(`/systems/${system_id}/sync`);
+    return response;
+  },
+
   // 获取单个系统数据
   async getSystemById(id) {
     const response = await apiClient.get(`/systems/${id}`);

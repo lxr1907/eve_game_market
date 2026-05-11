@@ -83,8 +83,208 @@
           style="margin-bottom: 20px;"
         />
 
-        <!-- KB记录标签页 -->
-        <el-card class="kb-records-card" shadow="hover">
+        <!-- ========== 详情页（隐藏列表） ========== -->
+        <div v-if="selectedKill" class="detail-view">
+          <div class="detail-header">
+            <el-button type="info" text @click="selectedKill = null; detailData = null">
+              <el-icon><ArrowLeft /></el-icon> 返回列表
+            </el-button>
+            <h3 class="detail-title">击毁详情 #{{ selectedKill.killmail_id }}</h3>
+          </div>
+
+          <!-- 加载中 -->
+          <div v-if="loadingDetail" class="loading-section">
+            <el-skeleton :rows="10" animated />
+          </div>
+
+          <!-- 详情内容 -->
+          <div v-else-if="detailData" class="detail-content">
+            <!-- 基本信息 -->
+            <el-card class="detail-card" shadow="hover">
+              <template #header><span>基本信息</span></template>
+              <el-descriptions :column="2" border size="small">
+                <el-descriptions-item label="Killmail ID">{{ detailData.killmail_id }}</el-descriptions-item>
+                <el-descriptions-item label="时间">{{ formatDate(detailData.killmail_time) }}</el-descriptions-item>
+                <el-descriptions-item label="星系">
+                  {{ selectedKill.solar_system_name ? `${selectedKill.solar_system_name}（${detailData.solar_system_id}）` : `ID: ${detailData.solar_system_id}` }}
+                </el-descriptions-item>
+                <el-descriptions-item label="安全等级">
+                  <span v-if="selectedKill.security_status !== null" :style="{ color: getSecurityColor(selectedKill.security_status) }">
+                    {{ selectedKill.security_status.toFixed(1) }}
+                  </span>
+                  <span v-else>-</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="总价值">
+                  <span class="isk-value">{{ formatISK(detailData.total_value) }} ISK</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="攻击者数量">{{ detailData.attackers_count }}</el-descriptions-item>
+                <el-descriptions-item label="War ID">{{ detailData.war_id || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="NPC击杀">
+                  <el-tag :type="selectedKill.is_npc ? 'info' : 'success'" size="small">
+                    {{ selectedKill.is_npc ? '是' : '否' }}
+                  </el-tag>
+                </el-descriptions-item>
+              </el-descriptions>
+            </el-card>
+
+            <!-- 舰船图片 -->
+            <div class="ship-images" v-if="detailData.victim?.ship_type_id || detailData.main_attacker?.ship_type_id">
+              <div class="ship-img-box" v-if="detailData.victim?.ship_type_id">
+                <span class="img-label loss">受害者舰船</span>
+                <span class="img-ship-name loss">{{ detailData.victim.ship_type_name || '-' }}</span>
+                <img :src="`https://images.evetech.net/types/${detailData.victim.ship_type_id}/render?size=256`" 
+                     @error="handleImgError" />
+              </div>
+              <div class="ship-img-box" v-if="detailData.main_attacker?.ship_type_id">
+                <span class="img-label">最后一击舰船</span>
+                <span class="img-ship-name">{{ detailData.main_attacker.ship_type_name || '-' }}</span>
+                <img :src="`https://images.evetech.net/types/${detailData.main_attacker.ship_type_id}/render?size=256`" 
+                     @error="handleImgError" />
+              </div>
+            </div>
+
+            <!-- 受害者信息 -->
+            <el-card class="detail-card" shadow="hover">
+              <template #header><span class="section-title-text victim-title">受害者</span></template>
+              <el-descriptions :column="2" border size="small">
+                <el-descriptions-item label="角色">
+                  {{ detailData.victim.character_id || '-' }}
+                </el-descriptions-item>
+                <el-descriptions-item label="公司">
+                  {{ detailData.victim.corporation_id || '-' }}
+                </el-descriptions-item>
+                <el-descriptions-item label="联盟">
+                  {{ detailData.victim.alliance_id || '-' }}
+                </el-descriptions-item>
+                <el-descriptions-item label="派系">
+                  {{ detailData.victim.faction_id || '-' }}
+                </el-descriptions-item>
+                <el-descriptions-item label="舰船">
+                  <span class="ship-name loss">{{ detailData.victim.ship_type_name || '-' }}</span>
+                  <span v-if="detailData.victim.ship_type_id" class="type-id"> ({{ detailData.victim.ship_type_id }})</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="承受伤害">{{ detailData.victim.damage_taken || 0 }}</el-descriptions-item>
+              </el-descriptions>
+            </el-card>
+
+            <!-- 受害者物品 -->
+            <el-card class="detail-card" shadow="hover">
+              <template #header>
+                <span class="section-title-text victim-title">受害者物品 ({{ detailData.victim.items?.length || 0 }})</span>
+              </template>
+              <el-table :data="detailData.victim.items || []" style="width: 100%" size="small" max-height="400">
+                <el-table-column label="物品" min-width="200">
+                  <template #default="{ row }">
+                    <span class="item-name">{{ row.type_name || '-' }}</span>
+                    <span v-if="row.type_id" class="type-id"> ({{ row.type_id }})</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="数量" prop="quantity_dropped" width="100" align="center">
+                  <template #default="{ row }">
+                    <span class="qty-dropped">{{ row.quantity_dropped || 0 }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="摧毁" prop="quantity_destroyed" width="100" align="center">
+                  <template #default="{ row }">
+                    <span class="qty-destroyed">{{ row.quantity_destroyed || 0 }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="总数量" width="100" align="center">
+                  <template #default="{ row }">
+                    {{ (row.quantity_dropped || 0) + (row.quantity_destroyed || 0) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="装配槽位" prop="flag" min-width="120">
+                  <template #default="{ row }">
+                    {{ row.flag || '-' }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="容器" prop="container_id" width="120" align="center">
+                  <template #default="{ row }">
+                    {{ row.container_id || '-' }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="singleton" width="80" align="center">
+                  <template #default="{ row }">
+                    <el-tag :type="row.singleton ? 'warning' : 'info'" size="small">
+                      {{ row.singleton ? '是' : '否' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </el-card>
+
+            <!-- 最后一击 -->
+            <el-card class="detail-card" shadow="hover" v-if="detailData.main_attacker">
+              <template #header><span class="section-title-text killer-title">最后一击</span></template>
+              <el-descriptions :column="2" border size="small">
+                <el-descriptions-item label="角色">
+                  {{ detailData.main_attacker.character_id || 'NPC' }}
+                </el-descriptions-item>
+                <el-descriptions-item label="公司">
+                  {{ detailData.main_attacker.corporation_id || '-' }}
+                </el-descriptions-item>
+                <el-descriptions-item label="联盟">
+                  {{ detailData.main_attacker.alliance_id || '-' }}
+                </el-descriptions-item>
+                <el-descriptions-item label="派系">
+                  {{ detailData.main_attacker.faction_id || '-' }}
+                </el-descriptions-item>
+                <el-descriptions-item label="舰船">
+                  <span class="ship-name">{{ detailData.main_attacker.ship_type_name || '-' }}</span>
+                  <span v-if="detailData.main_attacker.ship_type_id" class="type-id"> ({{ detailData.main_attacker.ship_type_id }})</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="武器">
+                  <span class="weapon-name">{{ detailData.main_attacker.weapon_type_name || '-' }}</span>
+                  <span v-if="detailData.main_attacker.weapon_type_id" class="type-id"> ({{ detailData.main_attacker.weapon_type_id }})</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="造成伤害">{{ detailData.main_attacker.damage_done || 0 }}</el-descriptions-item>
+                <el-descriptions-item label="安全等级">{{ detailData.main_attacker.security_status ?? '-' }}</el-descriptions-item>
+              </el-descriptions>
+            </el-card>
+
+            <!-- 协助者列表 -->
+            <el-card class="detail-card" shadow="hover">
+              <template #header>
+                <span class="section-title-text killer-title">协助者 ({{ detailData.supporters?.length || 0 }})</span>
+              </template>
+              <el-table :data="detailData.supporters || []" style="width: 100%" size="small" max-height="400">
+                <el-table-column label="角色" prop="character_id" width="120">
+                  <template #default="{ row }">
+                    {{ row.character_id || 'NPC' }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="公司" prop="corporation_id" width="120" />
+                <el-table-column label="舰船" min-width="180">
+                  <template #default="{ row }">
+                    <span class="ship-name">{{ row.ship_type_name || '-' }}</span>
+                    <span v-if="row.ship_type_id" class="type-id"> ({{ row.ship_type_id }})</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="武器" min-width="150">
+                  <template #default="{ row }">
+                    <span v-if="row.weapon_type_name">{{ row.weapon_type_name }}</span>
+                    <span v-else-if="row.weapon_type_id">ID: {{ row.weapon_type_id }}</span>
+                    <span v-else>-</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="伤害" prop="damage_done" width="100" align="right">
+                  <template #default="{ row }">
+                    <span class="isk-value">{{ row.damage_done?.toLocaleString() || 0 }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="安全等级" width="90" align="center">
+                  <template #default="{ row }">
+                    {{ row.security_status ?? '-' }}
+                  </template>
+                </el-table-column>
+              </el-table>
+            </el-card>
+          </div>
+        </div>
+
+        <!-- ========== KB记录列表 ========== -->
+        <el-card v-else class="kb-records-card" shadow="hover">
           <el-tabs v-model="activeTab">
             <el-tab-pane label="击毁记录" name="kills">
               <div v-if="loadingKills" class="loading-section">
@@ -108,9 +308,17 @@
                       </div>
                     </template>
                   </el-table-column>
-                  <el-table-column label="系统" prop="solar_system_name" width="120">
+                  <el-table-column label="星系" prop="solar_system_name" width="180">
                     <template #default="{ row }">
-                      {{ row.solar_system_name || `ID: ${row.solar_system_id}` }}
+                      {{ row.solar_system_name ? `${row.solar_system_name}（${row.solar_system_id}）` : `ID: ${row.solar_system_id}` }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="安全等级" width="90" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.security_status !== null" :style="{ color: getSecurityColor(row.security_status) }">
+                        {{ row.security_status.toFixed(1) }}
+                      </span>
+                      <span v-else>-</span>
                     </template>
                   </el-table-column>
                   <el-table-column label="价值" width="120" align="right">
@@ -151,9 +359,17 @@
                       <span v-else>-</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="系统" width="120">
+                  <el-table-column label="星系" width="180">
                     <template #default="{ row }">
-                      {{ row.solar_system_name || `ID: ${row.solar_system_id}` }}
+                      {{ row.solar_system_name ? `${row.solar_system_name}（${row.solar_system_id}）` : `ID: ${row.solar_system_id}` }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="安全等级" width="90" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.security_status !== null" :style="{ color: getSecurityColor(row.security_status) }">
+                        {{ row.security_status.toFixed(1) }}
+                      </span>
+                      <span v-else>-</span>
                     </template>
                   </el-table-column>
                   <el-table-column label="损失价值" width="120" align="right">
@@ -168,110 +384,6 @@
         </el-card>
       </div>
     </div>
-
-    <!-- Killmail 详情弹窗 -->
-    <el-dialog
-      v-model="detailVisible"
-      :title="detailData ? `击毁详情 #${detailData.killmail_id}` : '击毁详情'"
-      width="720px"
-      class="detail-dialog"
-      destroy-on-close
-    >
-      <div v-if="detailData" class="detail-content">
-        <!-- 基本信息 -->
-        <el-descriptions :column="2" border size="small" class="detail-desc">
-          <el-descriptions-item label="Killmail ID">{{ detailData.killmail_id }}</el-descriptions-item>
-          <el-descriptions-item label="时间">{{ formatDate(detailData.killmail_time) }}</el-descriptions-item>
-          <el-descriptions-item label="太阳系">
-            {{ detailData.solar_system_name || '-' }} ({{ detailData.solar_system_id || '-' }})
-          </el-descriptions-item>
-          <el-descriptions-item label="总价值">
-            <span class="isk-value">{{ formatISK(detailData.total_value) }} ISK</span>
-          </el-descriptions-item>
-          <el-descriptions-item label="攻击者数量">{{ detailData.attackers_count }}</el-descriptions-item>
-          <el-descriptions-item label="NPC击杀">
-            <el-tag :type="detailData.is_npc ? 'info' : 'success'" size="small">
-              {{ detailData.is_npc ? '是' : '否' }}
-            </el-tag>
-          </el-descriptions-item>
-        </el-descriptions>
-
-        <!-- 受害者信息 -->
-        <div class="detail-section">
-          <h4 class="section-title victim-title">受害者</h4>
-          <el-descriptions :column="2" border size="small">
-            <el-descriptions-item label="角色">
-              <span v-if="detailData.victim_character_id">
-                {{ detailData.victim_character_name || '-' }} ({{ detailData.victim_character_id }})
-              </span>
-              <span v-else>-</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="公司">
-              <span v-if="detailData.victim_corporation_id">
-                {{ detailData.victim_corporation_name || '-' }} ({{ detailData.victim_corporation_id }})
-              </span>
-              <span v-else>-</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="联盟">
-              <span v-if="detailData.victim_alliance_id">
-                {{ detailData.victim_alliance_name || '-' }} ({{ detailData.victim_alliance_id }})
-              </span>
-              <span v-else>-</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="舰船">
-              <span class="ship-name loss">{{ detailData.victim_ship_name || '-' }}</span>
-              <span v-if="detailData.victim_ship_type_id" class="type-id"> ({{ detailData.victim_ship_type_id }})</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="承受伤害">{{ detailData.victim_damage_taken || 0 }}</el-descriptions-item>
-          </el-descriptions>
-        </div>
-
-        <!-- 最后一击攻击者信息 -->
-        <div class="detail-section">
-          <h4 class="section-title killer-title">最后一击</h4>
-          <el-descriptions :column="2" border size="small">
-            <el-descriptions-item label="角色">
-              <span v-if="detailData.final_blow_character_id">
-                {{ detailData.final_blow_character_name || '-' }} ({{ detailData.final_blow_character_id }})
-              </span>
-              <span v-else-if="detailData.is_npc">NPC</span>
-              <span v-else>-</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="公司">
-              <span v-if="detailData.final_blow_corporation_id">
-                {{ detailData.final_blow_corporation_name || '-' }} ({{ detailData.final_blow_corporation_id }})
-              </span>
-              <span v-else>-</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="联盟">
-              <span v-if="detailData.final_blow_alliance_id">
-                {{ detailData.final_blow_alliance_name || '-' }} ({{ detailData.final_blow_alliance_id }})
-              </span>
-              <span v-else>-</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="舰船">
-              <span class="ship-name">{{ detailData.final_blow_ship_name || '-' }}</span>
-              <span v-if="detailData.final_blow_ship_type_id" class="type-id"> ({{ detailData.final_blow_ship_type_id }})</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="造成伤害">{{ detailData.final_blow_damage_done || 0 }}</el-descriptions-item>
-          </el-descriptions>
-        </div>
-
-        <!-- 舰船图片 -->
-        <div class="ship-images" v-if="detailData.victim_ship_type_id || detailData.final_blow_ship_type_id">
-          <div class="ship-img-box" v-if="detailData.victim_ship_type_id">
-            <span class="img-label loss">受害者舰船</span>
-            <img :src="`https://images.evetech.net/types/${detailData.victim_ship_type_id}/render?size=256`" 
-                 @error="handleImgError" />
-          </div>
-          <div class="ship-img-box" v-if="detailData.final_blow_ship_type_id">
-            <span class="img-label">最后一击舰船</span>
-            <img :src="`https://images.evetech.net/types/${detailData.final_blow_ship_type_id}/render?size=256`" 
-                 @error="handleImgError" />
-          </div>
-        </div>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -279,7 +391,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Warning } from '@element-plus/icons-vue'
+import { Warning, ArrowLeft } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const API_BASE = import.meta.env.VITE_API_BASE || ''
@@ -293,8 +405,9 @@ const losses = ref([])
 const loadingKills = ref(false)
 const loadingLosses = ref(false)
 const activeTab = ref('kills')
-const detailVisible = ref(false)
+const selectedKill = ref(null)
 const detailData = ref(null)
+const loadingDetail = ref(false)
 
 // 检查是否有killmail权限
 const hasKillmailScope = computed(() => {
@@ -313,7 +426,6 @@ const loadCharacterInfo = () => {
   if (saved) {
     const info = JSON.parse(saved)
     characterInfo.value = info
-    // 加载KB数据
     loadKBData()
   }
 }
@@ -348,7 +460,12 @@ const syncKB = async () => {
   syncResult.value = null
   
   try {
-    const response = await fetch(`${API_BASE}/api/kb/sync/${characterInfo.value.character_id}?datasource=serenity`, {
+    // 从localStorage获取code
+    const saved = localStorage.getItem('eve_character')
+    const savedInfo = saved ? JSON.parse(saved) : null
+    const code = savedInfo?.code
+    
+    const response = await fetch(`${API_BASE}/api/kb/sync/${characterInfo.value.character_id}?datasource=serenity${code ? '&code=' + encodeURIComponent(code) : ''}`, {
       method: 'POST'
     })
     const data = await response.json()
@@ -358,7 +475,6 @@ const syncKB = async () => {
         success: true,
         message: `成功同步 ${data.saved} 条记录，失败 ${data.errors} 条`
       }
-      // 刷新数据
       await loadKBData()
       ElMessage.success('KB数据同步成功')
     } else {
@@ -377,6 +493,30 @@ const syncKB = async () => {
     ElMessage.error('同步失败: ' + e.message)
   } finally {
     syncing.value = false
+  }
+}
+
+const showDetail = async (row) => {
+  selectedKill.value = row
+  detailData.value = null
+  loadingDetail.value = true
+  
+  try {
+    const response = await fetch(`${API_BASE}/api/kb/detail/${row.killmail_id}?datasource=serenity`)
+    const data = await response.json()
+    
+    if (data.success) {
+      detailData.value = data
+    } else {
+      ElMessage.error(data.error || '获取详情失败')
+      selectedKill.value = null
+    }
+  } catch (e) {
+    console.error('Fetch detail error:', e)
+    ElMessage.error('获取详情失败: ' + e.message)
+    selectedKill.value = null
+  } finally {
+    loadingDetail.value = false
   }
 }
 
@@ -412,17 +552,29 @@ const getEfficiencyClass = (efficiency) => {
   return 'eff-low'
 }
 
+const getSecurityColor = (sec) => {
+  if (sec === null || sec === undefined) return '#999'
+  const s = parseFloat(sec)
+  if (s >= 1.0) return '#409eff'
+  if (s >= 0.9) return '#53a8fb'
+  if (s >= 0.8) return '#67c23a'
+  if (s >= 0.7) return '#8fd13a'
+  if (s >= 0.6) return '#b4d84a'
+  if (s >= 0.5) return '#e6a23c'
+  if (s >= 0.4) return '#e8983c'
+  if (s >= 0.3) return '#e86c3a'
+  if (s >= 0.2) return '#e85038'
+  if (s >= 0.1) return '#e83436'
+  if (s > 0) return '#e81834'
+  return '#f56c6c'
+}
+
 const getRowClass = ({ row }) => {
   return row.is_npc ? 'npc-row' : ''
 }
 
 const handleAvatarError = (e) => {
   e.target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0Ij48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1zaXplPSIyMCI+PzwvdGV4dD48L3N2Zz4='
-}
-
-const showDetail = (row) => {
-  detailData.value = row
-  detailVisible.value = true
 }
 
 const handleImgError = (e) => {
@@ -535,25 +687,11 @@ const handleImgError = (e) => {
   margin-top: 4px;
 }
 
-.kills-card .stat-value {
-  color: #67c23a;
-}
-
-.losses-card .stat-value {
-  color: #f56c6c;
-}
-
-.eff-high {
-  color: #67c23a !important;
-}
-
-.eff-medium {
-  color: #e6a23c !important;
-}
-
-.eff-low {
-  color: #f56c6c !important;
-}
+.kills-card .stat-value { color: #67c23a; }
+.losses-card .stat-value { color: #f56c6c; }
+.eff-high { color: #67c23a !important; }
+.eff-medium { color: #e6a23c !important; }
+.eff-low { color: #f56c6c !important; }
 
 .stat-bar {
   width: 100%;
@@ -591,33 +729,12 @@ const handleImgError = (e) => {
   gap: 2px;
 }
 
-.ship-name {
-  color: #67c23a;
-  font-weight: 500;
-}
-
-.ship-name.loss {
-  color: #f56c6c;
-}
-
-.char-name {
-  color: #999;
-  font-size: 12px;
-}
-
-.isk-value {
-  color: #e6a23c;
-  font-family: monospace;
-}
-
-.isk-value.loss {
-  color: #f56c6c;
-}
-
-.npc-tag {
-  color: #909399;
-  font-style: italic;
-}
+.ship-name { color: #67c23a; font-weight: 500; }
+.ship-name.loss { color: #f56c6c; }
+.char-name { color: #999; font-size: 12px; }
+.isk-value { color: #e6a23c; font-family: monospace; }
+.isk-value.loss { color: #f56c6c; }
+.npc-tag { color: #909399; font-style: italic; }
 
 .clickable {
   cursor: pointer;
@@ -625,43 +742,56 @@ const handleImgError = (e) => {
   text-underline-offset: 2px;
 }
 
-.clickable:hover {
-  opacity: 0.8;
+.clickable:hover { opacity: 0.8; }
+
+/* ===== 详情页样式 ===== */
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.detail-title {
+  color: #e0e0e0;
+  font-size: 20px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.detail-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail-card {
+  background-color: #1e1e2e;
+  border-color: #2d3040;
 }
 
 .detail-content {
   color: #e0e0e0;
 }
 
-.detail-section {
-  margin-top: 20px;
+.section-title-text {
+  font-weight: 600;
+  color: #e0e0e0 !important;
 }
 
-.section-title {
-  font-size: 15px;
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #2d3040;
-}
+.victim-title { color: #f56c6c; }
+.killer-title { color: #67c23a; }
+.type-id { color: #666; font-size: 12px; }
+.weapon-name { color: #e6a23c; }
 
-.victim-title {
-  color: #f56c6c;
-}
-
-.killer-title {
-  color: #67c23a;
-}
-
-.type-id {
-  color: #666;
-  font-size: 12px;
-}
+.item-name { color: #e0e0e0; }
+.qty-dropped { color: #67c23a; }
+.qty-destroyed { color: #f56c6c; }
 
 .ship-images {
   display: flex;
   justify-content: center;
   gap: 40px;
-  margin-top: 24px;
   flex-wrap: wrap;
 }
 
@@ -681,112 +811,45 @@ const handleImgError = (e) => {
   display: block;
   font-size: 12px;
   color: #67c23a;
+  margin-bottom: 4px;
+}
+
+.img-label.loss { color: #f56c6c; }
+.img-ship-name {
+  display: block;
+  font-size: 13px;
+  color: #e0e0e0;
   margin-bottom: 6px;
 }
+.img-ship-name.loss { color: #f56c6c; }
 
-.img-label.loss {
-  color: #f56c6c;
-}
+/* ===== Element Plus 暗色覆盖 ===== */
+:deep(.el-tabs__item) { color: #999; }
+:deep(.el-tabs__item.is-active) { color: #409eff; }
+:deep(.el-tabs__nav-wrap::after) { background-color: #2d3040; }
 
-:deep(.detail-dialog .el-dialog) {
-  background-color: #1e1e2e;
-  border: 1px solid #2d3040;
-}
+:deep(.el-table) { background-color: transparent; }
+:deep(.el-table th) { background-color: #252636 !important; color: #999; }
+:deep(.el-table tr) { background-color: transparent; }
+:deep(.el-table td) { border-bottom-color: #2d3040; }
+:deep(.el-table--enable-row-hover .el-table__body tr:hover > td) { background-color: #252636 !important; }
+:deep(.el-table__body tr.npc-row td) { opacity: 0.7; }
 
-:deep(.detail-dialog .el-dialog__header) {
-  border-bottom: 1px solid #2d3040;
-}
+:deep(.el-card__header) { background-color: #252636; border-bottom-color: #2d3040; color: #e0e0e0; }
+:deep(.el-card__body) { color: #e0e0e0; }
 
-:deep(.detail-dialog .el-dialog__title) {
-  color: #e0e0e0;
-}
+:deep(.el-descriptions__label) { background-color: #252636 !important; color: #e0e0e0 !important; }
+:deep(.el-descriptions__content) { background-color: #1e1e2e !important; color: #e0e0e0 !important; }
+:deep(.el-descriptions__cell) { border-color: #2d3040 !important; }
 
-:deep(.detail-dialog .el-dialog__body) {
-  color: #e0e0e0;
-}
-
-:deep(.detail-desc .el-descriptions__label) {
-  background-color: #252636 !important;
-  color: #999;
-}
-
-:deep(.detail-desc .el-descriptions__content) {
-  background-color: #1e1e2e !important;
-  color: #e0e0e0;
-}
-
-:deep(.detail-desc .el-descriptions__cell) {
-  border-color: #2d3040 !important;
-}
-
-:deep(.el-tabs__item) {
-  color: #999;
-}
-
-:deep(.el-tabs__item.is-active) {
-  color: #409eff;
-}
-
-:deep(.el-tabs__nav-wrap::after) {
-  background-color: #2d3040;
-}
-
-:deep(.el-table) {
-  background-color: transparent;
-}
-
-:deep(.el-table th) {
-  background-color: #252636 !important;
-  color: #999;
-}
-
-:deep(.el-table tr) {
-  background-color: transparent;
-}
-
-:deep(.el-table td) {
-  border-bottom-color: #2d3040;
-}
-
-:deep(.el-table--enable-row-hover .el-table__body tr:hover > td) {
-  background-color: #252636 !important;
-}
-
-:deep(.el-table__body tr.npc-row td) {
-  opacity: 0.7;
-}
-
-:deep(.el-card__header) {
-  background-color: #252636;
-  border-bottom-color: #2d3040;
-  color: #e0e0e0;
-}
-
-:deep(.el-card__body) {
-  color: #e0e0e0;
-}
-
-:deep(.el-result__title p) {
-  color: #e0e0e0;
-}
-
-:deep(.el-result__subtitle p) {
-  color: #999;
-}
+:deep(.el-result__title p) { color: #e0e0e0; }
+:deep(.el-result__subtitle p) { color: #999; }
+:deep(.el-tag) { border-color: #2d3040; }
+:deep(.el-skeleton__item) { background-color: #2d3040; }
 
 @media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .character-info {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .sync-actions {
-    margin-left: 0;
-    margin-top: 16px;
-  }
+  .stats-grid { grid-template-columns: 1fr; }
+  .character-info { flex-direction: column; text-align: center; }
+  .sync-actions { margin-left: 0; margin-top: 16px; }
 }
 </style>

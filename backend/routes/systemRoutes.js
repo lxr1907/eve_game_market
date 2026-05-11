@@ -8,6 +8,7 @@ router.get('/systems/sync-ids', SystemController.syncSystemIds);
 router.get('/systems/sync-details', SystemController.syncSystemDetails);
 router.get('/systems/sync-all', SystemController.syncAllSystems);
 router.get('/systems/:id', SystemController.getSystemById);
+router.post('/systems/:system_id/sync', SystemController.syncOneSystem);
 router.post('/systems', SystemController.createSystem);
 router.put('/systems/:id', SystemController.updateSystem);
 router.delete('/systems/:id', SystemController.deleteSystem);

@@ -199,6 +199,47 @@ class SystemController {
     })();
   }
 
+  // 同步单条System数据
+  static async syncOneSystem(req, res) {
+    try {
+      const { system_id } = req.params;
+
+      if (!system_id) {
+        return res.status(400).json({ error: '缺少system_id参数' });
+      }
+
+      const systemDetails = await eveApiService.getSystemDetails(system_id, 'serenity');
+
+      if (!systemDetails) {
+        return res.status(404).json({ error: '未找到该系统的ESI数据' });
+      }
+
+      await System.insertOrUpdate({
+        system_id: systemDetails.system_id,
+        constellation_id: systemDetails.constellation_id,
+        name: systemDetails.name || '',
+        position: systemDetails.position,
+        security_status: systemDetails.security_status,
+        stargates: systemDetails.stargates,
+        datasource: 'serenity'
+      });
+
+      res.json({
+        success: true,
+        message: `系统 ${systemDetails.name || system_id} 同步成功`,
+        system: {
+          system_id: systemDetails.system_id,
+          name: systemDetails.name,
+          constellation_id: systemDetails.constellation_id,
+          security_status: systemDetails.security_status
+        }
+      });
+    } catch (error) {
+      console.error('Error syncing one system:', error);
+      res.status(500).json({ error: '同步失败', message: error.message });
+    }
+  }
+
   static async getSystems(req, res) {
     try {
       const { page = 1, limit = 10, search = '' } = req.query;

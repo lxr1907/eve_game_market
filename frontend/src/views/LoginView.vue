@@ -299,7 +299,8 @@ const handleSerenityLogin = async () => {
         character_name: result.character_name,
         access_token: result.access_token,
         token_saved: result.token_saved,
-        scopes: allScopes.join(' ')
+        scopes: allScopes.join(' '),
+        code: code
       }
       localStorage.setItem('eve_character', JSON.stringify(characterInfo))
 

@@ -43,6 +43,11 @@ class Killmail {
         total_value DOUBLE DEFAULT 0,
         attackers_count INT DEFAULT 0,
         
+        -- 完整数据（JSON）
+        victim_items JSON,
+        attackers JSON,
+        supporter_count INT DEFAULT 0,
+        
         -- 元数据
         war_id INT,
         is_npc BOOLEAN DEFAULT FALSE,
@@ -118,6 +123,28 @@ class Killmail {
     await pool.execute(killmailsTable);
     await pool.execute(kbStatsTable);
     await pool.execute(kbCorpStatsTable);
+
+    // 增量同步字段：检查并添加缺失的列（重复执行不报错）
+    await this.addColumnIfNotExists('killmails', 'victim_items', 'JSON');
+    await this.addColumnIfNotExists('killmails', 'attackers', 'JSON');
+    await this.addColumnIfNotExists('killmails', 'supporter_count', 'INT DEFAULT 0');
+  }
+
+  // 检查列是否存在，不存在则添加
+  static async addColumnIfNotExists(table, column, definition) {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT COUNT(*) as cnt FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+        [table, column]
+      );
+      if (rows[0].cnt === 0) {
+        await pool.execute(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
+        console.log(`Added column ${table}.${column}`);
+      }
+    } catch (e) {
+      console.error(`Error adding column ${table}.${column}:`, e.message);
+    }
   }
   
   // 保存击毁记录
@@ -132,6 +159,11 @@ class Killmail {
       d.killmail_time = new Date(d.killmail_time).toISOString().replace('T', ' ').replace('Z', '').slice(0, 19);
     }
 
+    // 序列化JSON字段
+    const victimItemsJson = d.victim_items ? JSON.stringify(d.victim_items) : null;
+    const attackersJson = d.attackers ? JSON.stringify(d.attackers) : null;
+    const supporterCount = typeof d.supporter_count === 'number' ? d.supporter_count : (d.attackers ? d.attackers.length - 1 : 0);
+
     const query = `
       INSERT INTO killmails (
         killmail_id, killmail_hash, datasource, killmail_time,
@@ -140,15 +172,13 @@ class Killmail {
         victim_alliance_id, victim_alliance_name, victim_ship_type_id, victim_ship_name, victim_damage_taken,
         final_blow_character_id, final_blow_character_name, final_blow_corporation_id, final_blow_corporation_name,
         final_blow_alliance_id, final_blow_alliance_name, final_blow_ship_type_id, final_blow_ship_name, final_blow_damage_done,
-        total_value, attackers_count, is_npc
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        killmail_time = VALUES(killmail_time),
-        total_value = VALUES(total_value),
-        updated_at = CURRENT_TIMESTAMP
+        total_value, attackers_count, victim_items, attackers, supporter_count, is_npc
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE killmail_id = killmail_id
     `;
     
-    const [result] = await pool.execute(query, [
+    // 用 query 而非 execute，避免预处理语句对 JSON 字段问题
+    const [result] = await pool.query(query, [
       d.killmail_id,
       d.killmail_hash,
       datasource,
@@ -175,6 +205,9 @@ class Killmail {
       d.final_blow_damage_done,
       d.total_value || 0,
       d.attackers_count || 1,
+      victimItemsJson,
+      attackersJson,
+      supporterCount,
       d.is_npc || false
     ]);
     
@@ -188,10 +221,13 @@ class Killmail {
     const query = `
       SELECT k.*,
         vt.name AS victim_ship_name,
-        ft.name AS final_blow_ship_name
+        ft.name AS final_blow_ship_name,
+        s.name AS solar_system_name,
+        s.security_status
       FROM killmails k
       LEFT JOIN types vt ON k.victim_ship_type_id = vt.id
       LEFT JOIN types ft ON k.final_blow_ship_type_id = ft.id
+      LEFT JOIN systems s ON k.solar_system_id = s.system_id AND k.datasource COLLATE utf8mb4_bin = s.datasource COLLATE utf8mb4_bin
       WHERE k.final_blow_character_id = ? AND k.datasource = ?
       ORDER BY k.killmail_time DESC
       LIMIT ${safeLimit} OFFSET ${safeOffset}
@@ -207,10 +243,13 @@ class Killmail {
     const query = `
       SELECT k.*,
         vt.name AS victim_ship_name,
-        ft.name AS final_blow_ship_name
+        ft.name AS final_blow_ship_name,
+        s.name AS solar_system_name,
+        s.security_status
       FROM killmails k
       LEFT JOIN types vt ON k.victim_ship_type_id = vt.id
       LEFT JOIN types ft ON k.final_blow_ship_type_id = ft.id
+      LEFT JOIN systems s ON k.solar_system_id = s.system_id AND k.datasource COLLATE utf8mb4_bin = s.datasource COLLATE utf8mb4_bin
       WHERE k.victim_character_id = ? AND k.datasource = ?
       ORDER BY k.killmail_time DESC
       LIMIT ${safeLimit} OFFSET ${safeOffset}
@@ -282,10 +321,13 @@ class Killmail {
     const query = `
       SELECT k.*,
         vt.name AS victim_ship_name,
-        ft.name AS final_blow_ship_name
+        ft.name AS final_blow_ship_name,
+        s.name AS solar_system_name,
+        s.security_status
       FROM killmails k
       LEFT JOIN types vt ON k.victim_ship_type_id = vt.id
       LEFT JOIN types ft ON k.final_blow_ship_type_id = ft.id
+      LEFT JOIN systems s ON k.solar_system_id = s.system_id AND k.datasource COLLATE utf8mb4_bin = s.datasource COLLATE utf8mb4_bin
       WHERE k.datasource = ?
       ORDER BY k.killmail_time DESC
       LIMIT ${safeLimit}

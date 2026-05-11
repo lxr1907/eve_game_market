@@ -14,4 +14,7 @@ router.get('/my', KbController.getMyKB);
 // 获取最近击毁（公共）
 router.get('/recent', KbController.getRecentKills);
 
+// 获取killmail完整详情（含attackers、items）
+router.get('/detail/:killmail_id', KbController.getKillmailDetail);
+
 module.exports = router;

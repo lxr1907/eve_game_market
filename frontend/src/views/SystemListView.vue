@@ -43,7 +43,12 @@
             @row-click="handleRowClick"
           >
             <el-table-column prop="system_id" label="系统ID" width="120" />
-            <el-table-column prop="name" label="名称" min-width="200" />
+            <el-table-column prop="name" label="名称" min-width="200">
+              <template #default="scope">
+                <span v-if="scope.row.name" class="system-name">{{ scope.row.name }}</span>
+                <span v-else class="system-name empty">未同步</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="constellation_id" label="星座ID" width="120" />
             <el-table-column prop="security_status" label="安全等级" width="120">
               <template #default="scope">
@@ -52,7 +57,7 @@
             </el-table-column>
             <el-table-column prop="created_at" label="创建时间" width="180" />
             <el-table-column prop="updated_at" label="更新时间" width="180" />
-            <el-table-column label="操作" width="180" fixed="right">
+            <el-table-column label="操作" width="200" fixed="right">
               <template #default="scope">
                 <el-button
                   type="primary"
@@ -61,6 +66,16 @@
                   @click.stop="viewSystem(scope.row.system_id)"
                 >
                   查看
+                </el-button>
+                <el-button
+                  v-if="!scope.row.name"
+                  type="warning"
+                  text
+                  size="small"
+                  :loading="scope.row.syncing"
+                  @click.stop="syncOneSystem(scope.row)"
+                >
+                  同步
                 </el-button>
               </template>
             </el-table-column>
@@ -161,6 +176,28 @@ const syncAllSystems = async () => {
   }
 }
 
+// 同步单条System数据
+const syncOneSystem = async (row) => {
+  row.syncing = true
+  try {
+    const response = await systemApi.syncOneSystem(row.system_id)
+    if (response.success) {
+      ElMessage.success(response.message || '同步成功')
+      // 更新本地数据
+      row.name = response.system?.name || row.name
+      row.constellation_id = response.system?.constellation_id || row.constellation_id
+      row.security_status = response.system?.security_status || row.security_status
+    } else {
+      ElMessage.error(response.error || '同步失败')
+    }
+  } catch (error) {
+    ElMessage.error('同步失败: ' + (error.message || '未知错误'))
+    console.error('Error syncing one system:', error)
+  } finally {
+    row.syncing = false
+  }
+}
+
 // 搜索
 const handleSearch = () => {
   currentPage.value = 1
@@ -246,5 +283,10 @@ onMounted(() => {
 
 :deep(.el-table__row:hover) {
   background-color: transparent !important;
+}
+
+.system-name.empty {
+  color: #e6a23c;
+  font-style: italic;
 }
 </style>

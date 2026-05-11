@@ -71,6 +71,12 @@ class EveSsoCode {
     return rows[0];
   }
 
+  static async getByCode(code) {
+    const query = `SELECT * FROM eve_sso_codes WHERE code = ? ORDER BY created_at DESC LIMIT 1`;
+    const [rows] = await pool.execute(query, [code]);
+    return rows[0];
+  }
+
   static async getValidToken(characterId, datasource = 'serenity') {
     const query = `
       SELECT * FROM eve_sso_codes
