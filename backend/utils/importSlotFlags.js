@@ -120,7 +120,7 @@ async function importSlotFlags() {
       [8, 'Booster', '增效剂', '其他'],
       [9, 'Ship', '舰船', '其他'],
       [10, 'Hangar', '机库', '其他'],
-      [11, 'Station', '空间站', '其他'],
+      [11, 'Station', '低槽', '其他'],
       [34, 'Cargo Hold', '货舱', '其他'],
       [35, 'Corporate Hangar', '军团机库', '其他'],
       [36, 'Corporate Wallet', '军团钱包', '其他'],
