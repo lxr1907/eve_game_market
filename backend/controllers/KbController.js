@@ -1,9 +1,172 @@
 const Killmail = require('../models/Killmail');
 const EveSsoCode = require('../models/EveSsoCode');
+const { getValidTokenWithRefresh } = require('./EveSsoController');
 const pool = require('../config/database');
 
 // ESI基础URL
 const ESI_BASE_URL = 'https://ali-esi.evepc.163.com/latest';
+
+// 默认使用吉他海空间站所在区域（The Forge）
+const DEFAULT_REGION_ID = 10000002;
+
+// 从orders表获取物品价格
+const getItemPriceFromOrders = async (typeId, regionId = DEFAULT_REGION_ID, datasource = 'serenity') => {
+  try {
+    // 查询最低卖单
+    const [sellOrders] = await pool.execute(
+      `SELECT MIN(price) as min_sell FROM orders 
+       WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = false`,
+      [typeId, regionId, datasource]
+    );
+    
+    // 查询最高买单
+    const [buyOrders] = await pool.execute(
+      `SELECT MAX(price) as max_buy FROM orders 
+       WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = true`,
+      [typeId, regionId, datasource]
+    );
+    
+    const minSell = sellOrders[0]?.min_sell;
+    const maxBuy = buyOrders[0]?.max_buy;
+    
+    return { minSell, maxBuy };
+  } catch (error) {
+    console.error(`Error getting price for type ${typeId}:`, error.message);
+    return { minSell: null, maxBuy: null };
+  }
+};
+
+// 从ESI同步指定物品的订单数据
+const syncOrdersForType = async (typeId, regionId = DEFAULT_REGION_ID, datasource = 'serenity') => {
+  try {
+    console.log(`Syncing orders for type ${typeId} in region ${regionId}...`);
+    
+    const url = `${ESI_BASE_URL}/markets/${regionId}/orders/?datasource=${datasource}&type_id=${typeId}`;
+    const response = await fetch(url, {
+      headers: { 'Accept': 'application/json' }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch orders: ${response.status}`);
+    }
+    
+    const orders = await response.json();
+    
+    // 保存订单到数据库
+    for (const order of orders) {
+      await pool.execute(
+        `INSERT INTO orders (
+          order_id, type_id, region_id, system_id, location_id,
+          price, volume_remain, volume_total, is_buy_order, issued, datasource
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          price = VALUES(price),
+          volume_remain = VALUES(volume_remain),
+          system_id = VALUES(system_id),
+          location_id = VALUES(location_id),
+          is_buy_order = VALUES(is_buy_order)`,
+        [
+          order.order_id,
+          order.type_id,
+          regionId,
+          order.system_id,
+          order.location_id,
+          order.price,
+          order.volume_remain,
+          order.volume_total,
+          order.is_buy_order,
+          new Date(order.issued).toISOString().slice(0, 19).replace('T', ' '),
+          datasource
+        ]
+      );
+    }
+    
+    console.log(`Synced ${orders.length} orders for type ${typeId}`);
+    return orders.length;
+  } catch (error) {
+    console.error(`Error syncing orders for type ${typeId}:`, error.message);
+    return 0;
+  }
+};
+
+// 计算单个物品的估值
+const calculateItemValue = async (item, regionId = DEFAULT_REGION_ID, datasource = 'serenity') => {
+  const typeId = item.item_type_id;
+  if (!typeId) return { value: 0, unitPrice: 0 };
+  
+  let { minSell, maxBuy } = await getItemPriceFromOrders(typeId, regionId, datasource);
+  
+  // 如果没有订单数据，尝试同步
+  if (minSell === null && maxBuy === null) {
+    console.log(`No orders found for type ${typeId}, syncing...`);
+    await syncOrdersForType(typeId, regionId, datasource);
+    // 重新查询
+    ({ minSell, maxBuy } = await getItemPriceFromOrders(typeId, regionId, datasource));
+  }
+  
+  let unitPrice = 0;
+  
+  if (minSell !== null && maxBuy !== null) {
+    // 有买卖单：(最低卖单 + 最高买单) / 2
+    unitPrice = (minSell + maxBuy) / 2;
+  } else if (minSell !== null) {
+    // 只有卖单：最低卖单
+    unitPrice = minSell;
+  } else if (maxBuy !== null) {
+    // 只有买单：最高买单 * 2
+    unitPrice = maxBuy * 2;
+  } else {
+    // 仍然没有订单，返回0
+    console.log(`No orders available for type ${typeId} after sync`);
+    return { value: 0, unitPrice: 0 };
+  }
+  
+  // 计算总价值（掉落 + 摧毁）
+  const totalQuantity = (item.quantity_dropped || 0) + (item.quantity_destroyed || 0);
+  const value = unitPrice * totalQuantity;
+  
+  return { value, unitPrice, minSell, maxBuy };
+};
+
+// 计算所有物品的估值
+const calculateItemsValue = async (items, regionId = DEFAULT_REGION_ID, datasource = 'serenity') => {
+  let totalValue = 0;
+  const itemsWithValue = [];
+  
+  for (const item of items) {
+    const { value, unitPrice, minSell, maxBuy } = await calculateItemValue(item, regionId, datasource);
+    
+    // 处理嵌套items（集装箱内的物品）
+    let nestedItemsWithValue = [];
+    let nestedValue = 0;
+    if (item.items && item.items.length > 0) {
+      for (const nestedItem of item.items) {
+        const nestedResult = await calculateItemValue(nestedItem, regionId, datasource);
+        nestedItemsWithValue.push({
+          ...nestedItem,
+          unit_price: nestedResult.unitPrice,
+          value: nestedResult.value
+        });
+        nestedValue += nestedResult.value;
+      }
+    }
+    
+    const itemTotalValue = value + nestedValue;
+    totalValue += itemTotalValue;
+    
+    itemsWithValue.push({
+      ...item,
+      unit_price: unitPrice,
+      value: itemTotalValue,
+      item_value: value,
+      nested_value: nestedValue,
+      items: nestedItemsWithValue,
+      price_info: { minSell, maxBuy }
+    });
+  }
+  
+  return { totalValue, itemsWithValue };
+};
 
 // 从ESI获取角色最近击毁记录
 const fetchRecentKillmails = async (characterId, accessToken, datasource = 'serenity') => {
@@ -45,24 +208,14 @@ const syncCharacterKB = async (req, res) => {
   try {
     const { character_id } = req.params;
     const datasource = req.query.datasource || 'serenity';
-    const { code } = req.query;
     
-    let tokenData = null;
-    
-    // 如果前端传了code，优先使用code获取token
-    if (code) {
-      tokenData = await EveSsoCode.getByCode(code);
-    }
-    
-    // 如果没有code或code无效，尝试用character_id获取
-    if (!tokenData || !tokenData.access_token) {
-      tokenData = await EveSsoCode.getValidToken(character_id, datasource);
-    }
+    // 获取有效的token（自动刷新如果需要）
+    const tokenData = await getValidTokenWithRefresh(character_id, datasource);
     
     if (!tokenData || !tokenData.access_token) {
       return res.status(401).json({ 
         success: false, 
-        error: '未找到有效的授权令牌，请重新登录' 
+        error: '未找到有效的授权令牌，请重新登录授权' 
       });
     }
     
@@ -81,8 +234,10 @@ const syncCharacterKB = async (req, res) => {
       try {
         const detail = await fetchKillmailDetail(km.killmail_id, km.killmail_hash, datasource);
         
-        // 解析击毁数据（hash只在列表接口中返回，需要传入）
-        const killmailData = parseKillmailDetail(detail, km.killmail_hash);
+        // 解析击毁数据（带估值计算）
+        const killmailData = await parseKillmailDetail(detail, km.killmail_hash, datasource);
+        
+        console.log(`Killmail ${km.killmail_id}: calculated value = ${killmailData.total_value.toLocaleString()} ISK`);
         
         // 保存到数据库
         try {
@@ -125,15 +280,15 @@ const syncCharacterKB = async (req, res) => {
   }
 };
 
-// 解析击毁详情
-const parseKillmailDetail = (detail, killmailHash) => {
+// 解析击毁详情（基础数据）
+const parseKillmailDetailBasic = (detail, killmailHash) => {
   const victim = detail.victim || {};
   const attackers = detail.attackers || [];
   
   // 找到最后一击的攻击者
   const finalBlow = attackers.find(a => a.final_blow === true) || attackers[0] || {};
   
-  // victim items
+  // victim items（原始数据）
   const victimItems = (victim.items || []).map(item => ({
     item_type_id: item.item_type_id || null,
     quantity_dropped: item.quantity_dropped || 0,
@@ -168,7 +323,7 @@ const parseKillmailDetail = (detail, killmailHash) => {
     killmail_hash: killmailHash || detail.killmail_hash || null,
     killmail_time: detail.killmail_time,
     solar_system_id: detail.solar_system_id,
-    solar_system_name: null, // 需要额外查询
+    solar_system_name: null,
     victim_character_id: victim.character_id || null,
     victim_character_name: null,
     victim_corporation_id: victim.corporation_id || null,
@@ -187,11 +342,30 @@ const parseKillmailDetail = (detail, killmailHash) => {
     final_blow_ship_type_id: finalBlow.ship_type_id || null,
     final_blow_ship_name: null,
     final_blow_damage_done: finalBlow.damage_done || 0,
-    total_value: detail.zkb?.totalValue || 0,
     attackers_count: attackers.length,
     victim_items: victimItems,
     attackers: attackersData,
     is_npc: !finalBlow.character_id && attackers.every(a => !a.character_id)
+  };
+};
+
+// 解析击毁详情（带估值）
+const parseKillmailDetail = async (detail, killmailHash, datasource = 'serenity') => {
+  const basicData = parseKillmailDetailBasic(detail, killmailHash);
+  
+  // 计算物品估值
+  const { totalValue, itemsWithValue } = await calculateItemsValue(
+    basicData.victim_items, 
+    DEFAULT_REGION_ID, 
+    datasource
+  );
+  
+  return {
+    ...basicData,
+    victim_items: itemsWithValue,
+    total_value: totalValue,
+    calculated_value: totalValue, // 标记为计算得出的估值
+    zkb_value: detail.zkb?.totalValue || null // 保留zkb的估值用于对比
   };
 };
 

@@ -170,28 +170,41 @@
             <!-- 受害者物品 -->
             <el-card class="detail-card" shadow="hover">
               <template #header>
-                <span class="section-title-text victim-title">物品列表</span>
+                <div class="items-header">
+                  <span class="section-title-text victim-title">物品列表</span>
+                  <span class="total-value">总损失估值: {{ formatISK(detailData.victim.items_value) }} ISK</span>
+                </div>
               </template>
               
               <!-- 高槽 -->
               <div v-if="groupedItems.highSlots.length > 0" class="slot-section">
-                <div class="slot-title high-slot">高槽 ({{ groupedItems.highSlots.length }})</div>
+                <div class="slot-title high-slot">高槽 ({{ groupedItems.highSlots.length }}) - {{ formatISK(groupedItems.highSlotsValue) }}</div>
                 <el-table :data="groupedItems.highSlots" style="width: 100%" size="small" :row-class-name="getItemRowClass">
-                  <el-table-column label="物品" min-width="200">
+                  <el-table-column label="物品" min-width="180">
                     <template #default="{ row }">
                       <span class="item-name">{{ row.type_name || '-' }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="掉落数量" width="100" align="center">
+                  <el-table-column label="掉落数量" width="80" align="center">
                     <template #default="{ row }">
                       <span v-if="row.quantity_dropped > 0" class="qty-dropped">{{ row.quantity_dropped }}</span>
                       <span v-else>-</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="未掉落" width="100" align="center">
+                  <el-table-column label="未掉落" width="80" align="center">
                     <template #default="{ row }">
                       <span v-if="row.quantity_destroyed > 0" class="qty-destroyed">{{ row.quantity_destroyed }}</span>
                       <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="单价" width="100" align="right">
+                    <template #default="{ row }">
+                      <span class="unit-price">{{ formatISK(row.unit_price) }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="估值" width="100" align="right">
+                    <template #default="{ row }">
+                      <span class="item-value">{{ formatISK(row.value) }}</span>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -199,23 +212,33 @@
               
               <!-- 中槽 -->
               <div v-if="groupedItems.midSlots.length > 0" class="slot-section">
-                <div class="slot-title mid-slot">中槽 ({{ groupedItems.midSlots.length }})</div>
+                <div class="slot-title mid-slot">中槽 ({{ groupedItems.midSlots.length }}) - {{ formatISK(groupedItems.midSlotsValue) }}</div>
                 <el-table :data="groupedItems.midSlots" style="width: 100%" size="small" :row-class-name="getItemRowClass">
-                  <el-table-column label="物品" min-width="200">
+                  <el-table-column label="物品" min-width="180">
                     <template #default="{ row }">
                       <span class="item-name">{{ row.type_name || '-' }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="掉落数量" width="100" align="center">
+                  <el-table-column label="掉落数量" width="80" align="center">
                     <template #default="{ row }">
                       <span v-if="row.quantity_dropped > 0" class="qty-dropped">{{ row.quantity_dropped }}</span>
                       <span v-else>-</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="未掉落" width="100" align="center">
+                  <el-table-column label="未掉落" width="80" align="center">
                     <template #default="{ row }">
                       <span v-if="row.quantity_destroyed > 0" class="qty-destroyed">{{ row.quantity_destroyed }}</span>
                       <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="单价" width="100" align="right">
+                    <template #default="{ row }">
+                      <span class="unit-price">{{ formatISK(row.unit_price) }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="估值" width="100" align="right">
+                    <template #default="{ row }">
+                      <span class="item-value">{{ formatISK(row.value) }}</span>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -223,23 +246,33 @@
               
               <!-- 低槽 -->
               <div v-if="groupedItems.lowSlots.length > 0" class="slot-section">
-                <div class="slot-title low-slot">低槽 ({{ groupedItems.lowSlots.length }})</div>
+                <div class="slot-title low-slot">低槽 ({{ groupedItems.lowSlots.length }}) - {{ formatISK(groupedItems.lowSlotsValue) }}</div>
                 <el-table :data="groupedItems.lowSlots" style="width: 100%" size="small" :row-class-name="getItemRowClass">
-                  <el-table-column label="物品" min-width="200">
+                  <el-table-column label="物品" min-width="180">
                     <template #default="{ row }">
                       <span class="item-name">{{ row.type_name || '-' }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="掉落数量" width="100" align="center">
+                  <el-table-column label="掉落数量" width="80" align="center">
                     <template #default="{ row }">
                       <span v-if="row.quantity_dropped > 0" class="qty-dropped">{{ row.quantity_dropped }}</span>
                       <span v-else>-</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="未掉落" width="100" align="center">
+                  <el-table-column label="未掉落" width="80" align="center">
                     <template #default="{ row }">
                       <span v-if="row.quantity_destroyed > 0" class="qty-destroyed">{{ row.quantity_destroyed }}</span>
                       <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="单价" width="100" align="right">
+                    <template #default="{ row }">
+                      <span class="unit-price">{{ formatISK(row.unit_price) }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="估值" width="100" align="right">
+                    <template #default="{ row }">
+                      <span class="item-value">{{ formatISK(row.value) }}</span>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -247,23 +280,33 @@
               
               <!-- 改装件 -->
               <div v-if="groupedItems.rigs.length > 0" class="slot-section">
-                <div class="slot-title rig-slot">改装件 ({{ groupedItems.rigs.length }})</div>
+                <div class="slot-title rig-slot">改装件 ({{ groupedItems.rigs.length }}) - {{ formatISK(groupedItems.rigsValue) }}</div>
                 <el-table :data="groupedItems.rigs" style="width: 100%" size="small" :row-class-name="getItemRowClass">
-                  <el-table-column label="物品" min-width="200">
+                  <el-table-column label="物品" min-width="180">
                     <template #default="{ row }">
                       <span class="item-name">{{ row.type_name || '-' }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="掉落数量" width="100" align="center">
+                  <el-table-column label="掉落数量" width="80" align="center">
                     <template #default="{ row }">
                       <span v-if="row.quantity_dropped > 0" class="qty-dropped">{{ row.quantity_dropped }}</span>
                       <span v-else>-</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="未掉落" width="100" align="center">
+                  <el-table-column label="未掉落" width="80" align="center">
                     <template #default="{ row }">
                       <span v-if="row.quantity_destroyed > 0" class="qty-destroyed">{{ row.quantity_destroyed }}</span>
                       <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="单价" width="100" align="right">
+                    <template #default="{ row }">
+                      <span class="unit-price">{{ formatISK(row.unit_price) }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="估值" width="100" align="right">
+                    <template #default="{ row }">
+                      <span class="item-value">{{ formatISK(row.value) }}</span>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -271,23 +314,33 @@
               
               <!-- 货仓 -->
               <div v-if="groupedItems.cargo.length > 0" class="slot-section">
-                <div class="slot-title cargo-slot">货仓 ({{ groupedItems.cargo.length }})</div>
+                <div class="slot-title cargo-slot">货仓 ({{ groupedItems.cargo.length }}) - {{ formatISK(groupedItems.cargoValue) }}</div>
                 <el-table :data="groupedItems.cargo" style="width: 100%" size="small" :row-class-name="getItemRowClass">
-                  <el-table-column label="物品" min-width="200">
+                  <el-table-column label="物品" min-width="180">
                     <template #default="{ row }">
                       <span class="item-name">{{ row.type_name || '-' }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="掉落数量" width="100" align="center">
+                  <el-table-column label="掉落数量" width="80" align="center">
                     <template #default="{ row }">
                       <span v-if="row.quantity_dropped > 0" class="qty-dropped">{{ row.quantity_dropped }}</span>
                       <span v-else>-</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="未掉落" width="100" align="center">
+                  <el-table-column label="未掉落" width="80" align="center">
                     <template #default="{ row }">
                       <span v-if="row.quantity_destroyed > 0" class="qty-destroyed">{{ row.quantity_destroyed }}</span>
                       <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="单价" width="100" align="right">
+                    <template #default="{ row }">
+                      <span class="unit-price">{{ formatISK(row.unit_price) }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="估值" width="100" align="right">
+                    <template #default="{ row }">
+                      <span class="item-value">{{ formatISK(row.value) }}</span>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -295,24 +348,34 @@
               
               <!-- 其他 -->
               <div v-if="groupedItems.other.length > 0" class="slot-section">
-                <div class="slot-title other-slot">其他 ({{ groupedItems.other.length }})</div>
+                <div class="slot-title other-slot">其他 ({{ groupedItems.other.length }}) - {{ formatISK(groupedItems.otherValue) }}</div>
                 <el-table :data="groupedItems.other" style="width: 100%" size="small" :row-class-name="getItemRowClass">
-                  <el-table-column label="物品" min-width="200">
+                  <el-table-column label="物品" min-width="180">
                     <template #default="{ row }">
                       <span class="item-name">{{ row.type_name || '-' }}</span>
                       <span class="flag-info">(flag: {{ row.flag }})</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="掉落数量" width="100" align="center">
+                  <el-table-column label="掉落数量" width="80" align="center">
                     <template #default="{ row }">
                       <span v-if="row.quantity_dropped > 0" class="qty-dropped">{{ row.quantity_dropped }}</span>
                       <span v-else>-</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="未掉落" width="100" align="center">
+                  <el-table-column label="未掉落" width="80" align="center">
                     <template #default="{ row }">
                       <span v-if="row.quantity_destroyed > 0" class="qty-destroyed">{{ row.quantity_destroyed }}</span>
                       <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="单价" width="100" align="right">
+                    <template #default="{ row }">
+                      <span class="unit-price">{{ formatISK(row.unit_price) }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="估值" width="100" align="right">
+                    <template #default="{ row }">
+                      <span class="item-value">{{ formatISK(row.value) }}</span>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -557,9 +620,12 @@ const mergeItems = (items) => {
 // 按槽位分组并合并物品
 const groupedItems = computed(() => {
   if (!detailData.value?.victim?.items) {
-    return { highSlots: [], midSlots: [], lowSlots: [], rigs: [], cargo: [], other: [] }
+    return { 
+      highSlots: [], midSlots: [], lowSlots: [], rigs: [], cargo: [], other: [],
+      highSlotsValue: 0, midSlotsValue: 0, lowSlotsValue: 0, rigsValue: 0, cargoValue: 0, otherValue: 0
+    }
   }
-  
+
   const items = detailData.value.victim.items
   const grouped = {
     highSlots: [],
@@ -569,25 +635,38 @@ const groupedItems = computed(() => {
     cargo: [],
     other: []
   }
-  
+
   // 先按槽位分组
   for (const item of items) {
     const slotType = getSlotType(item.flag)
-    grouped[slotType === 'high' ? 'highSlots' : 
-           slotType === 'mid' ? 'midSlots' : 
-           slotType === 'low' ? 'lowSlots' : 
-           slotType === 'rig' ? 'rigs' : 
+    grouped[slotType === 'high' ? 'highSlots' :
+           slotType === 'mid' ? 'midSlots' :
+           slotType === 'low' ? 'lowSlots' :
+           slotType === 'rig' ? 'rigs' :
            slotType === 'cargo' ? 'cargo' : 'other'].push(item)
   }
-  
+
   // 合并相同type_id的物品
-  return {
+  const merged = {
     highSlots: mergeItems(grouped.highSlots),
     midSlots: mergeItems(grouped.midSlots),
     lowSlots: mergeItems(grouped.lowSlots),
     rigs: mergeItems(grouped.rigs),
     cargo: mergeItems(grouped.cargo),
     other: grouped.other // 其他不需要合并
+  }
+
+  // 计算各类别的小计
+  const sumValue = (items) => items.reduce((sum, item) => sum + (item.value || 0), 0)
+
+  return {
+    ...merged,
+    highSlotsValue: sumValue(merged.highSlots),
+    midSlotsValue: sumValue(merged.midSlots),
+    lowSlotsValue: sumValue(merged.lowSlots),
+    rigsValue: sumValue(merged.rigs),
+    cargoValue: sumValue(merged.cargo),
+    otherValue: sumValue(merged.other)
   }
 })
 
@@ -629,21 +708,16 @@ const loadKBData = async () => {
 
 const syncKB = async () => {
   if (!characterInfo.value?.character_id) return
-  
+
   syncing.value = true
   syncResult.value = null
-  
+
   try {
-    // 从localStorage获取code
-    const saved = localStorage.getItem('eve_character')
-    const savedInfo = saved ? JSON.parse(saved) : null
-    const code = savedInfo?.code
-    
-    const response = await fetch(`${API_BASE}/api/kb/sync/${characterInfo.value.character_id}?datasource=serenity${code ? '&code=' + encodeURIComponent(code) : ''}`, {
+    const response = await fetch(`${API_BASE}/api/kb/sync/${characterInfo.value.character_id}?datasource=serenity`, {
       method: 'POST'
     })
     const data = await response.json()
-    
+
     if (data.success) {
       syncResult.value = {
         success: true,
@@ -1021,6 +1095,28 @@ const handleImgError = (e) => {
   color: #666;
   font-size: 11px;
   margin-left: 8px;
+}
+
+/* 物品列表头部 */
+.items-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.total-value {
+  color: #e6a23c;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* 单价和估值样式 */
+.unit-price {
+  color: #909399;
+  font-size: 12px;
+}
+.item-value {
+  color: #e6a23c;
+  font-weight: 500;
 }
 
 .ship-images {

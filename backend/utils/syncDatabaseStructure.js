@@ -245,6 +245,10 @@ async function syncDatabaseStructure() {
     await EveSsoCode.createTable();
     console.log(`✓ 表 eve_sso_codes 创建或验证成功`);
 
+    // 18. 迁移 eve_sso_codes 表的 code 唯一索引
+    await EveSsoCode.migrateAddCodeUniqueIndex();
+    console.log(`✓ 表 eve_sso_codes code 唯一索引迁移完成`);
+
     console.log('所有表结构同步完成！');
 
   } catch (error) {

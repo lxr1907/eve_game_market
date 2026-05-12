@@ -182,12 +182,12 @@ const generateAuthUrl = async () => {
   }
 
   const state = generateState()
-  sessionStorage.setItem('eve_sso_state', state)
+  localStorage.setItem('eve_sso_state', state)
 
   // 生成PKCE参数
   const codeVerifier = generateCodeVerifier()
   const codeChallenge = await generateCodeChallenge(codeVerifier)
-  sessionStorage.setItem('eve_code_verifier', codeVerifier)
+  localStorage.setItem('eve_code_verifier', codeVerifier)
 
   // 使用PKCE模式参数
   const params = new URLSearchParams({
@@ -275,7 +275,7 @@ const handleSerenityLogin = async () => {
     }
 
     // 获取PKCE code_verifier
-    const codeVerifier = sessionStorage.getItem('eve_code_verifier')
+    const codeVerifier = localStorage.getItem('eve_code_verifier')
 
     const response = await fetch('/api/eve-sso/save-code', {
       method: 'POST',
@@ -297,10 +297,7 @@ const handleSerenityLogin = async () => {
       const characterInfo = {
         character_id: result.character_id,
         character_name: result.character_name,
-        access_token: result.access_token,
-        token_saved: result.token_saved,
-        scopes: allScopes.join(' '),
-        code: code
+        scopes: allScopes.join(' ')
       }
       localStorage.setItem('eve_character', JSON.stringify(characterInfo))
 

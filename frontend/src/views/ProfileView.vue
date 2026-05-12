@@ -181,13 +181,11 @@ const loadProfile = async () => {
     const info = JSON.parse(saved)
     characterInfo.value = info
 
-    if (info.access_token) {
-      await fetchESIInfo(info.access_token)
-      if (info.character_id) {
-        await fetchCharacterDetails(info.character_id)
-      }
+    // 使用 character_id 获取角色信息（不再依赖前端的 access_token）
+    if (info.character_id) {
+      await fetchCharacterDetails(info.character_id)
     } else {
-      error.value = '未找到访问令牌，请重新登录'
+      error.value = '未找到角色ID，请重新登录'
     }
   } catch (e) {
     console.error('Load profile error:', e)
