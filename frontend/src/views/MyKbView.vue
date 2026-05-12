@@ -170,27 +170,153 @@
             <!-- 受害者物品 -->
             <el-card class="detail-card" shadow="hover">
               <template #header>
-                <span class="section-title-text victim-title">物品列表 ({{ detailData.victim.items?.length || 0 }})</span>
+                <span class="section-title-text victim-title">物品列表</span>
               </template>
-              <el-table :data="detailData.victim.items || []" style="width: 100%" size="small" max-height="400" :row-class-name="getItemRowClass">
-                <el-table-column label="物品" min-width="200">
-                  <template #default="{ row }">
-                    <span class="item-name">{{ row.type_name || '-' }}</span>
-                    <span v-if="row.type_id" class="type-id"> ({{ row.type_id }})</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="总数量" width="100" align="center">
-                  <template #default="{ row }">
-                    {{ (row.quantity_dropped || 0) + (row.quantity_destroyed || 0) }}
-                  </template>
-                </el-table-column>
-                <el-table-column label="装配槽位" prop="flag_text" min-width="180">
-                  <template #default="{ row }">
-                    {{ row.flag_text || '-' }}
-                  </template>
-                </el-table-column>
-
-              </el-table>
+              
+              <!-- 高槽 -->
+              <div v-if="groupedItems.highSlots.length > 0" class="slot-section">
+                <div class="slot-title high-slot">高槽 ({{ groupedItems.highSlots.length }})</div>
+                <el-table :data="groupedItems.highSlots" style="width: 100%" size="small" :row-class-name="getItemRowClass">
+                  <el-table-column label="物品" min-width="200">
+                    <template #default="{ row }">
+                      <span class="item-name">{{ row.type_name || '-' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="掉落数量" width="100" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.quantity_dropped > 0" class="qty-dropped">{{ row.quantity_dropped }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="未掉落" width="100" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.quantity_destroyed > 0" class="qty-destroyed">{{ row.quantity_destroyed }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+              
+              <!-- 中槽 -->
+              <div v-if="groupedItems.midSlots.length > 0" class="slot-section">
+                <div class="slot-title mid-slot">中槽 ({{ groupedItems.midSlots.length }})</div>
+                <el-table :data="groupedItems.midSlots" style="width: 100%" size="small" :row-class-name="getItemRowClass">
+                  <el-table-column label="物品" min-width="200">
+                    <template #default="{ row }">
+                      <span class="item-name">{{ row.type_name || '-' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="掉落数量" width="100" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.quantity_dropped > 0" class="qty-dropped">{{ row.quantity_dropped }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="未掉落" width="100" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.quantity_destroyed > 0" class="qty-destroyed">{{ row.quantity_destroyed }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+              
+              <!-- 低槽 -->
+              <div v-if="groupedItems.lowSlots.length > 0" class="slot-section">
+                <div class="slot-title low-slot">低槽 ({{ groupedItems.lowSlots.length }})</div>
+                <el-table :data="groupedItems.lowSlots" style="width: 100%" size="small" :row-class-name="getItemRowClass">
+                  <el-table-column label="物品" min-width="200">
+                    <template #default="{ row }">
+                      <span class="item-name">{{ row.type_name || '-' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="掉落数量" width="100" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.quantity_dropped > 0" class="qty-dropped">{{ row.quantity_dropped }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="未掉落" width="100" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.quantity_destroyed > 0" class="qty-destroyed">{{ row.quantity_destroyed }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+              
+              <!-- 改装件 -->
+              <div v-if="groupedItems.rigs.length > 0" class="slot-section">
+                <div class="slot-title rig-slot">改装件 ({{ groupedItems.rigs.length }})</div>
+                <el-table :data="groupedItems.rigs" style="width: 100%" size="small" :row-class-name="getItemRowClass">
+                  <el-table-column label="物品" min-width="200">
+                    <template #default="{ row }">
+                      <span class="item-name">{{ row.type_name || '-' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="掉落数量" width="100" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.quantity_dropped > 0" class="qty-dropped">{{ row.quantity_dropped }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="未掉落" width="100" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.quantity_destroyed > 0" class="qty-destroyed">{{ row.quantity_destroyed }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+              
+              <!-- 货仓 -->
+              <div v-if="groupedItems.cargo.length > 0" class="slot-section">
+                <div class="slot-title cargo-slot">货仓 ({{ groupedItems.cargo.length }})</div>
+                <el-table :data="groupedItems.cargo" style="width: 100%" size="small" :row-class-name="getItemRowClass">
+                  <el-table-column label="物品" min-width="200">
+                    <template #default="{ row }">
+                      <span class="item-name">{{ row.type_name || '-' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="掉落数量" width="100" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.quantity_dropped > 0" class="qty-dropped">{{ row.quantity_dropped }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="未掉落" width="100" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.quantity_destroyed > 0" class="qty-destroyed">{{ row.quantity_destroyed }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+              
+              <!-- 其他 -->
+              <div v-if="groupedItems.other.length > 0" class="slot-section">
+                <div class="slot-title other-slot">其他 ({{ groupedItems.other.length }})</div>
+                <el-table :data="groupedItems.other" style="width: 100%" size="small" :row-class-name="getItemRowClass">
+                  <el-table-column label="物品" min-width="200">
+                    <template #default="{ row }">
+                      <span class="item-name">{{ row.type_name || '-' }}</span>
+                      <span class="flag-info">(flag: {{ row.flag }})</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="掉落数量" width="100" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.quantity_dropped > 0" class="qty-dropped">{{ row.quantity_dropped }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="未掉落" width="100" align="center">
+                    <template #default="{ row }">
+                      <span v-if="row.quantity_destroyed > 0" class="qty-destroyed">{{ row.quantity_destroyed }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
             </el-card>
 
             <!-- 最后一击 -->
@@ -394,6 +520,75 @@ const hasKillmailScope = computed(() => {
   const scopes = characterInfo.value.scopes
   return scopes.includes('esi-killmails.read_killmails') || 
          scopes.includes('esi-killmails.read_corporation_killmails')
+})
+
+// 根据flag值判断槽位类型
+const getSlotType = (flag) => {
+  // 高槽: 27-34
+  if (flag >= 27 && flag <= 34) return 'high'
+  // 中槽: 19-26
+  if (flag >= 19 && flag <= 26) return 'mid'
+  // 低槽: 11-18
+  if (flag >= 11 && flag <= 18) return 'low'
+  // 改装件: 92-99
+  if (flag >= 92 && flag <= 99) return 'rig'
+  // 货仓: 5
+  if (flag === 5) return 'cargo'
+  // 其他
+  return 'other'
+}
+
+// 合并相同item_type_id的物品
+const mergeItems = (items) => {
+  const merged = {}
+  for (const item of items) {
+    const key = item.item_type_id
+    if (!key) continue
+    if (merged[key]) {
+      merged[key].quantity_dropped += (item.quantity_dropped || 0)
+      merged[key].quantity_destroyed += (item.quantity_destroyed || 0)
+    } else {
+      merged[key] = { ...item }
+    }
+  }
+  return Object.values(merged)
+}
+
+// 按槽位分组并合并物品
+const groupedItems = computed(() => {
+  if (!detailData.value?.victim?.items) {
+    return { highSlots: [], midSlots: [], lowSlots: [], rigs: [], cargo: [], other: [] }
+  }
+  
+  const items = detailData.value.victim.items
+  const grouped = {
+    highSlots: [],
+    midSlots: [],
+    lowSlots: [],
+    rigs: [],
+    cargo: [],
+    other: []
+  }
+  
+  // 先按槽位分组
+  for (const item of items) {
+    const slotType = getSlotType(item.flag)
+    grouped[slotType === 'high' ? 'highSlots' : 
+           slotType === 'mid' ? 'midSlots' : 
+           slotType === 'low' ? 'lowSlots' : 
+           slotType === 'rig' ? 'rigs' : 
+           slotType === 'cargo' ? 'cargo' : 'other'].push(item)
+  }
+  
+  // 合并相同type_id的物品
+  return {
+    highSlots: mergeItems(grouped.highSlots),
+    midSlots: mergeItems(grouped.midSlots),
+    lowSlots: mergeItems(grouped.lowSlots),
+    rigs: mergeItems(grouped.rigs),
+    cargo: mergeItems(grouped.cargo),
+    other: grouped.other // 其他不需要合并
+  }
 })
 
 onMounted(async () => {
@@ -777,6 +972,56 @@ const handleImgError = (e) => {
 .item-name { color: #e0e0e0; }
 .qty-dropped { color: #67c23a; }
 .qty-destroyed { color: #f56c6c; }
+
+/* 槽位分类样式 */
+.slot-section {
+  margin-bottom: 20px;
+}
+.slot-section:last-child {
+  margin-bottom: 0;
+}
+.slot-title {
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.high-slot {
+  background-color: rgba(64, 158, 255, 0.2);
+  color: #409eff;
+  border-left: 3px solid #409eff;
+}
+.mid-slot {
+  background-color: rgba(64, 158, 255, 0.2);
+  color: #409eff;
+  border-left: 3px solid #409eff;
+}
+.low-slot {
+  background-color: rgba(64, 158, 255, 0.2);
+  color: #409eff;
+  border-left: 3px solid #409eff;
+}
+.rig-slot {
+  background-color: rgba(64, 158, 255, 0.2);
+  color: #409eff;
+  border-left: 3px solid #409eff;
+}
+.cargo-slot {
+  background-color: rgba(64, 158, 255, 0.2);
+  color: #409eff;
+  border-left: 3px solid #409eff;
+}
+.other-slot {
+  background-color: rgba(96, 98, 102, 0.2);
+  color: #606266;
+  border-left: 3px solid #606266;
+}
+.flag-info {
+  color: #666;
+  font-size: 11px;
+  margin-left: 8px;
+}
 
 .ship-images {
   display: flex;
