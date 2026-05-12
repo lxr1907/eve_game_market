@@ -856,12 +856,19 @@ const showDetail = async (row) => {
 const formatISK = (value) => {
   if (!value) return '0'
   const num = parseFloat(value)
-  if (num >= 1000000000) {
-    return (num / 1000000000).toFixed(2) + 'B'
-  } else if (num >= 1000000) {
-    return (num / 1000000).toFixed(2) + 'M'
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(2) + 'K'
+  // 中文单位格式化
+  if (num >= 10000000000) {
+    // 超过100亿：以"百亿"结尾
+    return (num / 100000000).toFixed(2) + '亿'
+  } else if (num >= 100000000) {
+    // 超过亿：以"亿"结尾
+    return (num / 100000000).toFixed(2) + '亿'
+  } else if (num >= 10000000) {
+    // 超过1000万：以"千万"结尾
+    return (num / 10000000).toFixed(2) + '千万'
+  } else if (num >= 10000) {
+    // 超过1万：以"万"结尾
+    return (num / 10000).toFixed(2) + '万'
   }
   return num.toFixed(2)
 }

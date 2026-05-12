@@ -26,8 +26,11 @@ const getItemPriceFromOrders = async (typeId, regionId = DEFAULT_REGION_ID, data
       [typeId, regionId, datasource]
     );
     
-    const minSell = sellOrders[0]?.min_sell;
-    const maxBuy = buyOrders[0]?.max_buy;
+    // 确保转换为数字（MySQL DECIMAL 返回字符串）
+    const minSell = sellOrders[0]?.min_sell ? parseFloat(sellOrders[0].min_sell) : null;
+    const maxBuy = buyOrders[0]?.max_buy ? parseFloat(buyOrders[0].max_buy) : null;
+    
+    console.log(`[Price] type ${typeId} in region ${regionId}: minSell=${minSell}, maxBuy=${maxBuy}`);
     
     return { minSell, maxBuy };
   } catch (error) {
@@ -105,9 +108,11 @@ const calculateItemValue = async (item, regionId = DEFAULT_REGION_ID, datasource
   // 如果没有订单数据，尝试同步
   if (minSell === null && maxBuy === null) {
     console.log(`No orders found for type ${typeId}, syncing...`);
-    await syncOrdersForType(typeId, regionId, datasource);
+    const syncedCount = await syncOrdersForType(typeId, regionId, datasource);
+    console.log(`Synced ${syncedCount} orders for type ${typeId}`);
     // 重新查询
     ({ minSell, maxBuy } = await getItemPriceFromOrders(typeId, regionId, datasource));
+    console.log(`After sync, type ${typeId}: minSell=${minSell}, maxBuy=${maxBuy}`);
   }
   
   let unitPrice = 0;
@@ -162,16 +167,16 @@ const calculateItemsValue = async (items, regionId = DEFAULT_REGION_ID, datasour
     
     itemsWithValue.push({
       ...item,
-      unit_price: unitPrice,
-      value: itemTotalValue,
-      item_value: value,
-      nested_value: nestedValue,
+      unit_price: parseFloat(unitPrice.toFixed(2)),
+      value: parseFloat(itemTotalValue.toFixed(2)),
+      item_value: parseFloat(value.toFixed(2)),
+      nested_value: parseFloat(nestedValue.toFixed(2)),
       items: nestedItemsWithValue,
       price_info: { minSell, maxBuy }
     });
   }
   
-  return { totalValue, itemsWithValue };
+  return { totalValue: parseFloat(totalValue.toFixed(2)), itemsWithValue };
 };
 
 // 从ESI获取角色最近击毁记录
@@ -605,6 +610,13 @@ const getKillmailDetail = async (req, res) => {
     const mainAttacker = attackerList.find(a => a.final_blow) || null;
     const supporters = attackerList.filter(a => !a.final_blow);
     
+    // 8. 计算物品总价值
+    const itemsValue = items.reduce((sum, item) => {
+      const itemValue = parseFloat(item.value) || 0;
+      const nestedValue = (item.items || []).reduce((nSum, nested) => nSum + (parseFloat(nested.value) || 0), 0);
+      return sum + itemValue + nestedValue;
+    }, 0);
+    
     res.json({
       success: true,
       killmail_id: km.killmail_id,
@@ -621,7 +633,8 @@ const getKillmailDetail = async (req, res) => {
         ship_type_id: km.victim_ship_type_id,
         ship_type_name: typeNames[km.victim_ship_type_id] || null,
         damage_taken: km.victim_damage_taken,
-        items: items
+        items: items,
+        items_value: itemsValue
       },
       main_attacker: mainAttacker,
       supporters: supporters
