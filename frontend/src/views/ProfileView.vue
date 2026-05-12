@@ -1,7 +1,6 @@
 <template>
   <div class="profile-page">
     <div class="profile-container">
-      <h1 class="profile-title">个人信息</h1>
 
       <div v-if="loading" class="loading-section">
         <el-skeleton :rows="5" animated />
@@ -15,29 +14,14 @@
       </div>
 
       <div v-else-if="characterInfo" class="profile-content">
-        <!-- 角色基本信息卡片 -->
-        <el-card class="profile-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>角色信息</span>
-              <el-button type="danger" size="small" @click="handleLogout">退出登录</el-button>
-            </div>
-          </template>
-          <div class="profile-info">
-            <div class="info-item">
-              <label>角色名称：</label>
-              <span class="value">{{ characterInfo.character_name || '未知' }}</span>
-            </div>
-            <div class="info-item">
-              <label>角色ID：</label>
-              <span class="value">{{ characterInfo.character_id || '未知' }}</span>
-            </div>
-            <div class="info-item" v-if="esiData">
-              <label>账号状态：</label>
-              <el-tag type="success">已授权</el-tag>
-            </div>
-          </div>
-        </el-card>
+        <!-- 角色名称标题 -->
+        <div class="character-header">
+          <h2 class="character-name">{{ characterInfo.character_name || '未知' }} (ID: {{ characterInfo.character_id || '未知' }})</h2>
+          <el-button type="primary" @click="$router.push('/my-kb')">
+            <el-icon><Document /></el-icon>
+            我的KB
+          </el-button>
+        </div>
 
         <!-- ESI角色详细信息 -->
         <el-card class="detail-card" shadow="hover" v-if="characterDetails">
@@ -121,21 +105,7 @@
           </div>
         </el-card>
 
-        <!-- 原始数据（可折叠） -->
-        <el-collapse class="raw-data-collapse">
-          <el-collapse-item title="查看原始ESI数据" name="raw">
-            <div class="raw-data-section">
-              <div v-if="esiData">
-                <h4>验证数据</h4>
-                <pre class="raw-json">{{ JSON.stringify(esiData, null, 2) }}</pre>
-              </div>
-              <div v-if="characterDetails">
-                <h4>角色详情</h4>
-                <pre class="raw-json">{{ JSON.stringify(characterDetails, null, 2) }}</pre>
-              </div>
-            </div>
-          </el-collapse-item>
-        </el-collapse>
+
       </div>
 
       <div v-else class="not-logged-in">
@@ -153,12 +123,12 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Document } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const loading = ref(true)
 const error = ref('')
 const characterInfo = ref(null)
-const esiData = ref(null)
 const characterDetails = ref(null)
 const corporationInfo = ref(null)
 
@@ -192,29 +162,6 @@ const loadProfile = async () => {
     error.value = '加载个人信息失败：' + e.message
   } finally {
     loading.value = false
-  }
-}
-
-const fetchESIInfo = async (accessToken) => {
-  try {
-    const response = await fetch('https://ali-esi.evepc.163.com/verify', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`ESI验证失败: ${response.status}`)
-    }
-
-    esiData.value = await response.json()
-  } catch (e) {
-    console.error('ESI fetch error:', e)
-    if (e.message.includes('401') || e.message.includes('403')) {
-      error.value = '授权已过期，请重新登录'
-      localStorage.removeItem('eve_character')
-      characterInfo.value = null
-    }
   }
 }
 
@@ -363,6 +310,25 @@ const handleLogout = () => {
   font-weight: 500;
 }
 
+/* 角色名称标题 */
+.character-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background-color: #1e1e2e;
+  border-radius: 8px;
+  border: 1px solid #2d3040;
+}
+
+.character-name {
+  margin: 0;
+  font-size: 20px;
+  color: #e0e0e0;
+  font-weight: 600;
+}
+
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -415,47 +381,6 @@ const handleLogout = () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.raw-data-collapse {
-  background-color: #1e1e2e;
-  border-color: #2d3040;
-}
-
-.raw-data-collapse :deep(.el-collapse-item__header) {
-  background-color: #1e1e2e;
-  color: #e0e0e0;
-  border-color: #2d3040;
-}
-
-.raw-data-collapse :deep(.el-collapse-item__wrap) {
-  background-color: #1e1e2e;
-  border-color: #2d3040;
-}
-
-.raw-data-collapse :deep(.el-collapse-item__content) {
-  color: #e0e0e0;
-}
-
-.raw-data-section h4 {
-  color: #999;
-  margin: 16px 0 8px 0;
-  font-size: 14px;
-}
-
-.raw-data-section h4:first-child {
-  margin-top: 0;
-}
-
-.raw-json {
-  background-color: #252636;
-  padding: 16px;
-  border-radius: 4px;
-  color: #e0e0e0;
-  font-family: monospace;
-  font-size: 12px;
-  overflow-x: auto;
-  margin: 0;
 }
 
 .not-logged-in {

@@ -7,8 +7,10 @@ class OrderController {
   // 同步特定区域和类型的订单数据
   static async syncOrders(req, res) {
     try {
-      const { regionId, typeId } = req.params;
-      const { datasource = 'serenity' } = req.query;
+      // 支持路径参数和查询参数两种方式
+      const regionId = req.params.regionId || req.query.regionId || req.query.region_id;
+      const typeId = req.params.typeId || req.query.typeId || req.query.type_id;
+      const datasource = req.query.datasource || 'serenity';
       
       // 验证参数
       if (!regionId || !typeId) {
@@ -98,7 +100,10 @@ class OrderController {
   // 查询订单数据
   static async getOrders(req, res) {
     try {
-      const { regionId, typeId, datasource = 'serenity' } = req.query;
+      // 支持驼峰和下划线两种命名法
+      const regionId = req.query.regionId || req.query.region_id;
+      const typeId = req.query.typeId || req.query.type_id;
+      const datasource = req.query.datasource || req.query.datasource || 'serenity';
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
       

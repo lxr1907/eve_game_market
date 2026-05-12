@@ -12,17 +12,17 @@ const DEFAULT_REGION_ID = 10000002;
 // 从orders表获取物品价格
 const getItemPriceFromOrders = async (typeId, regionId = DEFAULT_REGION_ID, datasource = 'serenity') => {
   try {
-    // 查询最低卖单
+    // 查询最低卖单 (is_buy_order = 0 表示卖单)
     const [sellOrders] = await pool.execute(
-      `SELECT MIN(price) as min_sell FROM orders 
-       WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = false`,
+      `SELECT MIN(price) as min_sell FROM orders
+       WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = 0`,
       [typeId, regionId, datasource]
     );
-    
-    // 查询最高买单
+
+    // 查询最高买单 (is_buy_order = 1 表示买单)
     const [buyOrders] = await pool.execute(
-      `SELECT MAX(price) as max_buy FROM orders 
-       WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = true`,
+      `SELECT MAX(price) as max_buy FROM orders
+       WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = 1`,
       [typeId, regionId, datasource]
     );
     
@@ -54,28 +54,34 @@ const syncOrdersForType = async (typeId, regionId = DEFAULT_REGION_ID, datasourc
     
     // 保存订单到数据库
     for (const order of orders) {
+      // 确保 is_buy_order 是数字 0 或 1
+      const isBuyOrder = order.is_buy_order ? 1 : 0;
+
       await pool.execute(
         `INSERT INTO orders (
-          order_id, type_id, region_id, system_id, location_id,
-          price, volume_remain, volume_total, is_buy_order, issued, datasource
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          order_id, region_id, type_id, is_buy_order, price,
+          volume_remaining, volume_total, minimum_volume, order_range,
+          location_id, duration, is_active, datasource
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
           price = VALUES(price),
-          volume_remain = VALUES(volume_remain),
-          system_id = VALUES(system_id),
+          volume_remaining = VALUES(volume_remaining),
           location_id = VALUES(location_id),
-          is_buy_order = VALUES(is_buy_order)`,
+          is_buy_order = VALUES(is_buy_order),
+          is_active = VALUES(is_active)`,
         [
           order.order_id,
-          order.type_id,
           regionId,
-          order.system_id,
-          order.location_id,
+          order.type_id,
+          isBuyOrder,
           order.price,
           order.volume_remain,
           order.volume_total,
-          order.is_buy_order,
-          new Date(order.issued).toISOString().slice(0, 19).replace('T', ' '),
+          order.min_volume || 1,
+          order.range || 'region',
+          order.location_id,
+          order.duration || 90,
+          1, // is_active = 1
           datasource
         ]
       );
