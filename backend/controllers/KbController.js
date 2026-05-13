@@ -664,15 +664,15 @@ const getKBRanking = async (req, res) => {
     let result = [];
 
     if (type === 'single') {
-      // 单次KB损失估值排行（作为受害者损失最大的）
+      // 单次KB击毁估值排行（按最后一击角色）
       const [rows] = await pool.execute(
         `SELECT 
           k.killmail_id,
           k.killmail_time,
-          k.victim_character_id,
-          COALESCE(k.victim_character_name, sso.character_name) as victim_character_name,
-          k.victim_corporation_id,
-          k.victim_corporation_name,
+          k.final_blow_character_id,
+          COALESCE(k.final_blow_character_name, sso.character_name) as final_blow_character_name,
+          k.final_blow_corporation_id,
+          k.final_blow_corporation_name,
           k.victim_ship_type_id,
           vt.name as victim_ship_name,
           k.solar_system_id,
@@ -681,9 +681,9 @@ const getKBRanking = async (req, res) => {
         FROM killmails k
         LEFT JOIN types vt ON k.victim_ship_type_id = vt.id
         LEFT JOIN systems s ON k.solar_system_id = s.system_id AND k.datasource COLLATE utf8mb4_unicode_ci = s.datasource COLLATE utf8mb4_unicode_ci
-        LEFT JOIN eve_sso_codes sso ON k.victim_character_id = sso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso.datasource COLLATE utf8mb4_unicode_ci
+        LEFT JOIN eve_sso_codes sso ON k.final_blow_character_id = sso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso.datasource COLLATE utf8mb4_unicode_ci
         WHERE k.killmail_time >= ? AND k.datasource = ?
-          AND k.victim_character_id IS NOT NULL
+          AND k.final_blow_character_id IS NOT NULL
         ORDER BY k.total_value DESC
         LIMIT ${safeLimit}`,
         [oneMonthAgoStr, datasource]
