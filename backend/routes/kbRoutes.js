@@ -17,4 +17,7 @@ router.get('/recent', KbController.getRecentKills);
 // 获取killmail完整详情（含attackers、items）
 router.get('/detail/:killmail_id', KbController.getKillmailDetail);
 
+// 获取KB榜单
+router.get('/ranking', KbController.getKBRanking);
+
 module.exports = router;

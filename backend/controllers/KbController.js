@@ -650,10 +650,114 @@ const getKillmailDetail = async (req, res) => {
   }
 };
 
+// 获取KB榜单数据
+const getKBRanking = async (req, res) => {
+  try {
+    const { type = 'single', limit = 50, datasource = 'serenity' } = req.query;
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    const oneMonthAgoStr = oneMonthAgo.toISOString().slice(0, 19).replace('T', ' ');
+    
+    // 确保 limit 是安全的整数
+    const safeLimit = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
+
+    let result = [];
+
+    if (type === 'single') {
+      // 单次KB损失估值排行（作为受害者损失最大的）
+      const [rows] = await pool.execute(
+        `SELECT 
+          k.killmail_id,
+          k.killmail_time,
+          k.victim_character_id,
+          COALESCE(k.victim_character_name, sso.character_name) as victim_character_name,
+          k.victim_corporation_id,
+          k.victim_corporation_name,
+          k.victim_ship_type_id,
+          vt.name as victim_ship_name,
+          k.solar_system_id,
+          s.name as solar_system_name,
+          k.total_value
+        FROM killmails k
+        LEFT JOIN types vt ON k.victim_ship_type_id = vt.id
+        LEFT JOIN systems s ON k.solar_system_id = s.system_id AND k.datasource COLLATE utf8mb4_unicode_ci = s.datasource COLLATE utf8mb4_unicode_ci
+        LEFT JOIN eve_sso_codes sso ON k.victim_character_id = sso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso.datasource COLLATE utf8mb4_unicode_ci
+        WHERE k.killmail_time >= ? AND k.datasource = ?
+          AND k.victim_character_id IS NOT NULL
+        ORDER BY k.total_value DESC
+        LIMIT ${safeLimit}`,
+        [oneMonthAgoStr, datasource]
+      );
+      result = rows;
+
+    } else if (type === 'kills') {
+      // 角色击毁总估值排行（作为攻击者）
+      const [rows] = await pool.execute(
+        `SELECT 
+          k.final_blow_character_id as character_id,
+          COALESCE(k.final_blow_character_name, sso.character_name) as character_name,
+          k.final_blow_corporation_id as corporation_id,
+          k.final_blow_corporation_name as corporation_name,
+          COUNT(*) as kill_count,
+          SUM(k.total_value) as total_value
+        FROM killmails k
+        LEFT JOIN eve_sso_codes sso ON k.final_blow_character_id = sso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso.datasource COLLATE utf8mb4_unicode_ci
+        WHERE k.killmail_time >= ? AND k.datasource = ?
+          AND k.final_blow_character_id IS NOT NULL
+        GROUP BY k.final_blow_character_id, k.final_blow_character_name,
+                 k.final_blow_corporation_id, k.final_blow_corporation_name,
+                 sso.character_name
+        ORDER BY total_value DESC
+        LIMIT ${safeLimit}`,
+        [oneMonthAgoStr, datasource]
+      );
+      result = rows;
+
+    } else if (type === 'losses') {
+      // 角色损失总估值排行（作为受害者）
+      const [rows] = await pool.execute(
+        `SELECT 
+          k.victim_character_id as character_id,
+          COALESCE(k.victim_character_name, sso.character_name) as character_name,
+          k.victim_corporation_id as corporation_id,
+          k.victim_corporation_name as corporation_name,
+          COUNT(*) as loss_count,
+          SUM(k.total_value) as total_value
+        FROM killmails k
+        LEFT JOIN eve_sso_codes sso ON k.victim_character_id = sso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso.datasource COLLATE utf8mb4_unicode_ci
+        WHERE k.killmail_time >= ? AND k.datasource = ?
+          AND k.victim_character_id IS NOT NULL
+        GROUP BY k.victim_character_id, k.victim_character_name,
+                 k.victim_corporation_id, k.victim_corporation_name,
+                 sso.character_name
+        ORDER BY total_value DESC
+        LIMIT ${safeLimit}`,
+        [oneMonthAgoStr, datasource]
+      );
+      result = rows;
+    }
+
+    res.json({
+      success: true,
+      type,
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Get KB ranking error:', error);
+    res.status(500).json({
+      success: false,
+      error: '获取KB榜单失败',
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   syncCharacterKB,
   getCharacterKB,
   getMyKB,
   getRecentKills,
-  getKillmailDetail
+  getKillmailDetail,
+  getKBRanking
 };

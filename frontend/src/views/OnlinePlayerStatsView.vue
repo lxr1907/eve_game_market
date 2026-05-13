@@ -3,7 +3,7 @@
     <el-card shadow="hover" class="stats-card">
       <template #header>
         <div class="card-header">
-          <span>在线玩家统计</span>
+          <span>在线统计</span>
           <el-button type="primary" size="small" @click="fetchStats">
             <el-icon><Refresh /></el-icon>
             刷新数据

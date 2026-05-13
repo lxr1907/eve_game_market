@@ -26,6 +26,7 @@ const System = require('./models/System');
 const EveSsoCode = require('./models/EveSsoCode');
 const Killmail = require('./models/Killmail');
 const { syncDatabaseStructure } = require('./utils/syncDatabaseStructure');
+const { unifyDatabaseCharset } = require('./utils/unifyCharset');
 
 const app = express();
 
@@ -39,6 +40,9 @@ app.use(express.urlencoded({ extended: true }));
 // Initialize database tables using syncDatabaseStructure
 (async () => {
   try {
+    // 先统一数据库字符集
+    await unifyDatabaseCharset();
+    
     await syncDatabaseStructure();
     // 初始化KB相关表
     await Killmail.createTables();

@@ -16,6 +16,8 @@ import LoyaltyOfferView from '../views/LoyaltyOfferView.vue'
 import ProfitDataView from '../views/ProfitDataView.vue'
 import LpBlueprintView from '../views/LpBlueprintView.vue'
 import MyKbView from '../views/MyKbView.vue'
+import KbRankingView from '../views/KbRankingView.vue'
+import KbRankingDetailView from '../views/KbRankingDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -104,6 +106,16 @@ const router = createRouter({
       path: '/my-kb',
       name: 'my-kb',
       component: MyKbView
+    },
+    {
+      path: '/kb-ranking',
+      name: 'kb-ranking',
+      component: KbRankingView
+    },
+    {
+      path: '/kb-ranking/:id',
+      name: 'kb-ranking-detail',
+      component: KbRankingDetailView
     }
   ]
 })

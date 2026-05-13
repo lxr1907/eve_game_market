@@ -4,7 +4,7 @@
         <el-card shadow="hover">
           <template #header>
             <div class="card-header">
-              <span>星系击毁统计</span>
+              <span>星系击毁</span>
               <el-button type="primary" @click="syncSystemKills">
                 <el-icon><RefreshRight /></el-icon>
                 同步击毁统计数据

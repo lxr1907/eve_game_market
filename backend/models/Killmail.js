@@ -277,10 +277,25 @@ class Killmail {
     const kills = killsResult[0] || { count: 0, total_isk: 0 };
     const losses = lossesResult[0] || { count: 0, total_isk: 0 };
     
-    // 计算效率
-    const efficiency = (kills.count + losses.count) > 0 
-      ? (kills.count / (kills.count + losses.count) * 100).toFixed(2)
-      : 0;
+    // 计算效率：击毁总估值 / 损失总估值
+    // 如果击毁 < 损失，则效率 = - (损失总估值 / 击毁总估值)
+    const killsIsk = parseFloat(kills.total_isk) || 0;
+    const lossesIsk = parseFloat(losses.total_isk) || 0;
+    let efficiency = 0;
+    
+    if (killsIsk > 0 && lossesIsk > 0) {
+      if (killsIsk >= lossesIsk) {
+        efficiency = (killsIsk / lossesIsk * 100).toFixed(2);
+      } else {
+        efficiency = -(lossesIsk / killsIsk * 100).toFixed(2);
+      }
+    } else if (killsIsk > 0) {
+      // 只有击毁没有损失，效率为正无穷大，用一个大数表示
+      efficiency = 9999.99;
+    } else if (lossesIsk > 0) {
+      // 只有损失没有击毁，效率为负无穷大
+      efficiency = -9999.99;
+    }
     
     // 更新或插入统计
     const query = `

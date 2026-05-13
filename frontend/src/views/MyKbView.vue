@@ -58,12 +58,12 @@
           </el-card>
           <el-card class="stat-card efficiency-card" shadow="hover">
             <div class="stat-content">
-              <div class="stat-label">效率</div>
+              <div class="stat-label">效率分</div>
               <div class="stat-value" :class="getEfficiencyClass(stats.efficiency)">
-                {{ stats.efficiency || 0 }}%
+                {{ Math.round(parseFloat(stats.efficiency) || 0) }}
               </div>
               <div class="stat-bar">
-                <div class="efficiency-bar" :style="{ width: (stats.efficiency || 0) + '%' }"></div>
+                <div class="efficiency-bar" :style="{ width: Math.min(Math.abs(parseFloat(stats.efficiency) || 0), 100) + '%' }"></div>
               </div>
             </div>
           </el-card>

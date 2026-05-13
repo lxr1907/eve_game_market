@@ -29,11 +29,15 @@
           </el-menu-item>
           <el-menu-item index="7">
             <el-icon><UserFilled /></el-icon>
-            在线玩家统计
+            在线统计
           </el-menu-item>
           <el-menu-item index="8">
             <el-icon><MapLocation /></el-icon>
-            星系击毁统计
+            星系击毁
+          </el-menu-item>
+          <el-menu-item index="kb-ranking">
+            <el-icon><Trophy /></el-icon>
+            KB榜单
           </el-menu-item>
           <el-sub-menu index="2">
             <template #title>
@@ -100,7 +104,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { House, Collection, MapLocation, Document, Star, Money, UserFilled, User, ArrowDown, SwitchButton, Aim } from '@element-plus/icons-vue'
+import { House, Collection, MapLocation, Document, Star, Money, UserFilled, User, ArrowDown, SwitchButton, Aim, Trophy } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -201,6 +205,8 @@ const handleSelect = (key, keyPath) => {
     router.push('/online-player-stats')
   } else if (key === '8') {
     router.push('/system-kills')
+  } else if (key === 'kb-ranking') {
+    router.push('/kb-ranking')
   } else if (key === 'my-kb') {
     router.push('/my-kb')
   }
