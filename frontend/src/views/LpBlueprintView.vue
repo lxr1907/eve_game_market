@@ -100,8 +100,34 @@
                 <el-icon><Money /></el-icon> 收益概览
               </h2>
             </div>
+            
+            <!-- 每LP收益范围展示 -->
+            <div class="profit-range-container">
+              <div class="profit-item">
+                <div class="profit-label">按买价计算每LP收益</div>
+                <div class="profit-value" :class="profitDisplay[0]?.class">
+                  {{ profitDisplay[0]?.value }}
+                </div>
+              </div>
+              
+              <div class="wave-separator">
+                <svg class="wave-svg" viewBox="0 0 100 20" preserveAspectRatio="none">
+                  <path d="M0,10 Q25,0 50,10 T100,10" stroke="currentColor" fill="none" stroke-width="1.5"/>
+                </svg>
+                <span class="range-text">收益范围</span>
+              </div>
+              
+              <div class="profit-item">
+                <div class="profit-label">按卖价计算每LP收益</div>
+                <div class="profit-value" :class="profitDisplay[1]?.class">
+                  {{ profitDisplay[1]?.value }}
+                </div>
+              </div>
+            </div>
+            
+            <!-- 其他收益指标表格 -->
             <el-table
-              :data="profitDisplay"
+              :data="profitDisplay.slice(2)"
               style="width: 100%"
               border
               stripe
@@ -115,6 +141,7 @@
                 </template>
               </el-table-column>
             </el-table>
+            
             <div class="view-orders-btn">
               <el-button type="primary" @click="showOrderDialog" :loading="queryingOrders">
                 <el-icon><Search /></el-icon> 查看产品订单
@@ -967,6 +994,23 @@ export default {
   padding: 12px 0;
 }
 
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .profit-range-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .wave-separator {
+    transform: rotate(90deg);
+    padding: 20px 0;
+  }
+  
+  .profit-value {
+    font-size: 20px;
+  }
+}
+
 .profit-positive {
   color: #67c23a;
   font-weight: 700;
@@ -979,6 +1023,59 @@ export default {
   font-weight: 700;
   font-size: 16px;
   text-shadow: 0 0 10px rgba(245, 108, 108, 0.3);
+}
+
+/* 收益范围展示样式 */
+.profit-range-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, rgba(230, 162, 60, 0.1), rgba(64, 158, 255, 0.1));
+  border-radius: 8px;
+  border: 1px solid rgba(230, 162, 60, 0.2);
+}
+
+.profit-item {
+  flex: 1;
+  text-align: center;
+}
+
+.profit-label {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.profit-value {
+  font-size: 24px;
+  font-weight: 700;
+  text-shadow: 0 0 10px currentColor;
+}
+
+.wave-separator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  color: #e6a23c;
+}
+
+.wave-svg {
+  width: 80px;
+  height: 30px;
+  margin: 10px 0;
+  opacity: 0.8;
+}
+
+.range-text {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .view-orders-btn {
