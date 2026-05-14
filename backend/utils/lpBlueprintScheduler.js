@@ -359,7 +359,11 @@ async function runCalculation() {
       const oldest = await LpBlueprintProfit.getOldestRecord(regionId, datasource);
       if (oldest) {
         targetBlueprint = blueprints.find(bp => bp.type_id === oldest.type_id);
-        console.log(`[LP Blueprint Scheduler] Updating oldest record: ${targetBlueprint.type_name || targetBlueprint.type_id}`);
+        if (targetBlueprint) {
+          console.log(`[LP Blueprint Scheduler] Updating oldest record: ${targetBlueprint.type_name || targetBlueprint.type_id}`);
+        } else {
+          console.log(`[LP Blueprint Scheduler] Blueprint with type_id ${oldest.type_id} not found in blueprints list, skipping...`);
+        }
       }
     }
 
