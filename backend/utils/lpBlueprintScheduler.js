@@ -27,7 +27,6 @@ async function getBlueprintsWithBuyOrders(regionId, datasource) {
     FROM loyalty_offers lo
     LEFT JOIN types t ON lo.type_id = t.id
     WHERE lo.datasource = ?
-      AND lo.type_id IN (SELECT DISTINCT blueprint_type_id FROM blueprint_products)
       AND lo.lp_cost > 0
       AND lo.isk_cost > 0
     `, [datasource]);
