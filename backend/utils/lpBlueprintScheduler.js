@@ -21,7 +21,8 @@ let isCalculating = false;
  * 获取有收购订单的蓝图列表
  */
 async function getBlueprintsWithBuyOrders(regionId, datasource) {
-  const [rows] = await pool.execute(`
+  // 1. 获取所有符合基本条件的蓝图
+  const [allBlueprints] = await pool.execute(`
     SELECT DISTINCT lo.offer_id, lo.corporation_id, lo.type_id, lo.quantity, lo.lp_cost, lo.isk_cost, t.name as type_name
     FROM loyalty_offers lo
     LEFT JOIN types t ON lo.type_id = t.id
@@ -30,14 +31,74 @@ async function getBlueprintsWithBuyOrders(regionId, datasource) {
       AND lo.lp_cost > 0
       AND lo.isk_cost > 0
       AND lo.type_id NOT IN (SELECT DISTINCT lor.type_id FROM loyalty_offer_required_items lor)
-      AND lo.type_id IN (
-        SELECT bp.blueprint_type_id 
-        FROM blueprint_products bp 
-        JOIN region_types rt ON rt.type_id = bp.product_type_id 
-        WHERE rt.region_id = ? AND rt.datasource = ?
-      )
-  `, [datasource, regionId, datasource]);
-  return rows;
+  `, [datasource]);
+
+  if (allBlueprints.length === 0) {
+    return [];
+  }
+
+  // 2. 获取每个蓝图的产品类型
+  const blueprintProductMap = new Map();
+  for (const bp of allBlueprints) {
+    const [products] = await pool.execute(
+      `SELECT product_type_id FROM blueprint_products WHERE blueprint_type_id = ? AND activity_type = 'manufacturing' LIMIT 1`,
+      [bp.type_id]
+    );
+    if (products.length > 0) {
+      blueprintProductMap.set(bp.type_id, products[0].product_type_id);
+    }
+  }
+
+  // 3. 检查每个产品是否有区域市场数据，没有则尝试从ESI同步
+  const validBlueprints = [];
+  for (const bp of allBlueprints) {
+    const productTypeId = blueprintProductMap.get(bp.type_id);
+    if (!productTypeId) {
+      console.log(`[LP Scheduler] Skip blueprint ${bp.type_name || bp.type_id} (no product)`);
+      continue;
+    }
+
+    // 先检查本地是否有该产品的区域数据
+    const [hasLocalData] = await pool.execute(
+      `SELECT 1 FROM region_types WHERE region_id = ? AND type_id = ? AND datasource = ? LIMIT 1`,
+      [regionId, productTypeId, datasource]
+    );
+
+    if (hasLocalData.length > 0) {
+      validBlueprints.push(bp);
+      continue;
+    }
+
+    // 本地没有数据，尝试从ESI同步该产品的订单
+    console.log(`[LP Scheduler] Syncing product ${productTypeId} for blueprint ${bp.type_name || bp.type_id}...`);
+    try {
+      // 同步订单数据
+      await syncOrdersFromESI(productTypeId, regionId, datasource);
+      
+      // 检查同步后是否有订单数据
+      const [hasOrders] = await pool.execute(
+        `SELECT 1 FROM orders WHERE region_id = ? AND type_id = ? AND datasource = ? LIMIT 1`,
+        [regionId, productTypeId, datasource]
+      );
+      
+      if (hasOrders.length > 0) {
+        // 如果同步到了订单数据，添加到region_types表
+        await pool.execute(
+          `INSERT IGNORE INTO region_types (region_id, type_id, datasource, updated_at) VALUES (?, ?, ?, NOW())`,
+          [regionId, productTypeId, datasource]
+        );
+        validBlueprints.push(bp);
+        console.log(`[LP Scheduler] Added blueprint ${bp.type_name || bp.type_id} (synced from ESI)`);
+      } else {
+        console.log(`[LP Scheduler] Skip blueprint ${bp.type_name || bp.type_id} (no orders found after sync)`);
+      }
+    } catch (error) {
+      console.error(`[LP Scheduler] Failed to sync product ${productTypeId} for blueprint ${bp.type_name || bp.type_id}:`, error.message);
+    }
+  }
+
+  console.log(`[LP Scheduler] Found ${validBlueprints.length} valid blueprints with market data`);
+  return validBlueprints;
 }
 
 /**
@@ -351,5 +412,6 @@ module.exports = {
   calculateBlueprintProfit,
   checkLocalOrder,
   getOrderPrice,
-  syncOrdersFromESI
+  syncOrdersFromESI,
+  getBlueprintsWithBuyOrders
 };
