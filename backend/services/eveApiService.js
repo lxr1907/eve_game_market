@@ -781,13 +781,16 @@ class EveApiService {
       let page = startPage;
       let hasMoreData = true;
       
-      console.log(`Starting recursive fetch of ${orderType} orders for region ${regionId}, type ${typeId} from page ${startPage}`);
+      // 只在第一页打印开始日志
+      if (page === startPage) {
+        console.log(`Fetching ${orderType} orders for region ${regionId}, type ${typeId} (starting from page ${startPage})`);
+      }
       
       while (hasMoreData) {
-        console.log(`Fetching ${orderType} orders for region ${regionId}, type ${typeId} from page ${page}...`);
         const orders = await this.getMarketOrdersByRegionAndType(regionId, typeId, orderType, page, datasource);
         
-        console.log(`Orders for region ${regionId}, type ${typeId}, page ${page}:`, orders.slice(0, 10), orders.length > 10 ? '...' : '');
+        // 只打印每页的订单数量，不打印具体订单数据
+        console.log(`Page ${page}: ${orders.length} orders fetched`);
         
         if (orders.length === 0) {
           hasMoreData = false;
@@ -796,7 +799,8 @@ class EveApiService {
         
         // 调用回调函数处理当前页的数据
         if (callback && typeof callback === 'function') {
-          console.log(`Calling callback with ${orders.length} items from page ${page}`);
+          // 调试日志：仅在开发环境或需要调试时启用
+          // console.log(`Calling callback with ${orders.length} items from page ${page}`);
           await callback(orders, page);
         }
         

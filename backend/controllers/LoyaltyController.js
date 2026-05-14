@@ -1056,7 +1056,10 @@ class LoyaltyController {
   static async getLoyaltyBlueprints(req, res) {
     try {
       const pool = require('../config/database');
-      const { corporationId, datasource = 'serenity', search = '', hasBuyOrder = 'false', regionId = '10000002', positiveProfit = 'false' } = req.query;
+      const { corporationId = null, datasource = 'serenity', search = '', hasBuyOrder = false, regionId = '10000002', positiveProfit = false } = req.query;
+  
+  // 调试日志
+  console.log('搜索参数接收:', { search, searchLength: search?.length, searchTrimmed: search?.trim() });
 
       // 如果需要过滤有买单的蓝图，先检查 region_types 更新时间
       if (hasBuyOrder === 'true') {
@@ -1077,7 +1080,41 @@ class LoyaltyController {
         }
       }
 
-      // 先获取去重后的type_id列表，每个type_id只取一条数据（优先取有收益计算的记录）
+      // 构建WHERE条件部分
+      let whereConditions = `lo.datasource = ?
+          ${corporationId ? 'AND lo.corporation_id = ?' : ''}
+          AND lo.type_id IN (SELECT DISTINCT blueprint_type_id FROM blueprint_products)
+          AND lo.lp_cost > 0
+          AND lo.isk_cost > 0
+          AND lo.type_id NOT IN (
+            SELECT DISTINCT lor.type_id FROM loyalty_offer_required_items lor
+          )`;
+      
+      const trimmedSearch = search?.trim();
+      if (trimmedSearch) {
+        console.log('添加搜索条件:', { search: trimmedSearch, likePattern: `%${trimmedSearch}%` });
+        whereConditions += ` AND t.name LIKE ?`;
+      } else {
+        console.log('搜索条件为空，不添加过滤');
+      }
+
+      // 过滤有买单的蓝图（使用 region_types 表判断）
+      if (hasBuyOrder === 'true') {
+        whereConditions += `
+          AND lo.type_id IN (
+            SELECT bp.blueprint_type_id 
+            FROM blueprint_products bp 
+            JOIN region_types rt ON rt.type_id = bp.product_type_id 
+            WHERE rt.region_id = ? AND rt.datasource = ?
+          )`;
+      }
+
+      // 过滤正收益蓝图（必须有计算数据且收益大于0）
+      if (positiveProfit === 'true') {
+        whereConditions += ` AND lbp.profit_per_lp IS NOT NULL AND lbp.profit_per_lp > 0`;
+      }
+
+      // 重新构建完整查询
       let query = `
         SELECT 
           lo.type_id,
@@ -1103,45 +1140,23 @@ class LoyaltyController {
         FROM loyalty_offers lo
         LEFT JOIN types t ON lo.type_id = t.id
         LEFT JOIN lp_blueprint_profits lbp ON lbp.type_id = lo.type_id AND lbp.region_id = ? AND lbp.datasource = ?
-        WHERE lo.datasource = ?
-          ${corporationId ? 'AND lo.corporation_id = ?' : ''}
-          AND lo.type_id IN (SELECT DISTINCT blueprint_type_id FROM blueprint_products)
-          AND lo.lp_cost > 0
-          AND lo.isk_cost > 0
-          AND lo.type_id NOT IN (
-            SELECT DISTINCT lor.type_id FROM loyalty_offer_required_items lor
-          )
+        WHERE ${whereConditions}
         GROUP BY lo.type_id, t.name
         ORDER BY profit_per_lp DESC, t.name ASC
       `;
       
-      const params = corporationId ? [regionId, datasource, datasource, corporationId] : [regionId, datasource, datasource];
-
-      if (search) {
-        query += ` AND (t.name LIKE ? OR t.description LIKE ?)`;
-        params.push(`%${search}%`, `%${search}%`);
-      }
-
-      // 过滤有买单的蓝图（使用 region_types 表判断）
-      if (hasBuyOrder === 'true') {
-        query += `
-          AND lo.type_id IN (
-            SELECT bp.blueprint_type_id 
-            FROM blueprint_products bp 
-            JOIN region_types rt ON rt.type_id = bp.product_type_id 
-            WHERE rt.region_id = ? AND rt.datasource = ?
-          )
-        `;
-        params.push(regionId, datasource);
-      }
-
-      // 过滤正收益蓝图（必须有计算数据且收益大于0）
-      if (positiveProfit === 'true') {
-        query += ` AND lbp.profit_per_lp IS NOT NULL AND lbp.profit_per_lp > 0`;
-      }
+      // 构建参数数组
+      const params = [regionId, datasource, datasource];
+      if (corporationId) params.push(corporationId);
+      if (trimmedSearch) params.push(`%${trimmedSearch}%`);
+      if (hasBuyOrder === 'true') params.push(regionId, datasource);
 
       // 移除原有的ORDER BY，因为主查询中已经有ORDER BY
       // query += ` ORDER BY lbp.profit_per_lp DESC, t.name ASC`;
+      
+      // 调试日志：显示最终SQL和参数
+      console.log('最终SQL查询:', query);
+      console.log('SQL参数:', params);
 
       const [rows] = await pool.execute(query, params);
       res.status(200).json(rows);
