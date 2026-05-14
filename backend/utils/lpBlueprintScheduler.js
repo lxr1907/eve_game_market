@@ -368,6 +368,18 @@ async function runCalculation() {
       if (profitData) {
         await LpBlueprintProfit.upsert(profitData);
         console.log(`[LP Blueprint Scheduler] Calculated: ${targetBlueprint.type_name || targetBlueprint.type_id}, profit_per_lp: ${profitData.profit_per_lp.toFixed(2)}`);
+      } else {
+        // 如果没有计算出收益数据（可能是因为无订单），更新记录的updated_at时间
+        const existingRecord = await LpBlueprintProfit.getByTypeId(targetBlueprint.type_id, regionId, datasource);
+        if (existingRecord) {
+          await pool.execute(
+            `UPDATE lp_blueprint_profits SET updated_at = CURRENT_TIMESTAMP WHERE type_id = ? AND region_id = ? AND datasource = ?`,
+            [targetBlueprint.type_id, regionId, datasource]
+          );
+          console.log(`[LP Blueprint Scheduler] Updated timestamp for blueprint with no orders: ${targetBlueprint.type_name || targetBlueprint.type_id}`);
+        } else {
+          console.log(`[LP Blueprint Scheduler] Skip blueprint ${targetBlueprint.type_name || targetBlueprint.type_id} (no orders found after sync)`);
+        }
       }
     }
 
