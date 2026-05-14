@@ -1079,38 +1079,43 @@ class LoyaltyController {
 
       // 先获取去重后的type_id列表，每个type_id只取一条数据（优先取有收益计算的记录）
       let query = `
-        SELECT lo.offer_id, lo.corporation_id, lo.type_id, lo.quantity, lo.lp_cost, lo.isk_cost, lo.ak_cost,
-               t.name as type_name,
-               lbp.profit_per_lp, lbp.total_profit, lbp.updated_at as profit_updated_at,
-               lbp.buy_profit, lbp.sell_profit, lbp.profit_per_lp_buy, lbp.profit_per_lp_sell,
-               lbp.product_buy_price, lbp.product_sell_price, lbp.total_cost, lbp.material_cost
-        FROM (
-          SELECT type_id, MIN(offer_id) as min_offer_id
-          FROM loyalty_offers
-          WHERE datasource = ?
-            AND type_id IN (SELECT DISTINCT blueprint_type_id FROM blueprint_products)
-            AND lp_cost > 0
-            AND isk_cost > 0
-            AND type_id NOT IN (
-              SELECT DISTINCT lor.type_id FROM loyalty_offer_required_items lor
-            )
-          GROUP BY type_id
-        ) as lo_distinct
-        JOIN loyalty_offers lo ON lo.type_id = lo_distinct.type_id AND lo.offer_id = lo_distinct.min_offer_id
+        SELECT 
+          lo.type_id,
+          t.name as type_name,
+          MAX(lbp.profit_per_lp) as profit_per_lp,
+          MAX(lbp.total_profit) as total_profit,
+          MAX(lbp.updated_at) as profit_updated_at,
+          MAX(lbp.buy_profit) as buy_profit,
+          MAX(lbp.sell_profit) as sell_profit,
+          MAX(lbp.profit_per_lp_buy) as profit_per_lp_buy,
+          MAX(lbp.profit_per_lp_sell) as profit_per_lp_sell,
+          MAX(lbp.product_buy_price) as product_buy_price,
+          MAX(lbp.product_sell_price) as product_sell_price,
+          MAX(lbp.total_cost) as total_cost,
+          MAX(lbp.material_cost) as material_cost,
+          -- 取第一个出现的offer信息
+          MIN(lo.offer_id) as offer_id,
+          MIN(lo.corporation_id) as corporation_id,
+          MIN(lo.quantity) as quantity,
+          MIN(lo.lp_cost) as lp_cost,
+          MIN(lo.isk_cost) as isk_cost,
+          MIN(lo.ak_cost) as ak_cost
+        FROM loyalty_offers lo
         LEFT JOIN types t ON lo.type_id = t.id
         LEFT JOIN lp_blueprint_profits lbp ON lbp.type_id = lo.type_id AND lbp.region_id = ? AND lbp.datasource = ?
         WHERE lo.datasource = ?
+          ${corporationId ? 'AND lo.corporation_id = ?' : ''}
+          AND lo.type_id IN (SELECT DISTINCT blueprint_type_id FROM blueprint_products)
+          AND lo.lp_cost > 0
+          AND lo.isk_cost > 0
+          AND lo.type_id NOT IN (
+            SELECT DISTINCT lor.type_id FROM loyalty_offer_required_items lor
+          )
+        GROUP BY lo.type_id, t.name
+        ORDER BY profit_per_lp DESC, t.name ASC
       `;
-      const params = [datasource, regionId, datasource, datasource];
-
-      if (corporationId) {
-        // 在子查询中添加corporation_id过滤
-        query = query.replace(
-          `WHERE datasource = ?`,
-          `WHERE datasource = ? AND corporation_id = ?`
-        );
-        params.splice(1, 0, corporationId); // 插入到datasource参数之后
-      }
+      
+      const params = corporationId ? [regionId, datasource, datasource, corporationId] : [regionId, datasource, datasource];
 
       if (search) {
         query += ` AND (t.name LIKE ? OR t.description LIKE ?)`;
@@ -1135,7 +1140,8 @@ class LoyaltyController {
         query += ` AND lbp.profit_per_lp IS NOT NULL AND lbp.profit_per_lp > 0`;
       }
 
-      query += ` ORDER BY lbp.profit_per_lp DESC, t.name ASC`;
+      // 移除原有的ORDER BY，因为主查询中已经有ORDER BY
+      // query += ` ORDER BY lbp.profit_per_lp DESC, t.name ASC`;
 
       const [rows] = await pool.execute(query, params);
       res.status(200).json(rows);
