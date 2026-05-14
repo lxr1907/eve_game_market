@@ -30,8 +30,7 @@ async function getBlueprintsWithBuyOrders(regionId, datasource) {
       AND lo.type_id IN (SELECT DISTINCT blueprint_type_id FROM blueprint_products)
       AND lo.lp_cost > 0
       AND lo.isk_cost > 0
-      AND lo.type_id NOT IN (SELECT DISTINCT lor.type_id FROM loyalty_offer_required_items lor)
-  `, [datasource]);
+    `, [datasource]);
 
   if (allBlueprints.length === 0) {
     return [];
@@ -386,10 +385,10 @@ function startScheduler() {
   // 立即执行一次
   runCalculation().catch(console.error);
 
-  // 每5分钟执行一次
+  // 每5秒执行一次
   schedulerInterval = setInterval(() => {
     runCalculation().catch(console.error);
-  }, 5 * 60 * 1000);
+  }, 5 * 1000);
 
   console.log('[LP Blueprint Scheduler] Started');
 }
