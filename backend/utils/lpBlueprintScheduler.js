@@ -132,7 +132,7 @@ async function syncOrdersFromESI(typeId, regionId, datasource) {
 }
 
 /**
- * 获取订单价格（优先本地，必要时从ESI同步）
+ * 获取订单价格（优先本地，必要时从ESI同步，最后回退到类型平均价格）
  */
 async function getOrderPrice(typeId, regionId, datasource, isBuyOrder) {
   const checkResult = await checkLocalOrder(typeId, regionId, datasource, isBuyOrder);
@@ -142,18 +142,45 @@ async function getOrderPrice(typeId, regionId, datasource, isBuyOrder) {
     return checkResult.price;
   }
   
-  // 需要从ESI同步
+  // 尝试从ESI同步订单数据
   try {
+    console.log(`[LP Scheduler] Syncing orders from ESI for type ${typeId}...`);
     await syncOrdersFromESI(typeId, regionId, datasource);
     
     // 重新查询本地数据
     const refreshResult = await checkLocalOrder(typeId, regionId, datasource, isBuyOrder);
-    return refreshResult.hasOrder ? refreshResult.price : 0;
+    if (refreshResult.hasOrder) {
+      console.log(`[LP Scheduler] Got price from ESI for type ${typeId}: ${refreshResult.price}`);
+      return refreshResult.price;
+    }
   } catch (error) {
     console.error(`[LP Scheduler] Failed to sync orders for type ${typeId}:`, error.message);
     // 如果同步失败但有旧数据，返回旧数据
-    return checkResult.hasOrder ? checkResult.price : 0;
+    if (checkResult.hasOrder) {
+      console.log(`[LP Scheduler] Using stale data for type ${typeId}: ${checkResult.price}`);
+      return checkResult.price;
+    }
   }
+  
+  // 最后回退到使用类型的平均价格
+  try {
+    const [typeInfo] = await pool.execute(
+      `SELECT average_price FROM types WHERE id = ?`,
+      [typeId]
+    );
+    
+    if (typeInfo.length > 0 && typeInfo[0].average_price > 0) {
+      const averagePrice = typeInfo[0].average_price;
+      console.log(`[LP Scheduler] Using average price for type ${typeId}: ${averagePrice}`);
+      return averagePrice;
+    }
+  } catch (error) {
+    console.error(`[LP Scheduler] Failed to get average price for type ${typeId}:`, error.message);
+  }
+  
+  // 所有方法都失败，返回0
+  console.warn(`[LP Scheduler] No price available for type ${typeId}, returning 0`);
+  return 0;
 }
 
 /**
