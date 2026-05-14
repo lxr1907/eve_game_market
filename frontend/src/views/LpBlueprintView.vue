@@ -384,6 +384,10 @@ export default {
 
     // 选择蓝图
     const handleBlueprintClick = (bp) => {
+      // 已选中该蓝图则无需重复查询
+      if (selectedBlueprint.value && selectedBlueprint.value.offer_id === bp.offer_id) {
+        return
+      }
       selectedBlueprint.value = bp
       queryBlueprintProfit(bp)
     }
@@ -450,6 +454,23 @@ export default {
           { name: '总收益（按买价）', value: formatISKShort(detailData.buy_profit), class: detailData.buy_profit > 0 ? 'profit-positive' : 'profit-negative' },
           { name: '总收益（按卖价）', value: formatISKShort(detailData.sell_profit), class: detailData.sell_profit > 0 ? 'profit-positive' : 'profit-negative' }
         ]
+
+        // 6. 更新列表页中的收益数据
+        const blueprintIndex = blueprints.value.findIndex(item => item.type_id === bp.type_id)
+        if (blueprintIndex !== -1) {
+          // 更新收益数据
+          blueprints.value[blueprintIndex].profit_per_lp = detailData.profit_per_lp
+          blueprints.value[blueprintIndex].total_profit = detailData.total_profit
+          blueprints.value[blueprintIndex].buy_profit = detailData.buy_profit
+          blueprints.value[blueprintIndex].sell_profit = detailData.sell_profit
+          blueprints.value[blueprintIndex].profit_per_lp_buy = detailData.profit_per_lp_buy
+          blueprints.value[blueprintIndex].profit_per_lp_sell = detailData.profit_per_lp_sell
+          blueprints.value[blueprintIndex].product_buy_price = detailData.product_buy_price
+          blueprints.value[blueprintIndex].product_sell_price = detailData.product_sell_price
+          blueprints.value[blueprintIndex].total_cost = detailData.total_cost
+          blueprints.value[blueprintIndex].material_cost = detailData.material_cost
+          blueprints.value[blueprintIndex].profit_updated_at = new Date().toISOString()
+        }
 
       } catch (error) {
         console.error('查询蓝图制造收益失败:', error)

@@ -701,7 +701,90 @@ class LoyaltyController {
 
       const profitData = cachedProfit.length > 0 ? cachedProfit[0] : null;
 
-      // 8. 组装响应数据
+      // 8. 先计算动态成本和收益（在updateData之前）
+      const lpToIskRatio = datasource.toLowerCase() === 'tranquility' ? 560 : 1300;
+      const dynamicLpTotalCost = bp.lp_cost * lpToIskRatio;
+      const dynamicTotalCost = materialCost + dynamicLpTotalCost + bp.isk_cost;
+      
+      // 计算收益
+      const dynamicBuyProfit = productInfo ? (buyPrice * productInfo.quantity) - dynamicTotalCost : 0;
+      const dynamicSellProfit = productInfo ? (sellPrice * productInfo.quantity) - dynamicTotalCost : 0;
+      const dynamicProfitPerLpBuy = bp.lp_cost > 0 ? dynamicBuyProfit / bp.lp_cost : 0;
+      const dynamicProfitPerLpSell = bp.lp_cost > 0 ? dynamicSellProfit / bp.lp_cost : 0;
+      const dynamicTotalProfit = productInfo ? (dynamicBuyProfit + dynamicSellProfit) / 2 : 0;
+      const dynamicProfitPerLp = bp.lp_cost > 0 ? dynamicTotalProfit / bp.lp_cost : 0;
+      
+      // 更新lp_blueprint_profits表中的数据
+      const updateData = {
+        type_id: bp.type_id,
+        offer_id: bp.offer_id,
+        corporation_id: bp.corporation_id,
+        region_id: regionId,
+        lp_cost: bp.lp_cost,
+        isk_cost: bp.isk_cost,
+        material_cost: materialCost,
+        total_cost: dynamicTotalCost,
+        product_type_id: productInfo ? productInfo.type_id : null,
+        product_buy_price: buyPrice,
+        product_sell_price: sellPrice,
+        // 列表展示用的中间价收益
+        total_profit: dynamicTotalProfit,
+        profit_per_lp: dynamicProfitPerLp,
+        // 详情展示用的分开收益
+        buy_profit: dynamicBuyProfit,
+        sell_profit: dynamicSellProfit,
+        profit_per_lp_buy: dynamicProfitPerLpBuy,
+        profit_per_lp_sell: dynamicProfitPerLpSell,
+        datasource
+      };
+
+      if (profitData) {
+        // 更新现有记录
+        await pool.execute(`
+          UPDATE lp_blueprint_profits 
+          SET 
+            offer_id = ?, corporation_id = ?, region_id = ?,
+            lp_cost = ?, isk_cost = ?, material_cost = ?, total_cost = ?,
+            product_type_id = ?, product_buy_price = ?, product_sell_price = ?,
+            total_profit = ?, profit_per_lp = ?,
+            buy_profit = ?, sell_profit = ?,
+            profit_per_lp_buy = ?, profit_per_lp_sell = ?,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE type_id = ? AND region_id = ? AND datasource = ?
+        `, [
+          updateData.offer_id, updateData.corporation_id, updateData.region_id,
+          updateData.lp_cost, updateData.isk_cost, updateData.material_cost, updateData.total_cost,
+          updateData.product_type_id, updateData.product_buy_price, updateData.product_sell_price,
+          updateData.total_profit, updateData.profit_per_lp,
+          updateData.buy_profit, updateData.sell_profit,
+          updateData.profit_per_lp_buy, updateData.profit_per_lp_sell,
+          updateData.type_id, updateData.region_id, updateData.datasource
+        ]);
+      } else {
+        // 插入新记录
+        await pool.execute(`
+          INSERT INTO lp_blueprint_profits 
+          (type_id, offer_id, corporation_id, region_id, lp_cost, isk_cost, material_cost, 
+           total_cost, product_type_id, product_buy_price, product_sell_price, 
+           total_profit, profit_per_lp, buy_profit, sell_profit, 
+           profit_per_lp_buy, profit_per_lp_sell, datasource, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `, [
+          updateData.type_id, updateData.offer_id, updateData.corporation_id, updateData.region_id,
+          updateData.lp_cost, updateData.isk_cost, updateData.material_cost, updateData.total_cost,
+          updateData.product_type_id, updateData.product_buy_price, updateData.product_sell_price,
+          updateData.total_profit, updateData.profit_per_lp,
+          updateData.buy_profit, updateData.sell_profit,
+          updateData.profit_per_lp_buy, updateData.profit_per_lp_sell,
+          updateData.datasource
+        ]);
+      }
+
+      // 9. 组装响应数据
+      // 计算响应数据需要的额外字段
+      const dynamicBuyProfitRate = dynamicTotalCost > 0 ? (dynamicBuyProfit / dynamicTotalCost) * 100 : 0;
+      const dynamicSellProfitRate = dynamicTotalCost > 0 ? (dynamicSellProfit / dynamicTotalCost) * 100 : 0;
+      
       const response = {
         // 蓝图基本信息
         offer_id: bp.offer_id,
@@ -723,16 +806,21 @@ class LoyaltyController {
         product_sell_price: sellPrice,
         
         // 成本信息
-        lp_total_cost: lpTotalCost,
-        total_cost: totalCost,
+        lp_to_isk_ratio: lpToIskRatio,
+        lp_total_cost: dynamicLpTotalCost,
+        total_cost: dynamicTotalCost,
         
         // 收益信息
-        buy_profit: buyProfit,
-        sell_profit: sellProfit,
-        profit_per_lp_buy: profitPerLpBuy,
-        profit_per_lp_sell: profitPerLpSell,
-        buy_profit_rate: buyProfitRate,
-        sell_profit_rate: sellProfitRate,
+        buy_profit: dynamicBuyProfit,
+        sell_profit: dynamicSellProfit,
+        profit_per_lp_buy: dynamicProfitPerLpBuy,
+        profit_per_lp_sell: dynamicProfitPerLpSell,
+        buy_profit_rate: dynamicBuyProfitRate,
+        sell_profit_rate: dynamicSellProfitRate,
+        
+        // 列表页需要的中间价收益数据
+        total_profit: dynamicTotalProfit,
+        profit_per_lp: dynamicProfitPerLp,
         
         // 缓存数据（如果有）
         cached_profit: profitData
