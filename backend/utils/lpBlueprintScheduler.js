@@ -285,16 +285,31 @@ async function calculateBlueprintProfit(blueprint, regionId, datasource) {
   const productBuyPrice = await getOrderPrice(productTypeId, regionId, datasource, true);
   const productSellPrice = await getOrderPrice(productTypeId, regionId, datasource, false);
 
-  // 6. 计算收益（列表使用中间价：(最高买价 + 最低卖价) / 2）
-  const midPrice = (productBuyPrice + productSellPrice) / 2;
-  const totalProfit = midPrice - totalCost;
-  const profitPerLp = lp_cost > 0 ? totalProfit / lp_cost : 0;
-
-  // 7. 计算买单和卖单各自的收益（用于详情展示）
+  // 6. 计算买单和卖单各自的收益（用于详情展示）
   const buyProfit = productBuyPrice - totalCost;
   const sellProfit = productSellPrice - totalCost;
   const profitPerLpBuy = lp_cost > 0 ? buyProfit / lp_cost : 0;
   const profitPerLpSell = lp_cost > 0 ? sellProfit / lp_cost : 0;
+
+  // 7. 计算列表展示用的收益，根据不同情况使用不同逻辑
+  let totalProfit, profitPerLp;
+  
+  // 情况1：无订单（买价和卖价都为0）
+  if (productBuyPrice === 0 && productSellPrice === 0) {
+    totalProfit = -10000 * lp_cost; // 固定每LP收益-10000
+    profitPerLp = -10000;
+  }
+  // 情况2：买单收益小于0
+  else if (profitPerLpBuy < 0) {
+    totalProfit = buyProfit;
+    profitPerLp = profitPerLpBuy;
+  }
+  // 情况3：买单和卖单收益都大于0，使用中间价
+  else {
+    const midPrice = (productBuyPrice + productSellPrice) / 2;
+    totalProfit = midPrice - totalCost;
+    profitPerLp = lp_cost > 0 ? totalProfit / lp_cost : 0;
+  }
 
   return {
     type_id,
