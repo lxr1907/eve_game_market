@@ -385,6 +385,8 @@ async function runCalculation() {
           console.log(`[LP Blueprint Scheduler] Skip blueprint ${targetBlueprint.type_name || targetBlueprint.type_id} (no orders found after sync)`);
         }
       }
+    } else {
+      console.log(`[LP Blueprint Scheduler] No valid blueprint to calculate`);
     }
 
   } catch (error) {
