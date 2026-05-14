@@ -586,6 +586,165 @@ class LoyaltyController {
     }
   }
 
+  // 获取蓝图详情（包含材料、成本、收益等所有信息）
+  static async getBlueprintDetails(req, res) {
+    try {
+      const pool = require('../config/database');
+      const { typeId } = req.params;
+      const { datasource = 'serenity', regionId = '10000002' } = req.query;
+
+      // 1. 获取蓝图基本信息
+      const [blueprint] = await pool.execute(`
+        SELECT lo.offer_id, lo.corporation_id, lo.type_id, lo.quantity, lo.lp_cost, lo.isk_cost, 
+               t.name as type_name, t.description
+        FROM loyalty_offers lo
+        LEFT JOIN types t ON lo.type_id = t.id
+        WHERE lo.type_id = ? AND lo.datasource = ?
+        LIMIT 1
+      `, [typeId, datasource]);
+
+      if (blueprint.length === 0) {
+        return res.status(404).json({ message: 'Blueprint not found' });
+      }
+
+      const bp = blueprint[0];
+
+      // 2. 获取蓝图制造材料
+      const [materials] = await pool.execute(`
+        SELECT bm.material_type_id, bm.quantity, t.name as material_name
+        FROM blueprint_materials bm
+        LEFT JOIN types t ON bm.material_type_id = t.id
+        WHERE bm.blueprint_type_id = ? AND bm.activity_type = 'manufacturing'
+      `, [typeId]);
+
+      // 3. 获取材料价格并计算材料成本
+      const materialsWithCost = [];
+      let materialCost = 0;
+      for (const mat of materials) {
+        // 获取材料最低卖价
+        const [priceResult] = await pool.execute(`
+          SELECT price FROM orders 
+          WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = 0
+          ORDER BY price ASC LIMIT 1
+        `, [mat.material_type_id, regionId, datasource]);
+
+        const price = priceResult.length > 0 ? priceResult[0].price : 0;
+        const totalCost = price * mat.quantity;
+        materialCost += totalCost;
+
+        materialsWithCost.push({
+          name: mat.material_name || `ID: ${mat.material_type_id}`,
+          type_id: mat.material_type_id,
+          quantity: mat.quantity,
+          price: price,
+          total_cost: totalCost
+        });
+      }
+
+      // 4. 获取产品信息
+      const [products] = await pool.execute(`
+        SELECT bp.product_type_id, bp.quantity, t.name as product_name
+        FROM blueprint_products bp
+        LEFT JOIN types t ON bp.product_type_id = t.id
+        WHERE bp.blueprint_type_id = ? AND bp.activity_type = 'manufacturing'
+        LIMIT 1
+      `, [typeId]);
+
+      let productInfo = null;
+      let buyPrice = 0;
+      let sellPrice = 0;
+
+      if (products.length > 0) {
+        const product = products[0];
+        productInfo = {
+          type_id: product.product_type_id,
+          name: product.product_name || `ID: ${product.product_type_id}`,
+          quantity: product.quantity
+        };
+
+        // 获取产品最高买价
+        const [buyResult] = await pool.execute(`
+          SELECT price FROM orders 
+          WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = 1
+          ORDER BY price DESC LIMIT 1
+        `, [product.product_type_id, regionId, datasource]);
+        buyPrice = buyResult.length > 0 ? buyResult[0].price : 0;
+
+        // 获取产品最低卖价
+        const [sellResult] = await pool.execute(`
+          SELECT price FROM orders 
+          WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = 0
+          ORDER BY price ASC LIMIT 1
+        `, [product.product_type_id, regionId, datasource]);
+        sellPrice = sellResult.length > 0 ? sellResult[0].price : 0;
+      }
+
+      // 5. 计算LP兑换成本和总成本
+      const LP_TO_ISK_RATIO = 1300;
+      const lpTotalCost = bp.lp_cost * LP_TO_ISK_RATIO;
+      const totalCost = materialCost + lpTotalCost + bp.isk_cost;
+
+      // 6. 计算收益
+      const buyProfit = productInfo ? (buyPrice * productInfo.quantity) - totalCost : 0;
+      const sellProfit = productInfo ? (sellPrice * productInfo.quantity) - totalCost : 0;
+      const profitPerLpBuy = bp.lp_cost > 0 ? buyProfit / bp.lp_cost : 0;
+      const profitPerLpSell = bp.lp_cost > 0 ? sellProfit / bp.lp_cost : 0;
+      const buyProfitRate = totalCost > 0 ? (buyProfit / totalCost) * 100 : 0;
+      const sellProfitRate = totalCost > 0 ? (sellProfit / totalCost) * 100 : 0;
+
+      // 7. 从预计算表获取缓存数据（如果有）
+      const [cachedProfit] = await pool.execute(`
+        SELECT * FROM lp_blueprint_profits 
+        WHERE type_id = ? AND region_id = ? AND datasource = ?
+        LIMIT 1
+      `, [typeId, regionId, datasource]);
+
+      const profitData = cachedProfit.length > 0 ? cachedProfit[0] : null;
+
+      // 8. 组装响应数据
+      const response = {
+        // 蓝图基本信息
+        offer_id: bp.offer_id,
+        type_id: bp.type_id,
+        type_name: bp.type_name,
+        description: bp.description,
+        corporation_id: bp.corporation_id,
+        lp_cost: bp.lp_cost,
+        isk_cost: bp.isk_cost,
+        quantity: bp.quantity,
+        
+        // 材料信息
+        materials: materialsWithCost,
+        material_cost: materialCost,
+        
+        // 产品信息
+        product: productInfo,
+        product_buy_price: buyPrice,
+        product_sell_price: sellPrice,
+        
+        // 成本信息
+        lp_total_cost: lpTotalCost,
+        total_cost: totalCost,
+        
+        // 收益信息
+        buy_profit: buyProfit,
+        sell_profit: sellProfit,
+        profit_per_lp_buy: profitPerLpBuy,
+        profit_per_lp_sell: profitPerLpSell,
+        buy_profit_rate: buyProfitRate,
+        sell_profit_rate: sellProfitRate,
+        
+        // 缓存数据（如果有）
+        cached_profit: profitData
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error getting blueprint details:', error);
+      res.status(500).json({ message: 'Failed to get blueprint details', error: error.message });
+    }
+  }
+
   // 获取LP商店中的蓝图列表（用于LP蓝图制造模块）
   static async getLoyaltyBlueprints(req, res) {
     try {
@@ -614,7 +773,9 @@ class LoyaltyController {
       let query = `
         SELECT DISTINCT lo.offer_id, lo.corporation_id, lo.type_id, lo.quantity, lo.lp_cost, lo.isk_cost, lo.ak_cost,
                t.name as type_name,
-               lbp.profit_per_lp, lbp.total_profit, lbp.updated_at as profit_updated_at
+               lbp.profit_per_lp, lbp.total_profit, lbp.updated_at as profit_updated_at,
+               lbp.buy_profit, lbp.sell_profit, lbp.profit_per_lp_buy, lbp.profit_per_lp_sell,
+               lbp.product_buy_price, lbp.product_sell_price, lbp.total_cost, lbp.material_cost
         FROM loyalty_offers lo
         LEFT JOIN types t ON lo.type_id = t.id
         LEFT JOIN lp_blueprint_profits lbp ON lbp.type_id = lo.type_id AND lbp.region_id = ? AND lbp.datasource = ?

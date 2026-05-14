@@ -18,6 +18,7 @@ const Region = require('./models/Region');
 const RegionType = require('./models/RegionType');
 const Order = require('./models/Order');
 const LoyaltyOffer = require('./models/LoyaltyOffer');
+const LpBlueprintProfit = require('./models/LpBlueprintProfit');
 const LoyaltyTypeLpIsk = require('./models/LoyaltyTypeLpIsk');
 const Group = require('./models/Group');
 const Category = require('./models/Category');
@@ -46,6 +47,9 @@ app.use(express.urlencoded({ extended: true }));
     await syncDatabaseStructure();
     // 初始化KB相关表
     await Killmail.createTables();
+    // 初始化LP蓝图收益表并添加新列
+    await LpBlueprintProfit.createTable();
+    await LpBlueprintProfit.addNewColumns();
     console.log('Database tables initialized successfully');
   } catch (err) {
     console.error('Error initializing database tables:', err);

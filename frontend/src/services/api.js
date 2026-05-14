@@ -325,6 +325,13 @@ export const loyaltyApi = {
     params.regionId = regionId;
     const response = await apiClient.get(`/loyalty/blueprints`, { params });
     return response;
+  },
+
+  // 获取蓝图详情（包含材料、成本、收益等所有信息）
+  async getBlueprintDetails(typeId, datasource = 'serenity', regionId = '10000002') {
+    const params = { datasource, regionId };
+    const response = await apiClient.get(`/loyalty/blueprints/${typeId}/details`, { params });
+    return response;
   }
 };
 

@@ -1,5 +1,7 @@
 const pool = require('../config/database');
 const LpBlueprintProfit = require('../models/LpBlueprintProfit');
+const Order = require('../models/Order');
+const eveApiService = require('../services/eveApiService');
 
 // 默认区域ID
 const DEFAULT_REGION_ID = 10000002;
@@ -7,6 +9,9 @@ const DEFAULT_DATASOURCE = 'serenity';
 
 // LP兑换比例（可配置）
 const LP_TO_ISK_RATIO = 1300;
+
+// 订单缓存时间（毫秒）2小时
+const ORDER_CACHE_TIME = 2 * 60 * 60 * 1000;
 
 // 定时器状态
 let schedulerInterval = null;
@@ -36,6 +41,122 @@ async function getBlueprintsWithBuyOrders(regionId, datasource) {
 }
 
 /**
+ * 检查本地订单是否存在且有效
+ * @param {number} typeId - 物品类型ID
+ * @param {number} regionId - 区域ID
+ * @param {string} datasource - 数据源
+ * @param {boolean} isBuyOrder - 是否为买单
+ * @returns {Object} { hasOrder, price, needRefresh }
+ */
+async function checkLocalOrder(typeId, regionId, datasource, isBuyOrder) {
+  const orderType = isBuyOrder ? 1 : 0;
+  const orderTypeStr = isBuyOrder ? 'buy' : 'sell';
+  
+  // 查询最新订单
+  let query, params;
+  if (isBuyOrder) {
+    query = `SELECT price, updated_at FROM orders WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = 1 ORDER BY price DESC LIMIT 1`;
+  } else {
+    query = `SELECT price, updated_at FROM orders WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = 0 ORDER BY price ASC LIMIT 1`;
+  }
+  
+  const [orders] = await pool.execute(query, [typeId, regionId, datasource]);
+  
+  if (orders.length === 0) {
+    return { hasOrder: false, price: 0, needRefresh: true };
+  }
+  
+  const order = orders[0];
+  const now = Date.now();
+  const orderTime = new Date(order.updated_at).getTime();
+  const needRefresh = (now - orderTime) > ORDER_CACHE_TIME;
+  
+  return {
+    hasOrder: true,
+    price: parseFloat(order.price),
+    needRefresh
+  };
+}
+
+/**
+ * 从ESI同步订单数据
+ */
+async function syncOrdersFromESI(typeId, regionId, datasource) {
+  try {
+    console.log(`[LP Scheduler] Syncing orders for type ${typeId}...`);
+    
+    // 删除该区域和类型的1小时之前的订单数据
+    const deletedCount = await Order.deleteOlderThanOneHourByRegionAndType(regionId, typeId, datasource);
+    console.log(`[LP Scheduler] Deleted ${deletedCount} outdated orders for type ${typeId}`);
+    
+    // 定义处理订单数据的回调函数
+    const processOrders = async (orders, page) => {
+      console.log(`[LP Scheduler] Processing page ${page} with ${orders.length} orders for type ${typeId}`);
+      
+      // 为每个订单添加region_id和type_id
+      const ordersWithRegionAndType = orders.map(order => ({
+        ...order,
+        region_id: regionId,
+        type_id: typeId
+      }));
+      
+      // 批量插入或更新数据库
+      await Order.insertOrUpdate(ordersWithRegionAndType, datasource);
+    };
+
+    // 获取买入订单
+    await eveApiService.getAllMarketOrdersByRegionAndType(
+      regionId, 
+      typeId, 
+      'buy', 
+      1,
+      processOrders,
+      datasource
+    );
+
+    // 获取卖出订单
+    await eveApiService.getAllMarketOrdersByRegionAndType(
+      regionId, 
+      typeId, 
+      'sell', 
+      1,
+      processOrders,
+      datasource
+    );
+
+    console.log(`[LP Scheduler] Order sync completed for type ${typeId}`);
+  } catch (error) {
+    console.error(`[LP Scheduler] Failed to sync orders for type ${typeId}:`, error.message);
+    throw error;
+  }
+}
+
+/**
+ * 获取订单价格（优先本地，必要时从ESI同步）
+ */
+async function getOrderPrice(typeId, regionId, datasource, isBuyOrder) {
+  const checkResult = await checkLocalOrder(typeId, regionId, datasource, isBuyOrder);
+  
+  if (checkResult.hasOrder && !checkResult.needRefresh) {
+    // 使用本地缓存数据
+    return checkResult.price;
+  }
+  
+  // 需要从ESI同步
+  try {
+    await syncOrdersFromESI(typeId, regionId, datasource);
+    
+    // 重新查询本地数据
+    const refreshResult = await checkLocalOrder(typeId, regionId, datasource, isBuyOrder);
+    return refreshResult.hasOrder ? refreshResult.price : 0;
+  } catch (error) {
+    console.error(`[LP Scheduler] Failed to sync orders for type ${typeId}:`, error.message);
+    // 如果同步失败但有旧数据，返回旧数据
+    return checkResult.hasOrder ? checkResult.price : 0;
+  }
+}
+
+/**
  * 计算单个蓝图的收益
  */
 async function calculateBlueprintProfit(blueprint, regionId, datasource) {
@@ -47,58 +168,46 @@ async function calculateBlueprintProfit(blueprint, regionId, datasource) {
     [type_id]
   );
 
-  // 2. 计算材料成本
+  // 2. 计算材料成本（使用本地订单或从ESI同步）
   let materialCost = 0;
   for (const mat of materials) {
-    const [orders] = await pool.execute(
-      `SELECT price FROM orders WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = 0 ORDER BY price ASC LIMIT 1`,
-      [mat.material_type_id, regionId, datasource]
-    );
-    if (orders.length > 0) {
-      materialCost += orders[0].price * mat.quantity;
+    const price = await getOrderPrice(mat.material_type_id, regionId, datasource, false); // 使用卖价（最低价）
+    if (price > 0) {
+      materialCost += price * mat.quantity;
     }
   }
 
-  // 3. LP兑换成本
-  const lpToIskCost = lp_cost * LP_TO_ISK_RATIO;
-  const totalCost = materialCost + lpToIskCost + isk_cost;
+  // 3. 计算LP兑换ISK成本
+  const lpTotalCost = lp_cost * LP_TO_ISK_RATIO;
+  const totalCost = materialCost + lpTotalCost;
 
-  // 4. 获取制造产品
+  // 4. 获取产品类型
   const [products] = await pool.execute(
-    `SELECT product_type_id, quantity FROM blueprint_products WHERE blueprint_type_id = ? AND activity_type = 'manufacturing'`,
+    `SELECT product_type_id, quantity FROM blueprint_products WHERE blueprint_type_id = ? AND activity_type = 'manufacturing' LIMIT 1`,
     [type_id]
   );
 
-  let productTypeId = null;
-  let productBuyPrice = 0;
-  let productSellPrice = 0;
-
-  if (products.length > 0) {
-    productTypeId = products[0].product_type_id;
-    const productQuantity = products[0].quantity;
-
-    // 获取产品最高买价
-    const [buyOrders] = await pool.execute(
-      `SELECT price FROM orders WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = 1 ORDER BY price DESC LIMIT 1`,
-      [productTypeId, regionId, datasource]
-    );
-    if (buyOrders.length > 0) {
-      productBuyPrice = buyOrders[0].price;
-    }
-
-    // 获取产品最低卖价
-    const [sellOrders] = await pool.execute(
-      `SELECT price FROM orders WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = 0 ORDER BY price ASC LIMIT 1`,
-      [productTypeId, regionId, datasource]
-    );
-    if (sellOrders.length > 0) {
-      productSellPrice = sellOrders[0].price;
-    }
+  if (products.length === 0) {
+    return null; // 没有制造产品
   }
 
-  // 5. 计算收益
-  const totalProfit = productBuyPrice - totalCost;
+  const productTypeId = products[0].product_type_id;
+  const productQuantity = products[0].quantity;
+
+  // 5. 获取产品最高买价和最低卖价
+  const productBuyPrice = await getOrderPrice(productTypeId, regionId, datasource, true);
+  const productSellPrice = await getOrderPrice(productTypeId, regionId, datasource, false);
+
+  // 6. 计算收益（列表使用中间价：(最高买价 + 最低卖价) / 2）
+  const midPrice = (productBuyPrice + productSellPrice) / 2;
+  const totalProfit = midPrice - totalCost;
   const profitPerLp = lp_cost > 0 ? totalProfit / lp_cost : 0;
+
+  // 7. 计算买单和卖单各自的收益（用于详情展示）
+  const buyProfit = productBuyPrice - totalCost;
+  const sellProfit = productSellPrice - totalCost;
+  const profitPerLpBuy = lp_cost > 0 ? buyProfit / lp_cost : 0;
+  const profitPerLpSell = lp_cost > 0 ? sellProfit / lp_cost : 0;
 
   return {
     type_id,
@@ -112,8 +221,14 @@ async function calculateBlueprintProfit(blueprint, regionId, datasource) {
     product_type_id: productTypeId,
     product_buy_price: productBuyPrice,
     product_sell_price: productSellPrice,
+    // 列表展示用的中间价收益
     total_profit: totalProfit,
     profit_per_lp: profitPerLp,
+    // 详情展示用的分开收益
+    buy_profit: buyProfit,
+    sell_profit: sellProfit,
+    profit_per_lp_buy: profitPerLpBuy,
+    profit_per_lp_sell: profitPerLpSell,
     datasource
   };
 }
@@ -157,53 +272,42 @@ async function runCalculation() {
       const oldest = await LpBlueprintProfit.getOldestRecord(regionId, datasource);
       if (oldest) {
         targetBlueprint = blueprints.find(bp => bp.type_id === oldest.type_id);
-        console.log(`[LP Blueprint Scheduler] Updating oldest blueprint: ${targetBlueprint?.type_name || oldest.type_id}`);
-      } else {
-        console.log('[LP Blueprint Scheduler] All blueprints are negative profit and not expired');
+        console.log(`[LP Blueprint Scheduler] Updating oldest record: ${targetBlueprint.type_name || targetBlueprint.type_id}`);
       }
     }
 
-    if (!targetBlueprint) {
-      console.log('[LP Blueprint Scheduler] No blueprint to calculate');
-      return;
+    if (targetBlueprint) {
+      const profitData = await calculateBlueprintProfit(targetBlueprint, regionId, datasource);
+      if (profitData) {
+        await LpBlueprintProfit.upsert(profitData);
+        console.log(`[LP Blueprint Scheduler] Calculated: ${targetBlueprint.type_name || targetBlueprint.type_id}, profit_per_lp: ${profitData.profit_per_lp.toFixed(2)}`);
+      }
     }
 
-    // 计算收益
-    const profitData = await calculateBlueprintProfit(targetBlueprint, regionId, datasource);
-
-    // 保存到数据库
-    await LpBlueprintProfit.upsert(profitData);
-
-    console.log(`[LP Blueprint Scheduler] Calculated: ${targetBlueprint.type_name || targetBlueprint.type_id}, profit_per_lp: ${profitData.profit_per_lp.toFixed(2)}`);
   } catch (error) {
-    console.error('[LP Blueprint Scheduler] Error:', error.message);
+    console.error('[LP Blueprint Scheduler] Error during calculation:', error);
   } finally {
     isCalculating = false;
   }
 }
 
 /**
- * 启动定时器
+ * 启动定时任务
  */
 function startScheduler() {
-  console.log('[LP Blueprint Scheduler] Starting...');
-  
-  // 创建表
-  LpBlueprintProfit.createTable().catch(err => {
-    console.error('[LP Blueprint Scheduler] Failed to create table:', err.message);
-  });
-
-  // 延迟5秒后执行一次
-  setTimeout(() => {
-    runCalculation();
-  }, 5000);
+  // 立即执行一次
+  runCalculation().catch(console.error);
 
   // 每5分钟执行一次
-  schedulerInterval = setInterval(runCalculation, 5 * 60 * 1000);
+  schedulerInterval = setInterval(() => {
+    runCalculation().catch(console.error);
+  }, 5 * 60 * 1000);
+
+  console.log('[LP Blueprint Scheduler] Started');
 }
 
 /**
- * 停止定时器
+ * 停止定时任务
  */
 function stopScheduler() {
   if (schedulerInterval) {
@@ -216,5 +320,9 @@ function stopScheduler() {
 module.exports = {
   startScheduler,
   stopScheduler,
-  runCalculation
+  runCalculation,
+  calculateBlueprintProfit,
+  checkLocalOrder,
+  getOrderPrice,
+  syncOrdersFromESI
 };

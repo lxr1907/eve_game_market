@@ -394,103 +394,61 @@ export default {
       try {
         querying.value = true
 
-        // 1. LP兑换成本（固定比例 1300）
-        const lpCost = bp.lp_cost
-        const iskCost = bp.isk_cost
-        const lpToIskValue = lpCost * 1300
-        const lpTotalCost = lpToIskValue + iskCost
+        // 调用统一的蓝图详情API
+        const detailData = await loyaltyApi.getBlueprintDetails(
+          bp.type_id,
+          datasource.value,
+          selectedRegionId.value
+        )
 
+        // 1. LP兑换成本展示
         lpCostDisplay.value = [
-          { name: 'LP需求量', value: formatNumber(lpCost) },
-          { name: 'ISK需求量', value: formatISKShort(iskCost) },
-          { name: 'LP换算ISK成本', value: formatISKShort(lpToIskValue) },
-          { name: 'LP兑换总成本', value: formatISKShort(lpTotalCost) }
+          { name: 'LP需求量', value: formatNumber(detailData.lp_cost) },
+          { name: 'ISK需求量', value: formatISKShort(detailData.isk_cost) },
+          { name: 'LP换算ISK成本', value: formatISKShort(detailData.lp_total_cost) },
+          { name: 'LP兑换总成本', value: formatISKShort(detailData.lp_total_cost + detailData.isk_cost) }
         ]
 
-        // 2. 获取蓝图制造所需原材料
-        const materialsResponse = await typeApi.getBlueprintMaterials(bp.type_id, datasource.value)
+        // 2. 材料信息
+        materials.value = detailData.materials.map(mat => ({
+          name: mat.name,
+          type_id: mat.type_id,
+          quantity: mat.quantity,
+          price: mat.price,
+          total_cost: mat.total_cost
+        }))
 
-        // 3. 并行查询所有原材料的市场价格
-        let materialsTotal = 0
-        if (materialsResponse.length > 0) {
-          const materialsWithCost = await Promise.all(materialsResponse.map(async (material) => {
-            const priceResponse = await orderApi.getOrders({
-              regionId: selectedRegionId.value,
-              typeId: material.type_id,
-              datasource: datasource.value
-            })
-            const sellPrice = priceResponse.sellOrders.data.length > 0
-              ? priceResponse.sellOrders.data[0].price
-              : 0
-            const totalCost = sellPrice * material.quantity
-            materialsTotal += totalCost
-            return {
-              name: material.name,
-              type_id: material.type_id,
-              quantity: material.quantity,
-              price: sellPrice,
-              total_cost: totalCost
-            }
-          }))
-          materials.value = materialsWithCost
-        } else {
-          materials.value = []
-        }
-
-        // 4. 获取蓝图制造产品
-        const productsResponse = await typeApi.getBlueprintProducts(bp.type_id, datasource.value)
-
-        // 5. 查询产品市场价格
-        let buyPrice = 0
-        let sellPrice = 0
-        if (productsResponse.length > 0) {
-          productTypeId.value = productsResponse[0].type_id
-          productTypeName.value = productsResponse[0].name
-          const productQuantity = productsResponse[0].quantity
-          const productPriceResponse = await orderApi.getOrders({
-            regionId: selectedRegionId.value,
-            typeId: productTypeId.value,
-            datasource: datasource.value
-          })
-          buyPrice = productPriceResponse.buyOrders.data.length > 0
-            ? productPriceResponse.buyOrders.data[0].price
-            : 0
-          sellPrice = productPriceResponse.sellOrders.data.length > 0
-            ? productPriceResponse.sellOrders.data[0].price
-            : 0
+        // 3. 产品信息
+        if (detailData.product) {
+          productTypeId.value = detailData.product.type_id
+          productTypeName.value = detailData.product.name
         } else {
           productTypeId.value = null
           productTypeName.value = ''
         }
 
-        // 6. 计算总成本和收益
-        const totalCost = materialsTotal + lpTotalCost
-        const buyProfit = buyPrice - totalCost
-        const sellProfit = sellPrice - totalCost
-        const buyProfitRate = totalCost > 0 ? Number(((buyProfit / totalCost) * 100).toFixed(2)) : 0
-        const sellProfitRate = totalCost > 0 ? Number(((sellProfit / totalCost) * 100).toFixed(2)) : 0
-        const profitPerLp = lpCost > 0 ? Number((buyProfit / lpCost).toFixed(2)) : 0
-
-        // 7. 收益概览
+        // 4. 收益概览（分开显示买/卖收益）
         profitDisplay.value = [
-          { label: '每LP收益', value: formatISKShort(profitPerLp), class: profitPerLp > 0 ? 'profit-positive' : 'profit-negative' },
-          { label: '总收益 (按买价)', value: formatISKShort(buyProfit), class: buyProfit > 0 ? 'profit-positive' : 'profit-negative' },
-          { label: '总收益 (按卖价)', value: formatISKShort(sellProfit), class: sellProfit > 0 ? 'profit-positive' : 'profit-negative' },
-          { label: '收益率 (按买价)', value: `${buyProfitRate}%`, class: buyProfitRate > 0 ? 'profit-positive' : 'profit-negative' },
-          { label: '收益率 (按卖价)', value: `${sellProfitRate}%`, class: sellProfitRate > 0 ? 'profit-positive' : 'profit-negative' },
-          { label: '产品最高买价', value: formatISKShort(buyPrice), class: '' },
-          { label: '产品最低卖价', value: formatISKShort(sellPrice), class: '' },
-          { label: '总成本', value: formatISKShort(totalCost), class: '' }
+          { label: '每LP收益（按买价）', value: formatISKShort(detailData.profit_per_lp_buy), class: detailData.profit_per_lp_buy > 0 ? 'profit-positive' : 'profit-negative' },
+          { label: '每LP收益（按卖价）', value: formatISKShort(detailData.profit_per_lp_sell), class: detailData.profit_per_lp_sell > 0 ? 'profit-positive' : 'profit-negative' },
+          { label: '总收益（按买价）', value: formatISKShort(detailData.buy_profit), class: detailData.buy_profit > 0 ? 'profit-positive' : 'profit-negative' },
+          { label: '总收益（按卖价）', value: formatISKShort(detailData.sell_profit), class: detailData.sell_profit > 0 ? 'profit-positive' : 'profit-negative' },
+          { label: '收益率（按买价）', value: `${detailData.buy_profit_rate.toFixed(2)}%`, class: detailData.buy_profit_rate > 0 ? 'profit-positive' : 'profit-negative' },
+          { label: '收益率（按卖价）', value: `${detailData.sell_profit_rate.toFixed(2)}%`, class: detailData.sell_profit_rate > 0 ? 'profit-positive' : 'profit-negative' },
+          { label: '产品最高买价', value: formatISKShort(detailData.product_buy_price), class: '' },
+          { label: '产品最低卖价', value: formatISKShort(detailData.product_sell_price), class: '' },
+          { label: '总成本', value: formatISKShort(detailData.total_cost), class: '' }
         ]
 
-        // 8. 成本汇总
+        // 5. 成本汇总
         totalCostDisplay.value = [
-          { name: 'LP兑换总成本', value: formatISKShort(lpTotalCost) },
-          { name: '制造材料总成本', value: formatISKShort(materialsTotal) },
-          { name: '总成本', value: formatISKShort(totalCost) },
-          { name: '产品最高买价', value: formatISKShort(buyPrice) },
-          { name: '总收益 (按买价)', value: formatISKShort(buyProfit), class: buyProfit > 0 ? 'profit-positive' : 'profit-negative' },
-          { name: '每LP收益', value: formatISKShort(profitPerLp), class: profitPerLp > 0 ? 'profit-positive' : 'profit-negative' }
+          { name: 'LP兑换总成本', value: formatISKShort(detailData.lp_total_cost) },
+          { name: '制造材料总成本', value: formatISKShort(detailData.material_cost) },
+          { name: '总成本', value: formatISKShort(detailData.total_cost) },
+          { name: '产品最高买价', value: formatISKShort(detailData.product_buy_price) },
+          { name: '产品最低卖价', value: formatISKShort(detailData.product_sell_price) },
+          { name: '总收益（按买价）', value: formatISKShort(detailData.buy_profit), class: detailData.buy_profit > 0 ? 'profit-positive' : 'profit-negative' },
+          { name: '总收益（按卖价）', value: formatISKShort(detailData.sell_profit), class: detailData.sell_profit > 0 ? 'profit-positive' : 'profit-negative' }
         ]
 
       } catch (error) {
