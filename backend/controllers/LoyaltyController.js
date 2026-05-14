@@ -2,6 +2,7 @@ const LoyaltyOffer = require('../models/LoyaltyOffer');
 const Order = require('../models/Order');
 const LoyaltyTypeLpIsk = require('../models/LoyaltyTypeLpIsk');
 const LoyaltySkipItem = require('../models/LoyaltySkipItem');
+const Corporation = require('../models/Corporation');
 const eveApiService = require('../services/eveApiService');
 
 class LoyaltyController {
@@ -620,6 +621,9 @@ class LoyaltyController {
       // 3. 获取材料价格并计算材料成本
       const materialsWithCost = [];
       let materialCost = 0;
+      let hasMissingMaterials = false;
+      const missingMaterials = [];
+      
       for (const mat of materials) {
         // 获取材料最低卖价
         const [priceResult] = await pool.execute(`
@@ -631,13 +635,24 @@ class LoyaltyController {
         const price = priceResult.length > 0 ? priceResult[0].price : 0;
         const totalCost = price * mat.quantity;
         materialCost += totalCost;
+        
+        // 检查是否有材料没有买卖订单
+        if (price === 0) {
+          hasMissingMaterials = true;
+          missingMaterials.push({
+            type_id: mat.material_type_id,
+            name: mat.material_name || `ID: ${mat.material_type_id}`,
+            quantity: mat.quantity
+          });
+        }
 
         materialsWithCost.push({
           name: mat.material_name || `ID: ${mat.material_type_id}`,
           type_id: mat.material_type_id,
           quantity: mat.quantity,
           price: price,
-          total_cost: totalCost
+          total_cost: totalCost,
+          has_order: price > 0 // 标记该材料是否有订单
         });
       }
 
@@ -649,6 +664,62 @@ class LoyaltyController {
         WHERE bp.blueprint_type_id = ? AND bp.activity_type = 'manufacturing'
         LIMIT 1
       `, [typeId]);
+      
+      // 5. 获取所有相同type_id的兑换信息（蓝图出处）
+      const [blueprintSources] = await pool.execute(`
+        SELECT lo.offer_id, lo.corporation_id, lo.lp_cost, lo.isk_cost, lo.ak_cost
+        FROM loyalty_offers lo
+        WHERE lo.type_id = ? AND lo.datasource = ?
+          AND lo.lp_cost > 0 AND lo.isk_cost > 0
+        ORDER BY lo.lp_cost ASC, lo.isk_cost ASC
+      `, [typeId, datasource]);
+
+      // 6. 同步公司信息到数据库
+      const Corporation = require('../models/Corporation');
+      const eveApiService = require('../services/eveApiService');
+      
+      // 确保表存在
+      await Corporation.createTable();
+      
+      // 获取所有需要同步的公司ID
+      const corporationIds = blueprintSources.map(source => source.corporation_id);
+      const uniqueCorporationIds = [...new Set(corporationIds)];
+      
+      // 先查询本地数据库中已有的公司信息
+      const existingCorps = await Corporation.findByIds(uniqueCorporationIds, datasource);
+      
+      // 同步本地没有的公司信息
+      for (const corpId of uniqueCorporationIds) {
+        if (!existingCorps[corpId]) {
+          console.log(`[LP Blueprint] Syncing corporation info for ${corpId} from ESI...`);
+          const corpData = await eveApiService.getCorporationInfo(corpId, datasource);
+          if (corpData) {
+            // 转换数据格式
+            const formattedData = {
+              corporation_id: corpId,
+              name: corpData.name,
+              ticker: corpData.ticker,
+              description: corpData.description,
+              member_count: corpData.member_count,
+              tax_rate: corpData.tax_rate,
+              date_founded: corpData.date_founded,
+              ceo_id: corpData.ceo_id,
+              creator_id: corpData.creator_id,
+              faction_id: corpData.faction_id,
+              home_station_id: corpData.home_station_id,
+              shares: corpData.shares,
+              url: corpData.url
+            };
+            await Corporation.insertOrUpdate(formattedData, datasource);
+            console.log(`[LP Blueprint] Synced corporation info for ${corpId}: ${corpData.name}`);
+          } else {
+            console.log(`[LP Blueprint] Failed to sync corporation info for ${corpId}`);
+          }
+        }
+      }
+      
+      // 重新查询最新的公司信息
+      const updatedCorps = await Corporation.findByIds(uniqueCorporationIds, datasource);
 
       let productInfo = null;
       let buyPrice = 0;
@@ -677,6 +748,76 @@ class LoyaltyController {
           ORDER BY price ASC LIMIT 1
         `, [product.product_type_id, regionId, datasource]);
         sellPrice = sellResult.length > 0 ? sellResult[0].price : 0;
+        
+        // 如果最高买价或最低卖价为0，实时调用ESI同步订单数据
+        if (buyPrice === 0 || sellPrice === 0) {
+          console.log(`[LP Blueprint] Price is 0 for product type ${product.product_type_id}, syncing orders from ESI...`);
+          
+          try {
+            // 删除该区域和类型的1小时之前的订单数据
+            await Order.deleteOlderThanOneHourByRegionAndType(regionId, product.product_type_id, datasource);
+            
+            // 定义处理订单数据的回调函数
+            const processOrders = async (orders, page) => {
+              // 为每个订单添加region_id和type_id
+              const ordersWithRegionAndType = orders.map(order => ({
+                ...order,
+                region_id: regionId,
+                type_id: product.product_type_id
+              }));
+              
+              // 批量插入或更新数据库
+              await Order.insertOrUpdate(ordersWithRegionAndType, datasource);
+            };
+            
+            // 同步买入订单
+            if (buyPrice === 0) {
+              await eveApiService.getAllMarketOrdersByRegionAndType(
+                regionId, 
+                product.product_type_id, 
+                'buy', 
+                1,
+                processOrders,
+                datasource
+              );
+            }
+            
+            // 同步卖出订单
+            if (sellPrice === 0) {
+              await eveApiService.getAllMarketOrdersByRegionAndType(
+                regionId, 
+                product.product_type_id, 
+                'sell', 
+                1,
+                processOrders,
+                datasource
+              );
+            }
+            
+            // 重新查询订单价格
+            if (buyPrice === 0) {
+              const [refreshedBuyResult] = await pool.execute(`
+                SELECT price FROM orders 
+                WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = 1
+                ORDER BY price DESC LIMIT 1
+              `, [product.product_type_id, regionId, datasource]);
+              buyPrice = refreshedBuyResult.length > 0 ? refreshedBuyResult[0].price : 0;
+            }
+            
+            if (sellPrice === 0) {
+              const [refreshedSellResult] = await pool.execute(`
+                SELECT price FROM orders 
+                WHERE type_id = ? AND region_id = ? AND datasource = ? AND is_buy_order = 0
+                ORDER BY price ASC LIMIT 1
+              `, [product.product_type_id, regionId, datasource]);
+              sellPrice = refreshedSellResult.length > 0 ? refreshedSellResult[0].price : 0;
+            }
+            
+            console.log(`[LP Blueprint] Synced orders for product type ${product.product_type_id}, new buy price: ${buyPrice}, new sell price: ${sellPrice}`);
+          } catch (error) {
+            console.error(`[LP Blueprint] Failed to sync orders for product type ${product.product_type_id}:`, error.message);
+          }
+        }
       }
 
       // 5. 计算LP兑换成本和总成本
@@ -685,12 +826,23 @@ class LoyaltyController {
       const totalCost = materialCost + lpTotalCost + bp.isk_cost;
 
       // 6. 计算收益
-      const buyProfit = productInfo ? (buyPrice * productInfo.quantity) - totalCost : 0;
-      const sellProfit = productInfo ? (sellPrice * productInfo.quantity) - totalCost : 0;
-      const profitPerLpBuy = bp.lp_cost > 0 ? buyProfit / bp.lp_cost : 0;
-      const profitPerLpSell = bp.lp_cost > 0 ? sellProfit / bp.lp_cost : 0;
-      const buyProfitRate = totalCost > 0 ? (buyProfit / totalCost) * 100 : 0;
-      const sellProfitRate = totalCost > 0 ? (sellProfit / totalCost) * 100 : 0;
+      let buyProfit = productInfo ? (buyPrice * productInfo.quantity) - totalCost : 0;
+      let sellProfit = productInfo ? (sellPrice * productInfo.quantity) - totalCost : 0;
+      let profitPerLpBuy = bp.lp_cost > 0 ? buyProfit / bp.lp_cost : 0;
+      let profitPerLpSell = bp.lp_cost > 0 ? sellProfit / bp.lp_cost : 0;
+      let buyProfitRate = totalCost > 0 ? (buyProfit / totalCost) * 100 : 0;
+      let sellProfitRate = totalCost > 0 ? (sellProfit / totalCost) * 100 : 0;
+      
+      // 如果有材料没有买卖订单，将每LP收益设为0
+      if (hasMissingMaterials) {
+        console.log(`[LP Blueprint] Missing order data for materials in blueprint ${typeId}, setting profit per LP to 0`);
+        buyProfit = 0;
+        sellProfit = 0;
+        profitPerLpBuy = 0;
+        profitPerLpSell = 0;
+        buyProfitRate = 0;
+        sellProfitRate = 0;
+      }
 
       // 7. 从预计算表获取缓存数据（如果有）
       const [cachedProfit] = await pool.execute(`
@@ -707,12 +859,22 @@ class LoyaltyController {
       const dynamicTotalCost = materialCost + dynamicLpTotalCost + bp.isk_cost;
       
       // 计算收益
-      const dynamicBuyProfit = productInfo ? (buyPrice * productInfo.quantity) - dynamicTotalCost : 0;
-      const dynamicSellProfit = productInfo ? (sellPrice * productInfo.quantity) - dynamicTotalCost : 0;
-      const dynamicProfitPerLpBuy = bp.lp_cost > 0 ? dynamicBuyProfit / bp.lp_cost : 0;
-      const dynamicProfitPerLpSell = bp.lp_cost > 0 ? dynamicSellProfit / bp.lp_cost : 0;
-      const dynamicTotalProfit = productInfo ? (dynamicBuyProfit + dynamicSellProfit) / 2 : 0;
-      const dynamicProfitPerLp = bp.lp_cost > 0 ? dynamicTotalProfit / bp.lp_cost : 0;
+      let dynamicBuyProfit = productInfo ? (buyPrice * productInfo.quantity) - dynamicTotalCost : 0;
+      let dynamicSellProfit = productInfo ? (sellPrice * productInfo.quantity) - dynamicTotalCost : 0;
+      let dynamicProfitPerLpBuy = bp.lp_cost > 0 ? dynamicBuyProfit / bp.lp_cost : 0;
+      let dynamicProfitPerLpSell = bp.lp_cost > 0 ? dynamicSellProfit / bp.lp_cost : 0;
+      let dynamicTotalProfit = productInfo ? (dynamicBuyProfit + dynamicSellProfit) / 2 : 0;
+      let dynamicProfitPerLp = bp.lp_cost > 0 ? dynamicTotalProfit / bp.lp_cost : 0;
+      
+      // 如果有材料没有买卖订单，将每LP收益设为0
+      if (hasMissingMaterials) {
+        dynamicBuyProfit = 0;
+        dynamicSellProfit = 0;
+        dynamicProfitPerLpBuy = 0;
+        dynamicProfitPerLpSell = 0;
+        dynamicTotalProfit = 0;
+        dynamicProfitPerLp = 0;
+      }
       
       // 更新lp_blueprint_profits表中的数据
       const updateData = {
@@ -785,7 +947,63 @@ class LoyaltyController {
       const dynamicBuyProfitRate = dynamicTotalCost > 0 ? (dynamicBuyProfit / dynamicTotalCost) * 100 : 0;
       const dynamicSellProfitRate = dynamicTotalCost > 0 ? (dynamicSellProfit / dynamicTotalCost) * 100 : 0;
       
+      // 处理蓝图出处信息
+      const formattedSources = await Promise.all(blueprintSources.map(async source => {
+        let corp = updatedCorps[source.corporation_id];
+        let corporationName = `Corporation ${source.corporation_id}`;
+        let corporationTicker = '';
+        
+        // 先从缓存中获取
+        if (corp) {
+          corporationName = corp.name;
+          corporationTicker = corp.ticker || '';
+        } else {
+          // 从数据库中获取
+          corp = await Corporation.findById(source.corporation_id, datasource);
+          if (corp) {
+            corporationName = corp.name;
+            corporationTicker = corp.ticker || '';
+          } else {
+            // 从ESI接口实时获取并同步到数据库
+            const corpData = await eveApiService.getCorporationInfo(source.corporation_id, datasource);
+            if (corpData) {
+              const formattedCorpData = {
+                corporation_id: source.corporation_id,
+                name: corpData.name,
+                ticker: corpData.ticker,
+                description: corpData.description,
+                member_count: corpData.member_count,
+                tax_rate: corpData.tax_rate,
+                date_founded: corpData.date_founded,
+                ceo_id: corpData.ceo_id,
+                creator_id: corpData.creator_id,
+                faction_id: corpData.faction_id,
+                home_station_id: corpData.home_station_id,
+                shares: corpData.shares,
+                url: corpData.url
+              };
+              await Corporation.insertOrUpdate(formattedCorpData, datasource);
+              corporationName = corpData.name;
+              corporationTicker = corpData.ticker || '';
+            }
+          }
+        }
+        
+        return {
+          offer_id: source.offer_id,
+          corporation_id: source.corporation_id,
+          corporation_name: corporationName,
+          corporation_ticker: corporationTicker,
+          lp_cost: source.lp_cost,
+          isk_cost: source.isk_cost,
+          ak_cost: source.ak_cost
+        };
+      }));
+      
       const response = {
+        // 材料状态信息
+        has_missing_materials: hasMissingMaterials,
+        missing_materials: missingMaterials,
         // 蓝图基本信息
         offer_id: bp.offer_id,
         type_id: bp.type_id,
@@ -822,8 +1040,9 @@ class LoyaltyController {
         total_profit: dynamicTotalProfit,
         profit_per_lp: dynamicProfitPerLp,
         
-        // 缓存数据（如果有）
-        cached_profit: profitData
+        // 蓝图出处信息
+        blueprint_sources: formattedSources,
+        has_multiple_sources: formattedSources.length > 1
       };
 
       res.status(200).json(response);
@@ -858,33 +1077,44 @@ class LoyaltyController {
         }
       }
 
+      // 先获取去重后的type_id列表，每个type_id只取一条数据（优先取有收益计算的记录）
       let query = `
-        SELECT DISTINCT lo.offer_id, lo.corporation_id, lo.type_id, lo.quantity, lo.lp_cost, lo.isk_cost, lo.ak_cost,
+        SELECT lo.offer_id, lo.corporation_id, lo.type_id, lo.quantity, lo.lp_cost, lo.isk_cost, lo.ak_cost,
                t.name as type_name,
                lbp.profit_per_lp, lbp.total_profit, lbp.updated_at as profit_updated_at,
                lbp.buy_profit, lbp.sell_profit, lbp.profit_per_lp_buy, lbp.profit_per_lp_sell,
                lbp.product_buy_price, lbp.product_sell_price, lbp.total_cost, lbp.material_cost
-        FROM loyalty_offers lo
+        FROM (
+          SELECT type_id, MIN(offer_id) as min_offer_id
+          FROM loyalty_offers
+          WHERE datasource = ?
+            AND type_id IN (SELECT DISTINCT blueprint_type_id FROM blueprint_products)
+            AND lp_cost > 0
+            AND isk_cost > 0
+            AND type_id NOT IN (
+              SELECT DISTINCT lor.type_id FROM loyalty_offer_required_items lor
+            )
+          GROUP BY type_id
+        ) as lo_distinct
+        JOIN loyalty_offers lo ON lo.type_id = lo_distinct.type_id AND lo.offer_id = lo_distinct.min_offer_id
         LEFT JOIN types t ON lo.type_id = t.id
         LEFT JOIN lp_blueprint_profits lbp ON lbp.type_id = lo.type_id AND lbp.region_id = ? AND lbp.datasource = ?
         WHERE lo.datasource = ?
-          AND lo.type_id IN (SELECT DISTINCT blueprint_type_id FROM blueprint_products)
-          AND lo.lp_cost > 0
-          AND lo.isk_cost > 0
-          AND lo.type_id NOT IN (
-            SELECT DISTINCT lor.type_id FROM loyalty_offer_required_items lor
-          )
       `;
-      const params = [regionId, datasource, datasource];
+      const params = [datasource, regionId, datasource, datasource];
 
       if (corporationId) {
-        query += ` AND lo.corporation_id = ?`;
-        params.push(corporationId);
+        // 在子查询中添加corporation_id过滤
+        query = query.replace(
+          `WHERE datasource = ?`,
+          `WHERE datasource = ? AND corporation_id = ?`
+        );
+        params.splice(1, 0, corporationId); // 插入到datasource参数之后
       }
 
       if (search) {
-        query += ` AND t.name LIKE ?`;
-        params.push(`%${search}%`);
+        query += ` AND (t.name LIKE ? OR t.description LIKE ?)`;
+        params.push(`%${search}%`, `%${search}%`);
       }
 
       // 过滤有买单的蓝图（使用 region_types 表判断）

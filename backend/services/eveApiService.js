@@ -851,6 +851,58 @@ class EveApiService {
       }
     }
   }
+
+  // 获取公司信息
+  async getCorporationInfo(corporationId, datasource = 'serenity', retries = 3) {
+    // 节流控制：确保每1秒只请求1次
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.throttleInterval) {
+      const waitTime = this.throttleInterval - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastRequestTime = Date.now();
+
+    try {
+      // 欧服使用不同的API端点
+      if (datasource.toLowerCase() === 'tranquility') {
+        const fullUrl = `https://esi.evetech.net/latest/corporations/${corporationId}/`;
+        const response = await axios.get(fullUrl, {
+          params: {
+            datasource: 'tranquility'
+          },
+          headers: {
+            'Accept': 'application/json',
+            'X-Compatibility-Date': process.env.EVE_API_COMPATIBILITY_DATE || '2025-11-06'
+          },
+          timeout: 10000 // 设置10秒超时
+        });
+        return response.data;
+      } else {
+        const response = await this.client.get(`/corporations/${corporationId}/`, {
+          params: {
+            datasource: datasource
+          },
+          timeout: 10000 // 设置10秒超时
+        });
+        return response.data;
+      }
+    } catch (error) {
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        // 如果是超时或连接重置错误，进行重试
+        console.log(`Timeout fetching corporation info for ${corporationId}, retrying (${retries} left)...`);
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getCorporationInfo(corporationId, datasource, retries - 1);
+      } else {
+        console.error(`Error fetching corporation info for ${corporationId}, datasource ${datasource}: ${error.message}`);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+        return null; // 返回null表示获取失败
+      }
+    }
+  }
 }
 
 module.exports = new EveApiService();
