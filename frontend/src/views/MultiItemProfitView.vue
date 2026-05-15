@@ -253,6 +253,7 @@ const calculateProfit = async () => {
 }
 
 const showOrderDetails = async (row) => {
+  console.log('showOrderDetails called with row:', row)
   selectedItem.value = row
   orderDialogVisible.value = true
   queryingOrders.value = true
