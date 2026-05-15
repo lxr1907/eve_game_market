@@ -74,7 +74,14 @@
                     <el-icon><Warning /></el-icon>
                   </el-button>
                   <el-icon v-if="scope.row.is_unique === 1" class="unique-icon" title="独特物品"><Star /></el-icon>
-                  <el-tag type="info" size="small" style="margin-left: 10px">每LP: {{ formatNumber(scope.row.profit_per_lp) }}</el-tag>
+                  <el-tag 
+                    :type="scope.row.profit_per_lp > 0 ? 'success' : 'danger'" 
+                    size="large" 
+                    class="lp-profit-tag" 
+                    :class="scope.row.profit_per_lp > 0 ? 'profit-positive' : 'profit-negative'"
+                    style="margin-left: 10px">
+                    {{ scope.row.profit_per_lp > 0 ? '+' : '' }}每LP: {{ formatNumber(scope.row.profit_per_lp) }}
+                  </el-tag>
                 </div>
               </template>
             </el-table-column>
@@ -521,6 +528,35 @@ onMounted(() => {
 .updated-at-text {
   font-size: 12px;
   color: #909399;
+}
+
+/* 每LP收益标签样式增强 */
+.lp-profit-tag {
+  font-size: 14px !important;
+  font-weight: bold !important;
+  padding: 6px 14px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s ease !important;
+}
+
+.lp-profit-tag:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+.lp-profit-tag.profit-positive {
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.25), rgba(103, 194, 58, 0.1)) !important;
+  border-color: #67c23a !important;
+  color: #67c23a !important;
+  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.3) !important;
+}
+
+.lp-profit-tag.profit-negative {
+  background: linear-gradient(135deg, rgba(245, 108, 108, 0.25), rgba(245, 108, 108, 0.1)) !important;
+  border-color: #f56c6c !important;
+  color: #f56c6c !important;
+  box-shadow: 0 2px 8px rgba(245, 108, 108, 0.3) !important;
 }
 
 /* 订单弹窗样式 */
