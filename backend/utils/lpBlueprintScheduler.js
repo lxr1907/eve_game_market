@@ -421,7 +421,7 @@ function startScheduler() {
   // 每5秒执行一次
   schedulerInterval = setInterval(() => {
     runCalculation().catch(console.error);
-  }, 5 * 1000);
+  }, 60 * 1000);
 
   console.log('[LP Blueprint Scheduler] Started');
 }

@@ -223,11 +223,15 @@ class Killmail {
         vt.name AS victim_ship_name,
         ft.name AS final_blow_ship_name,
         s.name AS solar_system_name,
-        s.security_status
+        s.security_status,
+        COALESCE(k.victim_character_name, vsso.character_name) as victim_character_name,
+        COALESCE(k.final_blow_character_name, fsso.character_name) as final_blow_character_name
       FROM killmails k
       LEFT JOIN types vt ON k.victim_ship_type_id = vt.id
       LEFT JOIN types ft ON k.final_blow_ship_type_id = ft.id
       LEFT JOIN systems s ON k.solar_system_id = s.system_id AND k.datasource COLLATE utf8mb4_bin = s.datasource COLLATE utf8mb4_bin
+      LEFT JOIN eve_sso_codes vsso ON k.victim_character_id = vsso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = vsso.datasource COLLATE utf8mb4_unicode_ci
+      LEFT JOIN eve_sso_codes fsso ON k.final_blow_character_id = fsso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = fsso.datasource COLLATE utf8mb4_unicode_ci
       WHERE k.final_blow_character_id = ? AND k.datasource = ?
       ORDER BY k.killmail_time DESC
       LIMIT ${safeLimit} OFFSET ${safeOffset}
@@ -245,11 +249,15 @@ class Killmail {
         vt.name AS victim_ship_name,
         ft.name AS final_blow_ship_name,
         s.name AS solar_system_name,
-        s.security_status
+        s.security_status,
+        COALESCE(k.victim_character_name, vsso.character_name) as victim_character_name,
+        COALESCE(k.final_blow_character_name, fsso.character_name) as final_blow_character_name
       FROM killmails k
       LEFT JOIN types vt ON k.victim_ship_type_id = vt.id
       LEFT JOIN types ft ON k.final_blow_ship_type_id = ft.id
       LEFT JOIN systems s ON k.solar_system_id = s.system_id AND k.datasource COLLATE utf8mb4_bin = s.datasource COLLATE utf8mb4_bin
+      LEFT JOIN eve_sso_codes vsso ON k.victim_character_id = vsso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = vsso.datasource COLLATE utf8mb4_unicode_ci
+      LEFT JOIN eve_sso_codes fsso ON k.final_blow_character_id = fsso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = fsso.datasource COLLATE utf8mb4_unicode_ci
       WHERE k.victim_character_id = ? AND k.datasource = ?
       ORDER BY k.killmail_time DESC
       LIMIT ${safeLimit} OFFSET ${safeOffset}

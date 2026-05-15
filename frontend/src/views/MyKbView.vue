@@ -508,6 +508,7 @@
                       <div class="victim-info">
                         <span class="ship-name clickable" @click="showDetail(row)">{{ row.victim_ship_name || `舰船ID: ${row.victim_ship_type_id}` }}</span>
                         <span class="char-name" v-if="row.victim_character_name">{{ row.victim_character_name }}</span>
+                        <span class="char-name" v-else-if="row.victim_character_id">{{ getCharacterNameWithId(row.victim_character_id) }}</span>
                       </div>
                     </template>
                   </el-table-column>
@@ -558,6 +559,7 @@
                   <el-table-column label="击毁者" min-width="150">
                     <template #default="{ row }">
                       <span v-if="row.final_blow_character_name">{{ row.final_blow_character_name }}</span>
+                      <span v-else-if="row.final_blow_character_id">{{ getCharacterNameWithId(row.final_blow_character_id) }}</span>
                       <span v-else-if="row.is_npc" class="npc-tag">NPC</span>
                       <span v-else>-</span>
                     </template>
