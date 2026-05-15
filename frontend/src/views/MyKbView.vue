@@ -214,7 +214,7 @@
                 <el-table :data="groupedItems.midSlots" style="width: 100%" size="small" :row-class-name="getItemRowClass">
                   <el-table-column label="物品" min-width="180">
                     <template #default="{ row }">
-                      <span class="item-name">{{ row.type_name || '-' }}</span>
+                      <el-link type="primary" @click="showOrderDetails(row)" class="item-name-link">{{ row.type_name || '-' }}</el-link>
                     </template>
                   </el-table-column>
                   <el-table-column label="掉落数量" width="80" align="center">
