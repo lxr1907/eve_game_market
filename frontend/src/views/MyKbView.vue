@@ -83,7 +83,7 @@
               <div class="stat-label">
                 效率分
                 <el-tooltip content="效率分 = (击毁总价值 - 损失总价值) / 击毁总价值 × 100%" placement="top">
-                  <el-button size="small" type="text" @click="showEfficiencyDialog = true" class="info-icon">
+                  <el-button size="small" link @click="showEfficiencyDialog = true" class="info-icon">
                     <i class="el-icon-info"></i>
                   </el-button>
                 </el-tooltip>
