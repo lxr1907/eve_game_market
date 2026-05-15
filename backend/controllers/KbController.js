@@ -657,7 +657,7 @@ const getKillmailDetail = async (req, res) => {
     }));
     
     // 6. 处理attackers
-    const attackerList = attackers.map(attacker => ({
+    let attackerList = attackers.map(attacker => ({
       ...attacker,
       ship_type_name: typeNames[attacker.ship_type_id] || null,
       weapon_type_name: typeNames[attacker.weapon_type_id] || null,
@@ -676,7 +676,18 @@ const getKillmailDetail = async (req, res) => {
         ...mainAttacker,
         ship_value: shipValue
       };
+      // 更新attackerList中的mainAttacker
+      const mainAttackerIndex = attackerList.findIndex(a => a.final_blow);
+      if (mainAttackerIndex !== -1) {
+        attackerList[mainAttackerIndex] = mainAttacker;
+      }
     }
+    
+    // 9. 为所有攻击者舰船添加估值字段（兼容前端显示）
+    attackerList = attackerList.map(attacker => ({
+      ...attacker,
+      ship_value: attacker.ship_value || 0 // 保留mainAttacker的估值，其他默认0
+    }));
     
     // 如果main_attacker存在且没有character_name，但我们有final_blow_character_name，补充上
     if (mainAttacker && !mainAttacker.character_name && km.final_blow_character_name) {
@@ -775,7 +786,8 @@ const getKBRanking = async (req, res) => {
           vt.name as victim_ship_name,
           k.solar_system_id,
           s.name as solar_system_name,
-          k.total_value
+          k.total_value,
+          k.ship_value
         FROM killmails k
         LEFT JOIN types vt ON k.victim_ship_type_id = vt.id
         LEFT JOIN systems s ON k.solar_system_id = s.system_id AND k.datasource COLLATE utf8mb4_unicode_ci = s.datasource COLLATE utf8mb4_unicode_ci
@@ -786,7 +798,10 @@ const getKBRanking = async (req, res) => {
         LIMIT ${safeLimit}`,
         [oneMonthAgoStr, datasource]
       );
-      result = rows;
+      result = rows.map(km => ({
+        ...km,
+        ship_value: km.ship_value || 0
+      }));
 
     } else if (type === 'kills') {
       // 角色击毁总估值排行（作为攻击者）
