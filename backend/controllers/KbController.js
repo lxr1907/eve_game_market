@@ -671,7 +671,16 @@ const getKillmailDetail = async (req, res) => {
     // 8. 为最后一击攻击者添加舰船估值
     if (mainAttacker && mainAttacker.ship_type_id) {
       // 尝试从数据库获取已计算的舰船估值
-      const shipValue = parseFloat(km.attacker_ship_value) || 0;
+      let shipValue = parseFloat(km.attacker_ship_value) || 0;
+      
+      // 如果数据库中没有估值，实时计算
+      if (!shipValue) {
+        console.log(`Calculating ship value for attacker ship type ${mainAttacker.ship_type_id}...`);
+        const calculated = await calculateShipValue(mainAttacker.ship_type_id, DEFAULT_REGION_ID, datasource);
+        shipValue = calculated.value;
+        console.log(`Calculated attacker ship value: ${shipValue} ISK`);
+      }
+      
       mainAttacker = {
         ...mainAttacker,
         ship_value: shipValue
@@ -705,13 +714,19 @@ const getKillmailDetail = async (req, res) => {
       return sum + itemValue + nestedValue;
     }, 0);
     
-    // 9. 获取舰船价值（如果数据库中已存储）
-    const shipValue = parseFloat(km.ship_value) || 0;
+    // 9. 获取/计算舰船价值
+    let shipValue = parseFloat(km.ship_value) || 0;
     
-    // 计算总损失价值：数据库中的total_value已经包含了舰船+物品的总价值
-    const totalLossValue = parseFloat(km.total_value) || 0;
+    // 如果数据库中没有舰船估值，实时计算
+    if (!shipValue && km.victim_ship_type_id) {
+      console.log(`Calculating ship value for victim ship type ${km.victim_ship_type_id}...`);
+      const calculated = await calculateShipValue(km.victim_ship_type_id, DEFAULT_REGION_ID, datasource);
+      shipValue = calculated.value;
+      console.log(`Calculated ship value: ${shipValue} ISK`);
+    }
     
-    // 10. 为所有攻击者舰船计算估值（如果有需要）
+    // 10. 计算总损失价值：物品价值 + 舰船价值
+    const totalLossValue = parseFloat(km.total_value) || (itemsValue + shipValue);
     const supportersWithShipValue = supporters.map(supporter => {
       if (supporter.ship_type_id) {
         // 这里可以添加攻击者舰船估值的计算逻辑

@@ -193,7 +193,7 @@
                 <el-descriptions-item label="舰船">
                   <el-link type="primary" @click="showShipOrderDetails(detailData.victim)" class="ship-name loss">{{ detailData.victim.ship_type_name || '-' }}</el-link>
                   <span v-if="detailData.victim.ship_type_id" class="type-id"> ({{ detailData.victim.ship_type_id }})</span>
-                  <span v-if="detailData.victim.ship_value > 0" class="ship-value"> (估值: {{ formatISK(detailData.victim.ship_value) }} ISK)</span>
+                  <span class="ship-value"> (估值: {{ formatISK(detailData.victim?.ship_value || 0) }} ISK)</span>
                 </el-descriptions-item>
                 <el-descriptions-item label="承受伤害">{{ detailData.victim.damage_taken || 0 }}</el-descriptions-item>
               </el-descriptions>
@@ -437,7 +437,7 @@
                 <el-descriptions-item label="舰船">
                   <el-link type="primary" @click="showShipOrderDetails(detailData.main_attacker)" class="ship-name">{{ detailData.main_attacker.ship_type_name || '-' }}</el-link>
                   <span v-if="detailData.main_attacker.ship_type_id" class="type-id"> ({{ detailData.main_attacker.ship_type_id }})</span>
-                  <span v-if="detailData.main_attacker.ship_value > 0" class="ship-value"> (估值: {{ formatISK(detailData.main_attacker.ship_value) }} ISK)</span>
+                  <span class="ship-value"> (估值: {{ formatISK(detailData.main_attacker?.ship_value || 0) }} ISK)</span>
                 </el-descriptions-item>
                 <el-descriptions-item label="武器">
                   <span class="weapon-name">{{ detailData.main_attacker.weapon_type_name || '-' }}</span>
