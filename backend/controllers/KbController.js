@@ -668,6 +668,16 @@ const getKillmailDetail = async (req, res) => {
     // 7. 区分main_attacker和supporters
     let mainAttacker = attackerList.find(a => a.final_blow) || null;
     
+    // 8. 为最后一击攻击者添加舰船估值
+    if (mainAttacker && mainAttacker.ship_type_id) {
+      // 尝试从数据库获取已计算的舰船估值
+      const shipValue = parseFloat(km.attacker_ship_value) || 0;
+      mainAttacker = {
+        ...mainAttacker,
+        ship_value: shipValue
+      };
+    }
+    
     // 如果main_attacker存在且没有character_name，但我们有final_blow_character_name，补充上
     if (mainAttacker && !mainAttacker.character_name && km.final_blow_character_name) {
       mainAttacker = {
@@ -689,6 +699,19 @@ const getKillmailDetail = async (req, res) => {
     
     // 计算总损失价值：数据库中的total_value已经包含了舰船+物品的总价值
     const totalLossValue = parseFloat(km.total_value) || 0;
+    
+    // 10. 为所有攻击者舰船计算估值（如果有需要）
+    const supportersWithShipValue = supporters.map(supporter => {
+      if (supporter.ship_type_id) {
+        // 这里可以添加攻击者舰船估值的计算逻辑
+        // 目前先返回0，后续可以优化为从数据库获取或实时计算
+        return {
+          ...supporter,
+          ship_value: 0
+        };
+      }
+      return supporter;
+    });
     
     res.json({
       success: true,
@@ -712,7 +735,7 @@ const getKillmailDetail = async (req, res) => {
         total_loss_value: totalLossValue
       },
       main_attacker: mainAttacker,
-      supporters: supporters
+      supporters: supportersWithShipValue
     });
     
   } catch (error) {
