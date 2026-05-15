@@ -737,8 +737,14 @@ const mergeItems = (items) => {
     if (merged[key]) {
       merged[key].quantity_dropped += (item.quantity_dropped || 0)
       merged[key].quantity_destroyed += (item.quantity_destroyed || 0)
+      // 重新计算总价值：单价 × 总数量
+      const totalQuantity = merged[key].quantity_dropped + merged[key].quantity_destroyed
+      merged[key].value = merged[key].unit_price * totalQuantity
     } else {
       merged[key] = { ...item }
+      // 确保value字段正确计算
+      const totalQuantity = item.quantity_dropped + item.quantity_destroyed
+      merged[key].value = item.unit_price * totalQuantity
     }
   }
   return Object.values(merged)
