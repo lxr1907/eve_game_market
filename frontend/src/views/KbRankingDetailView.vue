@@ -114,7 +114,7 @@
             <el-table :data="groupedItems.highSlots" style="width: 100%" size="small">
               <el-table-column label="物品" min-width="180">
                 <template #default="{ row }">
-                  <span class="item-name">{{ row.type_name || '-' }}</span>
+                  <el-link type="primary" @click="showOrderDetails(row)" class="item-name-link">{{ row.type_name || '-' }}</el-link>
                 </template>
               </el-table-column>
               <el-table-column label="掉落数量" width="80" align="center">
@@ -148,7 +148,7 @@
             <el-table :data="groupedItems.midSlots" style="width: 100%" size="small">
               <el-table-column label="物品" min-width="180">
                 <template #default="{ row }">
-                  <span class="item-name">{{ row.type_name || '-' }}</span>
+                  <el-link type="primary" @click="showOrderDetails(row)" class="item-name-link">{{ row.type_name || '-' }}</el-link>
                 </template>
               </el-table-column>
               <el-table-column label="掉落数量" width="80" align="center">
@@ -182,7 +182,7 @@
             <el-table :data="groupedItems.lowSlots" style="width: 100%" size="small">
               <el-table-column label="物品" min-width="180">
                 <template #default="{ row }">
-                  <span class="item-name">{{ row.type_name || '-' }}</span>
+                  <el-link type="primary" @click="showOrderDetails(row)" class="item-name-link">{{ row.type_name || '-' }}</el-link>
                 </template>
               </el-table-column>
               <el-table-column label="掉落数量" width="80" align="center">
@@ -216,7 +216,7 @@
             <el-table :data="groupedItems.rigs" style="width: 100%" size="small">
               <el-table-column label="物品" min-width="180">
                 <template #default="{ row }">
-                  <span class="item-name">{{ row.type_name || '-' }}</span>
+                  <el-link type="primary" @click="showOrderDetails(row)" class="item-name-link">{{ row.type_name || '-' }}</el-link>
                 </template>
               </el-table-column>
               <el-table-column label="掉落数量" width="80" align="center">
@@ -250,7 +250,7 @@
             <el-table :data="groupedItems.cargo" style="width: 100%" size="small">
               <el-table-column label="物品" min-width="180">
                 <template #default="{ row }">
-                  <span class="item-name">{{ row.type_name || '-' }}</span>
+                  <el-link type="primary" @click="showOrderDetails(row)" class="item-name-link">{{ row.type_name || '-' }}</el-link>
                 </template>
               </el-table-column>
               <el-table-column label="掉落数量" width="80" align="center">
@@ -284,7 +284,7 @@
             <el-table :data="groupedItems.other" style="width: 100%" size="small">
               <el-table-column label="物品" min-width="180">
                 <template #default="{ row }">
-                  <span class="item-name">{{ row.type_name || '-' }}</span>
+                  <el-link type="primary" @click="showOrderDetails(row)" class="item-name-link">{{ row.type_name || '-' }}</el-link>
                   <span class="flag-info">(flag: {{ row.flag }})</span>
                 </template>
               </el-table-column>
@@ -346,20 +346,105 @@
       <el-empty v-else-if="!loading" description="未找到数据" />
     </div>
   </div>
+
+  <!-- 订单详情弹窗 -->
+  <el-dialog
+    v-model="orderDialogVisible"
+    :title="`${selectedItem?.type_name || '物品'} - 市场订单`"
+    width="70%"
+    destroy-on-close
+    class="order-dialog"
+  >
+    <div v-loading="queryingOrders" class="order-dialog-content">
+      <!-- 手动同步按钮 -->
+      <div class="sync-order-actions">
+        <el-button 
+          type="primary" 
+          :loading="syncingOrder" 
+          @click="syncItemOrders"
+          size="small"
+        >
+          <el-icon><Refresh /></el-icon>
+          同步订单数据
+        </el-button>
+        <span class="sync-hint" v-if="selectedItem?.item_type_id">
+          Type ID: {{ selectedItem.item_type_id }}
+        </span>
+      </div>
+
+      <el-row :gutter="20">
+        <!-- 卖单表格 -->
+        <el-col :span="12">
+          <div class="section-header">
+            <h3 class="section-title sell">
+              <el-icon><Top /></el-icon> 卖出订单 (Sell)
+            </h3>
+          </div>
+          <el-table 
+            :data="sellOrders" 
+            style="width: 100%" 
+            height="350px"
+            size="small"
+            v-if="sellOrders.length > 0"
+          >
+            <el-table-column prop="price" label="价格 (ISK)" sortable min-width="120">
+              <template #default="{ row }">
+                <span class="sell-price">{{ formatISK(row.price) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="volume_remaining" label="数量" sortable width="100" />
+            <el-table-column prop="location_id" label="位置 ID" width="120" />
+          </el-table>
+          <el-empty v-else description="暂无卖单数据" />
+        </el-col>
+
+        <!-- 买单表格 -->
+        <el-col :span="12">
+          <div class="section-header">
+            <h3 class="section-title buy">
+              <el-icon><Bottom /></el-icon> 买入订单 (Buy)
+            </h3>
+          </div>
+          <el-table 
+            :data="buyOrders" 
+            style="width: 100%" 
+            height="350px"
+            size="small"
+            v-if="buyOrders.length > 0"
+          >
+            <el-table-column prop="price" label="价格 (ISK)" sortable min-width="120">
+              <template #default="{ row }">
+                <span class="buy-price">{{ formatISK(row.price) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="volume_remaining" label="数量" sortable width="100" />
+            <el-table-column prop="location_id" label="位置 ID" width="120" />
+          </el-table>
+          <el-empty v-else description="暂无买单数据" />
+        </el-col>
+      </el-row>
+    </div>
+  </el-dialog>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, Refresh, Top, Bottom } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 
 const detailData = ref(null)
 const loading = ref(false)
+const orderDialogVisible = ref(false)
+const queryingOrders = ref(false)
+const syncingOrder = ref(false)
+const selectedItem = ref(null)
+const buyOrders = ref([])
+const sellOrders = ref([])
 
 // 槽位分类
 const slotFlags = {
@@ -495,12 +580,134 @@ const handleImgError = (e) => {
   e.target.style.display = 'none'
 }
 
+// 显示订单详情弹窗
+const showOrderDetails = async (item) => {
+  selectedItem.value = item
+  orderDialogVisible.value = true
+  queryingOrders.value = true
+  buyOrders.value = []
+  sellOrders.value = []
+  
+  try {
+    const typeId = item.item_type_id
+    if (!typeId) {
+      ElMessage.warning('物品类型ID无效')
+      return
+    }
+    
+    // 从后端获取订单数据
+    const response = await fetch(`${API_BASE}/orders?type_id=${typeId}&region_id=10000002&datasource=serenity`)
+    const data = await response.json()
+    
+    // 支持两种数据格式
+    if (data.success) {
+      // 格式1: { success: true, data: { buyOrders: [...], sellOrders: [...] } }
+      buyOrders.value = data.data?.buyOrders?.data || data.data?.buyOrders || []
+      sellOrders.value = data.data?.sellOrders?.data || data.data?.sellOrders || []
+    } else if (data.buyOrders || data.sellOrders) {
+      // 格式2: { buyOrders: [...], sellOrders: [...] } 或 { buyOrders: { data: [...] } }
+      buyOrders.value = data.buyOrders?.data || data.buyOrders || []
+      sellOrders.value = data.sellOrders?.data || data.sellOrders || []
+    } else {
+      ElMessage.warning(data.error || '获取订单数据失败')
+    }
+  } catch (error) {
+    console.error('获取订单详情失败:', error)
+    ElMessage.error('获取订单详情失败')
+  } finally {
+    queryingOrders.value = false
+  }
+}
+
+// 同步物品订单数据
+const syncItemOrders = async () => {
+  if (!selectedItem.value?.item_type_id) return
+  
+  syncingOrder.value = true
+  try {
+    const typeId = selectedItem.value.item_type_id
+    const response = await fetch(`${API_BASE}/orders/sync?type_id=${typeId}&region_id=10000002&datasource=serenity`, {
+      method: 'POST'
+    })
+    const data = await response.json()
+    
+    if (data.success) {
+      ElMessage.success('订单数据同步成功')
+      // 重新查询订单
+      await showOrderDetails(selectedItem.value)
+    } else {
+      ElMessage.error(data.error || '同步订单数据失败')
+    }
+  } catch (error) {
+    console.error('同步订单失败:', error)
+    ElMessage.error('同步订单失败')
+  } finally {
+    syncingOrder.value = false
+  }
+}
+
 onMounted(() => {
   fetchDetail()
 })
 </script>
 
 <style scoped>
+/* 物品名称链接样式 */
+.item-name-link {
+  cursor: pointer;
+  color: #409eff;
+}
+
+.item-name-link:hover {
+  color: #66b1ff;
+}
+
+/* 订单弹窗样式 */
+.order-dialog-content {
+  padding: 20px 0;
+}
+
+.sync-order-actions {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
+.sync-hint {
+  color: #909399;
+  font-size: 14px;
+}
+
+.section-header {
+  margin-bottom: 10px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title.sell {
+  color: #f56c6c;
+}
+
+.section-title.buy {
+  color: #67c23a;
+}
+
+.sell-price {
+  color: #f56c6c;
+  font-weight: 600;
+}
+
+.buy-price {
+  color: #67c23a;
+  font-weight: 600;
+}
 .kb-detail-page {
   min-height: calc(100vh - 120px);
   padding: 20px;
