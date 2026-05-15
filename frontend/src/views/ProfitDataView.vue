@@ -79,15 +79,18 @@
               </template>
             </el-table-column>
 
-            <el-table-column prop="max_buy_order_volume_remaining" label="最高价买单剩余数量" width="150" />
-            <el-table-column prop="max_buy_order_total_profit" label="最高价买单总利润" width="150" :formatter="formatNumber" />
-
-            <el-table-column prop="lp_cost" label="LP成本" width="100" :formatter="formatNumber" />
-            <el-table-column prop="isk_cost" label="ISK成本" width="120" :formatter="formatNumber" />
-            <el-table-column prop="sell_price" label="售价" width="120" :formatter="formatNumber" />
-            <el-table-column prop="quantity" label="数量" width="80" :formatter="formatNumber" />
-            <el-table-column prop="total_profit" label="总收益" width="120" :formatter="formatNumber" />
-            <el-table-column prop="updated_at" label="更新时间" width="180" :formatter="formatDate" />
+            <el-table-column prop="max_buy_order_volume_remaining" label="最高买单剩余" min-width="120" />
+            <el-table-column prop="max_buy_order_total_profit" label="按买单总利润" min-width="120" :formatter="formatNumber" />
+            <el-table-column prop="lp_cost" label="LP成本" min-width="80" :formatter="formatNumber" />
+            <el-table-column prop="isk_cost" label="ISK成本" min-width="100" :formatter="formatNumber" />
+            <el-table-column prop="sell_price" label="售价" min-width="100" :formatter="formatNumber" />
+            <el-table-column prop="quantity" label="数量" min-width="80" :formatter="formatNumber" />
+            <el-table-column prop="total_profit" label="总收益" min-width="100" :formatter="formatNumber" />
+            <el-table-column prop="updated_at" label="更新时间" min-width="140" sortable>
+              <template #default="{ row }">
+                <span class="updated-at-text">{{ formatUpdatedAt(row.updated_at) }}</span>
+              </template>
+            </el-table-column>
           </el-table>
           
           <!-- 分页 -->
@@ -282,6 +285,29 @@ const formatDate = (row, column, cellValue) => {
   return date.toLocaleString()
 }
 
+// 友好格式化更新时间
+const formatUpdatedAt = (val) => {
+  if (!val) return '-'
+  const date = new Date(val)
+  if (isNaN(date.getTime())) return '-'
+  const now = new Date()
+  const diffMs = now - date
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return '刚刚'
+  if (diffMin < 60) return `${diffMin}分钟前`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}小时前`
+  const diffDay = Math.floor(diffHr / 24)
+  if (diffDay < 7) return `${diffDay}天前`
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 // 格式化数字，大数字转换为带单位的形式（10000 → 1w）
 const formatNumber = (row, column, cellValue) => {
   // 确定实际要格式化的值
@@ -442,6 +468,30 @@ onMounted(() => {
 <style scoped>
 .profit-data {
   padding: 20px;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.profit-data >>> .el-main {
+  padding: 0;
+}
+
+.profit-data >>> .el-card {
+  margin: 0;
+}
+
+.profit-data >>> .el-table {
+  width: 100% !important;
+  table-layout: auto !important;
+}
+
+.profit-data >>> .el-table__header,
+.profit-data >>> .el-table__body {
+  width: 100% !important;
+}
+
+.profit-data >>> .el-table__row {
+  width: 100% !important;
 }
 
 .card-header {
@@ -466,6 +516,11 @@ onMounted(() => {
   font-size: 16px;
   margin-left: 5px;
   vertical-align: middle;
+}
+
+.updated-at-text {
+  font-size: 12px;
+  color: #909399;
 }
 
 /* 订单弹窗样式 */
