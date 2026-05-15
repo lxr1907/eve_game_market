@@ -267,9 +267,9 @@ class LoyaltyOffer {
           SELECT lor.type_id, lor.quantity, t.name as type_name
           FROM loyalty_offer_required_items lor
           LEFT JOIN types t ON lor.type_id = t.id
-          WHERE lor.offer_id = ? AND lor.corporation_id = ?
+          WHERE lor.offer_id = ? AND lor.corporation_id = ? AND lor.datasource = ?
         `;
-        const [requiredItems] = await pool.execute(requiredItemsQuery, [offer.offer_id, offer.corporation_id]);
+        const [requiredItems] = await pool.execute(requiredItemsQuery, [offer.offer_id, offer.corporation_id, datasource]);
         offer.required_items = requiredItems;
       }
       
