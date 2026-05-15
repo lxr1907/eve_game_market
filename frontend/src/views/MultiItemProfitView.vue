@@ -40,7 +40,7 @@
               </div>
             </div>
           </template>
-          
+
           <!-- 数据表格 -->
           <el-table
             v-loading="loading"
@@ -51,10 +51,10 @@
               <template #default="scope">
                 <div class="item-name-container">
                   <el-link type="primary" @click="showOrderDetails(scope.row)">{{ scope.row.type_name }}</el-link>
-                  <el-tag 
-                    :type="scope.row.profit_per_lp > 0 ? 'success' : 'danger'" 
-                    size="large" 
-                    class="lp-profit-tag" 
+                  <el-tag
+                    :type="scope.row.profit_per_lp > 0 ? 'success' : 'danger'"
+                    size="large"
+                    class="lp-profit-tag"
                     :class="scope.row.profit_per_lp > 0 ? 'profit-positive' : 'profit-negative'"
                     style="margin-left: 10px">
                     {{ scope.row.profit_per_lp > 0 ? '+' : '' }}每LP: {{ formatNumber(scope.row.profit_per_lp) }}
@@ -67,25 +67,25 @@
             <el-table-column prop="lp_cost" label="需要LP" min-width="80" :formatter="formatNumber" />
             <el-table-column prop="isk_cost" label="需要ISK" min-width="100" :formatter="formatISK" />
             <el-table-column prop="quantity" label="兑换数量" min-width="80" :formatter="formatNumber" />
-            
+
             <el-table-column label="所需物品总价" min-width="120">
               <template #default="scope">
                 <span>{{ formatISK(scope.row.required_items_total_sell_price) }}</span>
               </template>
             </el-table-column>
-            
+
             <el-table-column label="结果物品卖价" min-width="120">
               <template #default="scope">
                 <span>{{ formatISK(scope.row.result_item_sell_price) }}</span>
               </template>
             </el-table-column>
-            
+
             <el-table-column label="结果物品买价" min-width="120">
               <template #default="scope">
                 <span>{{ formatISK(scope.row.result_item_buy_price) }}</span>
               </template>
             </el-table-column>
-            
+
             <el-table-column label="所需物品" min-width="200">
               <template #default="scope">
                 <el-popover
@@ -106,7 +106,7 @@
                 <span v-else>-</span>
               </template>
             </el-table-column>
-            
+
             <el-table-column prop="total_profit" label="总收益" min-width="100">
               <template #default="scope">
                 <span :class="scope.row.total_profit >= 0 ? 'profit-positive' : 'profit-negative'">
@@ -114,7 +114,7 @@
                 </span>
               </template>
             </el-table-column>
-            
+
             <el-table-column prop="updated_at" label="更新时间" min-width="140" sortable>
               <template #default="{ row }">
                 <span class="updated-at-text">{{ formatUpdatedAt(row.updated_at) }}</span>
@@ -141,9 +141,29 @@
     <el-dialog
       :title="'订单详情 - ' + selectedItem?.type_name"
       :visible.sync="orderDialogVisible"
-      width="800px"
+      width="900px"
     >
-      <OrderDetailComponent v-if="selectedItem" :type-id="selectedItem.type_id" :datasource="filters.datasource" />
+      <div v-if="queryingOrders" v-loading="queryingOrders" element-loading-text="加载订单数据..."></div>
+      <div v-else>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <h4 style="margin-bottom: 10px;">买单 (购买玩家)</h4>
+            <el-table :data="buyOrders" size="small" max-height="300" style="width: 100%">
+              <el-table-column prop="price" label="价格" :formatter="(row) => formatISK(row.price)" />
+              <el-table-column prop="volume_remaining" label="剩余数量" />
+              <el-table-column prop="order_id" label="订单ID" width="120" />
+            </el-table>
+          </el-col>
+          <el-col :span="12">
+            <h4 style="margin-bottom: 10px;">卖单 (出售玩家)</h4>
+            <el-table :data="sellOrders" size="small" max-height="300" style="width: 100%">
+              <el-table-column prop="price" label="价格" :formatter="(row) => formatISK(row.price)" />
+              <el-table-column prop="volume_remaining" label="剩余数量" />
+              <el-table-column prop="order_id" label="订单ID" width="120" />
+            </el-table>
+          </el-col>
+        </el-row>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -152,15 +172,17 @@
 import { ref, reactive, onMounted } from 'vue'
 import { Search, CirclePlus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import OrderDetailComponent from '../components/OrderDetailComponent.vue'
 
 const loading = ref(false)
 const profitData = ref([])
 const orderDialogVisible = ref(false)
 const selectedItem = ref(null)
+const queryingOrders = ref(false)
+const buyOrders = ref([])
+const sellOrders = ref([])
 
 const filters = reactive({
-  corporationId: '',
+  corporationId: 1000180,
   datasource: 'serenity'
 })
 
@@ -170,19 +192,14 @@ const pagination = reactive({
   total: 0
 })
 
-const corporations = ref([])
-
-const fetchCorporations = async () => {
-  try {
-    const response = await fetch('/api/corporations')
-    const result = await response.json()
-    if (result.success) {
-      corporations.value = result.data
-    }
-  } catch (error) {
-    console.error('Error fetching corporations:', error)
-  }
-}
+const corporations = ref([
+  { id: 1000436, name: '天使-摩拉辛狂热者' },
+  { id: 1000437, name: '古斯塔斯-古力突击队' },
+  { id: 1000181, name: '盖伦特-联邦防务联合会' },
+  { id: 1000179, name: '艾玛-帝国科洛斯第二十四军团' },
+  { id: 1000180, name: '加达里-合众国护卫军' },
+  { id: 1000182, name: '米玛塔尔-部族解放力量' }
+])
 
 const fetchData = async () => {
   loading.value = true
@@ -195,7 +212,7 @@ const fetchData = async () => {
     if (filters.corporationId) {
       params.append('corporationId', filters.corporationId)
     }
-    
+
     const response = await fetch(`/api/loyalty/multi-item-profit?${params}`)
     const result = await response.json()
     if (result.success) {
@@ -217,7 +234,7 @@ const calculateProfit = async () => {
     ElMessage.warning('请先选择公司')
     return
   }
-  
+
   try {
     const response = await fetch(`/api/loyalty/multi-item-profit/calculate?corporationId=${filters.corporationId}`, {
       method: 'POST'
@@ -235,19 +252,39 @@ const calculateProfit = async () => {
   }
 }
 
-const showOrderDetails = (item) => {
-  selectedItem.value = item
+const showOrderDetails = async (row) => {
+  selectedItem.value = row
   orderDialogVisible.value = true
+  queryingOrders.value = true
+  buyOrders.value = []
+  sellOrders.value = []
+
+  try {
+    const response = await fetch(`/api/orders?regionId=${row.region_id || 10000002}&typeId=${row.type_id}&datasource=${filters.datasource}`)
+    const result = await response.json()
+    if (result.success) {
+      buyOrders.value = result.data.buyOrders || []
+      sellOrders.value = result.data.sellOrders || []
+    }
+  } catch (error) {
+    console.error('获取订单详情失败:', error)
+    ElMessage.error('获取订单详情失败')
+  } finally {
+    queryingOrders.value = false
+  }
 }
 
 const formatNumber = (value) => {
   if (value === null || value === undefined) return '-'
-  return Number(value).toLocaleString()
+  const num = parseFloat(value)
+  if (isNaN(num)) return '-'
+  return num.toLocaleString()
 }
 
 const formatISK = (value) => {
-  if (value === null || value === undefined || value === 0) return '0 ISK'
-  const num = Number(value)
+  if (value === null || value === undefined || value === '') return '0 ISK'
+  const num = parseFloat(value)
+  if (isNaN(num)) return '0 ISK'
   if (num >= 1000000000) {
     return (num / 1000000000).toFixed(2) + ' 亿 ISK'
   } else if (num >= 10000) {
@@ -274,7 +311,6 @@ const handleCurrentChange = (val) => {
 }
 
 onMounted(() => {
-  fetchCorporations()
   fetchData()
 })
 </script>
