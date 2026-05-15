@@ -360,6 +360,45 @@ const parseKillmailDetailBasic = (detail, killmailHash) => {
   };
 };
 
+// 计算舰船估值
+const calculateShipValue = async (shipTypeId, regionId = DEFAULT_REGION_ID, datasource = 'serenity') => {
+  if (!shipTypeId) return { value: 0, unitPrice: 0 };
+  
+  let { minSell, maxBuy } = await getItemPriceFromOrders(shipTypeId, regionId, datasource);
+  
+  // 如果没有订单数据，尝试同步
+  if (minSell === null && maxBuy === null) {
+    console.log(`No orders found for ship type ${shipTypeId}, syncing...`);
+    const syncedCount = await syncOrdersForType(shipTypeId, regionId, datasource);
+    console.log(`Synced ${syncedCount} orders for ship type ${shipTypeId}`);
+    // 重新查询
+    ({ minSell, maxBuy } = await getItemPriceFromOrders(shipTypeId, regionId, datasource));
+    console.log(`After sync, ship type ${shipTypeId}: minSell=${minSell}, maxBuy=${maxBuy}`);
+  }
+  
+  let unitPrice = 0;
+  
+  if (minSell !== null && maxBuy !== null) {
+    // 有买卖单：(最低卖单 + 最高买单) / 2
+    unitPrice = (minSell + maxBuy) / 2;
+  } else if (minSell !== null) {
+    // 只有卖单：最低卖单
+    unitPrice = minSell;
+  } else if (maxBuy !== null) {
+    // 只有买单：最高买单 * 2
+    unitPrice = maxBuy * 2;
+  } else {
+    // 仍然没有订单，返回0
+    console.log(`No orders available for ship type ${shipTypeId} after sync`);
+    return { value: 0, unitPrice: 0 };
+  }
+  
+  // 舰船损失按1艘计算
+  const value = unitPrice * 1;
+  
+  return { value: parseFloat(value.toFixed(2)), unitPrice: parseFloat(unitPrice.toFixed(2)), minSell, maxBuy };
+};
+
 // 解析击毁详情（带估值）
 const parseKillmailDetail = async (detail, killmailHash, datasource = 'serenity') => {
   const basicData = parseKillmailDetailBasic(detail, killmailHash);
@@ -371,11 +410,24 @@ const parseKillmailDetail = async (detail, killmailHash, datasource = 'serenity'
     datasource
   );
   
+  // 计算舰船估值
+  const shipValueResult = await calculateShipValue(
+    basicData.victim_ship_type_id, 
+    DEFAULT_REGION_ID, 
+    datasource
+  );
+  
+  // 总损失 = 物品损失 + 舰船损失
+  const totalLossValue = parseFloat((totalValue + shipValueResult.value).toFixed(2));
+  
   return {
     ...basicData,
     victim_items: itemsWithValue,
-    total_value: totalValue,
-    calculated_value: totalValue, // 标记为计算得出的估值
+    total_value: totalLossValue,
+    calculated_value: totalLossValue, // 标记为计算得出的估值
+    ship_value: shipValueResult.value,
+    items_value: totalValue,
+    ship_price_info: shipValueResult,
     zkb_value: detail.zkb?.totalValue || null // 保留zkb的估值用于对比
   };
 };
@@ -632,12 +684,18 @@ const getKillmailDetail = async (req, res) => {
       return sum + itemValue + nestedValue;
     }, 0);
     
+    // 9. 获取舰船价值（如果数据库中已存储）
+    const shipValue = parseFloat(km.ship_value) || 0;
+    
+    // 计算总损失价值：数据库中的total_value已经包含了舰船+物品的总价值
+    const totalLossValue = parseFloat(km.total_value) || 0;
+    
     res.json({
       success: true,
       killmail_id: km.killmail_id,
       killmail_time: km.killmail_time,
       solar_system_id: km.solar_system_id,
-      total_value: km.total_value,
+      total_value: totalLossValue,
       attackers_count: km.attackers_count,
       is_npc: km.is_npc,
       victim: {
@@ -649,7 +707,9 @@ const getKillmailDetail = async (req, res) => {
         ship_type_name: typeNames[km.victim_ship_type_id] || null,
         damage_taken: km.victim_damage_taken,
         items: items,
-        items_value: itemsValue
+        items_value: parseFloat(km.items_value) || itemsValue,
+        ship_value: parseFloat(km.ship_value) || shipValue,
+        total_loss_value: totalLossValue
       },
       main_attacker: mainAttacker,
       supporters: supporters

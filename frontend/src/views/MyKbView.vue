@@ -193,6 +193,7 @@
                 <el-descriptions-item label="舰船">
                   <el-link type="primary" @click="showShipOrderDetails(detailData.victim)" class="ship-name loss">{{ detailData.victim.ship_type_name || '-' }}</el-link>
                   <span v-if="detailData.victim.ship_type_id" class="type-id"> ({{ detailData.victim.ship_type_id }})</span>
+                  <span v-if="detailData.victim.ship_value > 0" class="ship-value"> (估值: {{ formatISK(detailData.victim.ship_value) }} ISK)</span>
                 </el-descriptions-item>
                 <el-descriptions-item label="承受伤害">{{ detailData.victim.damage_taken || 0 }}</el-descriptions-item>
               </el-descriptions>
@@ -203,7 +204,7 @@
               <template #header>
                 <div class="items-header">
                   <span class="section-title-text victim-title">物品列表</span>
-                  <span class="total-value">总损失估值: {{ formatISK(detailData.victim.items_value) }} ISK</span>
+                  <span class="total-value">总损失估值: {{ formatISK(detailData.victim.total_loss_value) }} ISK</span>
                 </div>
               </template>
               
@@ -1416,6 +1417,14 @@ const showShipOrderDetails = (shipData) => {
 }
 .item-value {
   color: #e6a23c;
+  font-weight: 500;
+}
+
+/* 舰船估值样式 */
+.ship-value {
+  color: #67c23a;
+  font-size: 12px;
+  margin-left: 8px;
   font-weight: 500;
 }
 
