@@ -118,9 +118,12 @@
                 <el-descriptions-item label="攻击者数量">{{ detailData.attackers_count }}</el-descriptions-item>
                 <el-descriptions-item label="War ID">{{ detailData.war_id || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="NPC击杀">
-                  <el-tag :type="selectedKill.is_npc ? 'info' : 'success'" size="small">
-                    {{ selectedKill.is_npc ? '是' : '否' }}
-                  </el-tag>
+                  <span v-if="selectedKill.is_npc" class="npc-kill-tag yes">
+                    <el-tag type="info" size="small">是</el-tag>
+                  </span>
+                  <span v-else class="npc-kill-tag no">
+                    否
+                  </span>
                 </el-descriptions-item>
               </el-descriptions>
             </el-card>
@@ -385,7 +388,8 @@
               <template #header><span class="section-title-text killer-title">最后一击</span></template>
               <el-descriptions :column="2" border size="small">
                 <el-descriptions-item label="角色">
-                  {{ detailData.main_attacker.character_id || 'NPC' }}
+                  <span v-if="detailData.main_attacker.character_id === 'NPC'">NPC</span>
+                  <span v-else>{{ getCharacterNameWithId(detailData.main_attacker.character_id) }}</span>
                 </el-descriptions-item>
                 <el-descriptions-item label="公司">
                   {{ detailData.main_attacker.corporation_id || '-' }}
@@ -759,12 +763,22 @@ onMounted(async () => {
   loadCharacterInfo()
 })
 
-const loadCharacterInfo = () => {
+const loadCharacterInfo = async () => {
   const saved = localStorage.getItem('eve_character')
   if (saved) {
     const info = JSON.parse(saved)
     characterInfo.value = info
     loadKBData()
+  }
+  // 加载角色名称映射
+  try {
+    const response = await fetch(`${API_BASE}/api/characters/names`)
+    const data = await response.json()
+    if (data.success && data.data) {
+      characterNames.value = data.data
+    }
+  } catch (error) {
+    console.error('加载角色名称失败:', error)
   }
 }
 
@@ -851,6 +865,22 @@ const showDetail = async (row) => {
   } finally {
     loadingDetail.value = false
   }
+}
+
+// 从数据库获取角色名称映射
+const characterNames = ref({})
+
+// 初始化时加载角色名称
+
+
+// 获取角色名称和ID的显示格式
+const getCharacterNameWithId = (characterId) => {
+  if (!characterId) return '未知'
+  const name = characterNames.value[characterId]
+  if (name) {
+    return `${name} (${characterId})`
+  }
+  return characterId
 }
 
 const formatISK = (value) => {
@@ -1000,6 +1030,11 @@ const handleImgError = (e) => {
 </script>
 
 <style scoped>
+/* NPC击杀显示样式 */
+.npc-kill-tag.no {
+  color: #ffffff;
+  font-weight: 500;
+}
 .kb-page {
   min-height: calc(100vh - 120px);
   padding: 20px;
