@@ -262,9 +262,9 @@ const showOrderDetails = async (row) => {
   try {
     const response = await fetch(`/api/orders?regionId=${row.region_id || 10000002}&typeId=${row.type_id}&datasource=${filters.datasource}`)
     const result = await response.json()
-    if (result.success) {
-      buyOrders.value = result.data.buyOrders || []
-      sellOrders.value = result.data.sellOrders || []
+    if (result.buyOrders && result.sellOrders) {
+      buyOrders.value = result.buyOrders.data || []
+      sellOrders.value = result.sellOrders.data || []
     }
   } catch (error) {
     console.error('获取订单详情失败:', error)
