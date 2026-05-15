@@ -529,9 +529,14 @@ const getKillmailDetail = async (req, res) => {
     const { killmail_id } = req.params;
     const datasource = req.query.datasource || 'serenity';
     
-    // 1. 从数据库获取killmail记录
+    // 1. 从数据库获取killmail记录，关联eve_sso_codes获取最后一击角色名称
     const [rows] = await pool.execute(
-      'SELECT * FROM killmails WHERE killmail_id = ? AND datasource = ?',
+      `SELECT k.*, 
+        COALESCE(k.final_blow_character_name, sso.character_name) as final_blow_character_name,
+        sso.character_id as final_blow_character_id
+       FROM killmails k
+       LEFT JOIN eve_sso_codes sso ON k.final_blow_character_id = sso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso.datasource COLLATE utf8mb4_unicode_ci
+       WHERE k.killmail_id = ? AND k.datasource = ?`,
       [killmail_id, datasource]
     );
     
@@ -603,11 +608,21 @@ const getKillmailDetail = async (req, res) => {
     const attackerList = attackers.map(attacker => ({
       ...attacker,
       ship_type_name: typeNames[attacker.ship_type_id] || null,
-      weapon_type_name: typeNames[attacker.weapon_type_id] || null
+      weapon_type_name: typeNames[attacker.weapon_type_id] || null,
+      // 如果有角色名称，添加到攻击者信息中
+      character_name: attacker.character_id === km.final_blow_character_id ? km.final_blow_character_name : null
     }));
     
     // 7. 区分main_attacker和supporters
-    const mainAttacker = attackerList.find(a => a.final_blow) || null;
+    let mainAttacker = attackerList.find(a => a.final_blow) || null;
+    
+    // 如果main_attacker存在且没有character_name，但我们有final_blow_character_name，补充上
+    if (mainAttacker && !mainAttacker.character_name && km.final_blow_character_name) {
+      mainAttacker = {
+        ...mainAttacker,
+        character_name: km.final_blow_character_name
+      };
+    }
     const supporters = attackerList.filter(a => !a.final_blow);
     
     // 8. 计算物品总价值

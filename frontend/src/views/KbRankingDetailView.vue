@@ -47,7 +47,8 @@
           </div>
           <div class="ship-img-box" v-if="detailData.main_attacker?.ship_type_id">
             <span class="img-label">最后一击舰船</span>
-            <span class="img-ship-name">{{ detailData.main_attacker.ship_type_name || '-' }}</span>
+                  <span class="img-ship-name">{{ detailData.main_attacker.ship_type_name || '-' }}</span>
+                  <span v-if="detailData.main_attacker?.character_name" class="img-character-name">{{ detailData.main_attacker.character_name }}</span>
             <img :src="`https://images.evetech.net/types/${detailData.main_attacker.ship_type_id}/render?size=256`" 
                  @error="handleImgError" />
           </div>
@@ -79,7 +80,10 @@
           <template #header><span class="section-title-text killer-title">最后一击</span></template>
           <el-descriptions :column="2" border size="small">
             <el-descriptions-item label="角色">
-              {{ detailData.main_attacker.character_id || '-' }}
+              <span v-if="detailData.main_attacker.character_name">
+                {{ detailData.main_attacker.character_name }} ({{ detailData.main_attacker.character_id }})
+              </span>
+              <span v-else>{{ detailData.main_attacker.character_id || '-' }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="公司">
               {{ detailData.main_attacker.corporation_id || '-' }}
