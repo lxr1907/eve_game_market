@@ -372,6 +372,9 @@ class LoyaltyController {
     // 2. 删除2周前的订单数据
     await Order.deleteOlderThanTwoWeeks(datasource);
 
+    // 3. 删除超过1天的跳过记录
+    await LoyaltySkipItem.deleteOldSkipItems(datasource);
+
     // 根据数据源选择对应的区域ID
     const regionId = datasource === 'infinity' ? 10000016 : 10000002;
     

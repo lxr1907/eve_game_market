@@ -40,6 +40,23 @@ class LoyaltySkipItem {
     }
   }
 
+  /**
+   * 删除超过1天的跳过记录
+   */
+  static async deleteOldSkipItems(datasource = 'serenity') {
+    const query = `DELETE FROM loyalty_skip_items WHERE datasource = ? AND created_at < DATE_SUB(NOW(), INTERVAL 1 DAY)`;
+    try {
+      const [result] = await pool.execute(query, [datasource]);
+      if (result.affectedRows > 0) {
+        console.log(`Deleted ${result.affectedRows} old skip items from ${datasource} (older than 1 day)`);
+      }
+      return result.affectedRows;
+    } catch (error) {
+      console.error('Error deleting old skip items:', error);
+      return 0;
+    }
+  }
+
   static async removeSkipItem(typeId, datasource = 'serenity') {
     const query = `DELETE FROM loyalty_skip_items WHERE type_id = ? AND datasource = ?`;
     try {

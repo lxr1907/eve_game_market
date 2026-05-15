@@ -1,6 +1,7 @@
 const pool = require('../config/database');
 const LpBlueprintProfit = require('../models/LpBlueprintProfit');
 const Order = require('../models/Order');
+const LoyaltySkipItem = require('../models/LoyaltySkipItem');
 const eveApiService = require('../services/eveApiService');
 
 // 默认区域ID
@@ -346,6 +347,13 @@ async function runCalculation() {
 
   isCalculating = true;
   try {
+    console.log(`[LP Blueprint Scheduler] Starting calculation...`);
+
+    // 删除超过1天的跳过记录
+    await LoyaltySkipItem.deleteOldSkipItems('serenity');
+    await LoyaltySkipItem.deleteOldSkipItems('tranquility');
+    await LoyaltySkipItem.deleteOldSkipItems('infinity');
+
     const regionId = DEFAULT_REGION_ID;
     const datasource = DEFAULT_DATASOURCE;
 
