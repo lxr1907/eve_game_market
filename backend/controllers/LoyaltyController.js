@@ -2,7 +2,9 @@ const LoyaltyOffer = require('../models/LoyaltyOffer');
 const Order = require('../models/Order');
 const LoyaltyTypeLpIsk = require('../models/LoyaltyTypeLpIsk');
 const LoyaltySkipItem = require('../models/LoyaltySkipItem');
+const LoyaltyMultiItemProfit = require('../models/LoyaltyMultiItemProfit');
 const Corporation = require('../models/Corporation');
+const Type = require('../models/Type');
 const eveApiService = require('../services/eveApiService');
 
 class LoyaltyController {
@@ -1167,6 +1169,206 @@ class LoyaltyController {
       console.error('Error getting loyalty blueprints:', error);
       res.status(500).json({ message: 'Failed to get loyalty blueprints', error: error.message });
     }
+  }
+
+  // 获取LP多物品兑换收益数据
+  static async getMultiItemProfitData(req, res) {
+    try {
+      const { page = 1, limit = 50, corporationId, typeId, datasource = 'serenity' } = req.query;
+      
+      let result = [];
+      let totalCount = 0;
+
+      if (corporationId) {
+        result = await LoyaltyMultiItemProfit.findByCorporationId(parseInt(corporationId), datasource);
+        totalCount = result.length;
+      } else if (typeId) {
+        result = await LoyaltyMultiItemProfit.findByTypeId(parseInt(typeId), datasource);
+        totalCount = result.length;
+      } else {
+        result = await LoyaltyMultiItemProfit.findAll(parseInt(page), parseInt(limit), datasource);
+        totalCount = await LoyaltyMultiItemProfit.count(datasource);
+      }
+
+      // 获取类型名称映射
+      const typeIds = [...new Set(result.map(item => item.type_id))];
+      const typeRows = await Type.findByIds(typeIds);
+      const typeNames = {};
+      typeRows.forEach(row => {
+        typeNames[row.id] = row.name;
+      });
+
+      // 获取公司名称映射
+      const corpIds = [...new Set(result.map(item => item.corporation_id))];
+      const corpRows = await Corporation.findByIds(corpIds, datasource);
+      const corpNames = {};
+      // Corporation.findByIds 返回的是映射对象
+      Object.keys(corpRows).forEach(id => {
+        corpNames[id] = corpRows[id].name;
+      });
+
+      // 处理required_items_json (mysql2会自动解析JSON字段)
+      const processedResult = result.map(item => {
+        const requiredItems = typeof item.required_items_json === 'string' 
+          ? JSON.parse(item.required_items_json) 
+          : (item.required_items_json || []);
+        return {
+          ...item,
+          type_name: typeNames[item.type_id] || `Type ${item.type_id}`,
+          corporation_name: corpNames[item.corporation_id] || `Corporation ${item.corporation_id}`,
+          required_items: requiredItems
+        };
+      });
+
+      res.status(200).json({
+        success: true,
+        data: processedResult,
+        total: totalCount,
+        page: parseInt(page),
+        limit: parseInt(limit)
+      });
+    } catch (error) {
+      console.error('Error getting multi item profit data:', error);
+      res.status(500).json({ message: 'Failed to get multi item profit data', error: error.message });
+    }
+  }
+
+  // 计算LP多物品兑换收益
+  static async calculateMultiItemProfit(req, res) {
+    try {
+      const corporationId = (req.body && req.body.corporationId) || parseInt(req.query.corporationId);
+
+      res.status(202).json({
+        message: `Calculating multi-item LP profit for corporation ${corporationId} has started in background`,
+        status: 'started'
+      });
+
+      (async () => {
+        try {
+          console.log(`Starting multi-item LP profit calculation for corporation ${corporationId}...`);
+          const datasources = ['serenity', 'infinity', 'tranquility'];
+
+          await Promise.all(datasources.map(async (ds) => {
+            console.log(`Processing datasource: ${ds}`);
+            await LoyaltyMultiItemProfit.deleteByCorporationId(corporationId, ds);
+            await LoyaltyController.calculateMultiItemProfitInternal(corporationId, ds);
+            console.log(`Multi-item profit calculation completed for datasource ${ds}`);
+          }));
+
+          console.log('All datasources processing completed');
+        } catch (error) {
+          console.error(`Error in background multi-item profit calculation: ${error.message}`);
+        }
+      })();
+    } catch (error) {
+      console.error('Error starting multi-item profit calculation:', error.message);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  // 内部方法：执行LP多物品兑换收益计算
+  static async calculateMultiItemProfitInternal(corporationId, datasource = 'serenity') {
+    const regionId = datasource === 'infinity' ? 10000016 : 10000002;
+
+    const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId, datasource);
+    const offers = allOffers.offers;
+    const totalOffersCount = offers.length;
+
+    console.log(`=== Starting multi-item LP profit calculation for ${datasource} ===`);
+    console.log(`Total offers to process: ${totalOffersCount}`);
+
+    let processedOffers = 0;
+    let savedOffers = 0;
+    let skippedOffers = 0;
+
+    for (const offer of offers) {
+      processedOffers++;
+      const progress = ((processedOffers / totalOffersCount) * 100).toFixed(1);
+
+      try {
+        if (processedOffers % 20 === 0 || processedOffers === 1 || processedOffers === totalOffersCount) {
+          process.stdout.write(`\rProgress: [${processedOffers}/${totalOffersCount}] ${progress}% | Saved: ${savedOffers} | Skipped: ${skippedOffers}   `);
+        }
+
+        // 只处理有required_items的offer
+        if (!offer.required_items || offer.required_items.length === 0) {
+          skippedOffers++;
+          continue;
+        }
+
+        const requiredItems = offer.required_items;
+        let allRequiredItemsHaveOrders = true;
+        let requiredItemsTotalSellPrice = 0;
+        const requiredItemsWithPrice = [];
+
+        // 检查所有所需物品是否有卖订单，并计算总价
+        for (const requiredItem of requiredItems) {
+          const sellOrders = await Order.findByRegionAndType(regionId, requiredItem.type_id, 'sell', 1, 1, datasource);
+          
+          if (sellOrders.length === 0) {
+            allRequiredItemsHaveOrders = false;
+            break;
+          }
+
+          const minSellPrice = sellOrders[0].price;
+          const itemTotalPrice = minSellPrice * requiredItem.quantity;
+          
+          requiredItemsTotalSellPrice += itemTotalPrice;
+          requiredItemsWithPrice.push({
+            ...requiredItem,
+            sell_price: minSellPrice,
+            total_price: itemTotalPrice
+          });
+        }
+
+        if (!allRequiredItemsHaveOrders) {
+          skippedOffers++;
+          continue;
+        }
+
+        // 获取兑换结果物品的卖单和买单价格
+        const resultSellOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'sell', 1, 1, datasource);
+        const resultBuyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1, datasource);
+
+        if (resultSellOrders.length === 0 && resultBuyOrders.length === 0) {
+          skippedOffers++;
+          continue;
+        }
+
+        const resultItemSellPrice = resultSellOrders.length > 0 ? resultSellOrders[0].price : 0;
+        const resultItemBuyPrice = resultBuyOrders.length > 0 ? resultBuyOrders[0].price : 0;
+
+        // 计算总收益：(结果物品卖单价 * 数量) - 所需物品总价 - ISK成本
+        const totalRevenue = resultItemSellPrice * offer.quantity;
+        const totalCost = requiredItemsTotalSellPrice + offer.isk_cost;
+        const totalProfit = totalRevenue - totalCost;
+        const profitPerLp = offer.lp_cost > 0 ? totalProfit / offer.lp_cost : 0;
+
+        // 存储结果
+        await LoyaltyMultiItemProfit.insertOrUpdate({
+          type_id: offer.type_id,
+          corporation_id: corporationId,
+          region_id: regionId,
+          lp_cost: offer.lp_cost,
+          isk_cost: offer.isk_cost,
+          quantity: offer.quantity,
+          required_items_total_sell_price: requiredItemsTotalSellPrice,
+          result_item_sell_price: resultItemSellPrice,
+          result_item_buy_price: resultItemBuyPrice,
+          total_profit: totalProfit,
+          profit_per_lp: profitPerLp,
+          required_items_json: requiredItemsWithPrice
+        }, datasource);
+
+        savedOffers++;
+      } catch (error) {
+        console.error(`Error processing offer ${offer.type_id}: ${error.message}`);
+        skippedOffers++;
+      }
+    }
+
+    console.log(`\n=== Multi-item LP profit calculation completed for ${datasource} ===`);
+    console.log(`Processed: ${processedOffers}, Saved: ${savedOffers}, Skipped: ${skippedOffers}`);
   }
 }
 

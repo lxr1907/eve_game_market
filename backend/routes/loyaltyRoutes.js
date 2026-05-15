@@ -9,6 +9,8 @@ router.post('/loyalty/offers/sync-all', LoyaltyController.syncAllLoyaltyOffers);
 router.post('/loyalty/offers/calculate-profit', LoyaltyController.calculateProfit);
 router.post('/loyalty/offers/clean-recalculate-profit', LoyaltyController.cleanAndRecalculateProfit);
 router.get('/loyalty/profit-data', LoyaltyController.getProfitData);
+router.get('/loyalty/multi-item-profit', LoyaltyController.getMultiItemProfitData);
+router.post('/loyalty/multi-item-profit/calculate', LoyaltyController.calculateMultiItemProfit);
 router.get('/loyalty/blueprints', LoyaltyController.getLoyaltyBlueprints);
 router.get('/loyalty/blueprints/:typeId/details', LoyaltyController.getBlueprintDetails);
 router.get('/loyalty/offers/:id', LoyaltyController.getLoyaltyOfferById);

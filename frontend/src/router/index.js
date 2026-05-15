@@ -14,6 +14,7 @@ import ProfileView from '../views/ProfileView.vue'
 import OrderQueryView from '../views/OrderQueryView.vue'
 import LoyaltyOfferView from '../views/LoyaltyOfferView.vue'
 import ProfitDataView from '../views/ProfitDataView.vue'
+import MultiItemProfitView from '../views/MultiItemProfitView.vue'
 import LpBlueprintView from '../views/LpBlueprintView.vue'
 import MyKbView from '../views/MyKbView.vue'
 import KbRankingView from '../views/KbRankingView.vue'
@@ -71,6 +72,11 @@ const router = createRouter({
       path: '/profit-data',
       name: 'profit-data',
       component: ProfitDataView
+    },
+    {
+      path: '/multi-item-profit',
+      name: 'multi-item-profit',
+      component: MultiItemProfitView
     },
     {
       path: '/online-player-stats',
