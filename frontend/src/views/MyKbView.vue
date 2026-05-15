@@ -38,7 +38,7 @@
         <el-card class="character-card" shadow="hover">
           <div class="character-info">
             <div class="char-avatar">
-              <img :src="`/evetech/characters/${characterInfo.character_id}/portrait?size=64`" 
+              <img :src="`https://images.evetech.net/characters/${characterInfo.character_id}/portrait?size=64`" 
                    alt="avatar" 
                    @error="handleAvatarError" />
             </div>
@@ -162,7 +162,7 @@
               <div class="ship-img-box" v-if="detailData.victim?.ship_type_id">
                 <span class="img-label loss">受害者舰船</span>
                 <span class="img-ship-name loss">{{ detailData.victim.ship_type_name || '-' }}</span>
-                <img :src="`/evetech/types/${detailData.victim.ship_type_id}/render?size=256`" 
+                <img :src="`https://images.evetech.net/types/${detailData.victim.ship_type_id}/render?size=256`" 
                      @error="handleImgError" />
               </div>
               <div class="ship-img-box" v-if="detailData.main_attacker?.ship_type_id">
