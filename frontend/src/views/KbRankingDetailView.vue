@@ -370,13 +370,31 @@ const slotFlags = {
   cargo: [5]
 }
 
+// 合并相同item_type_id的物品
+const mergeItems = (items) => {
+  const merged = {}
+  for (const item of items) {
+    const key = item.item_type_id
+    if (!key) continue
+    if (merged[key]) {
+      merged[key].quantity_dropped += (item.quantity_dropped || 0)
+      merged[key].quantity_destroyed += (item.quantity_destroyed || 0)
+    } else {
+      merged[key] = { ...item }
+    }
+  }
+  return Object.values(merged)
+}
+
 // 分组物品
 const groupedItems = computed(() => {
   if (!detailData.value?.victim?.items) {
     return { highSlots: [], midSlots: [], lowSlots: [], rigs: [], cargo: [], other: [], highSlotsValue: 0, midSlotsValue: 0, lowSlotsValue: 0, rigsValue: 0, cargoValue: 0, otherValue: 0 }
   }
   
-  const items = detailData.value.victim.items
+  let items = detailData.value.victim.items
+  // 合并相同类型的物品
+  items = mergeItems(items)
   const result = {
     highSlots: [],
     midSlots: [],
