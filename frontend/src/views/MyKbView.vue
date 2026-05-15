@@ -6,7 +6,29 @@
         <el-result icon="warning" title="未登录" sub-title="请先登录以查看您的KB数据">
           <template #extra>
             <el-button type="primary" @click="$router.push('/login')">前往登录</el-button>
-          </template>
+          <!-- 效率分详情弹窗 -->
+<el-dialog title="效率分计算方式" v-model="showEfficiencyDialog" width="400px" append-to-body>
+  <div class="efficiency-explanation">
+    <h4>效率分计算公式</h4>
+    <p class="formula">
+      效率分 = (击毁总价值 - 损失总价值) / 击毁总价值 × 100%
+    </p>
+    <h4>公式说明</h4>
+    <ul>
+      <li><strong>击毁总价值</strong>: 所有参与击毁的舰船和物品的总价值</li>
+      <li><strong>损失总价值</strong>: 所有损失的舰船和物品的总价值</li>
+      <li><strong>效率分范围</strong>: -∞ ~ 100%</li>
+    </ul>
+    <h4>结果解读</h4>
+    <ul>
+      <li><strong>100%</strong>: 只击毁，无任何损失</li>
+      <li><strong>0% ~ 100%</strong>: 击毁价值大于损失价值</li>
+      <li><strong>0%</strong>: 击毁价值等于损失价值</li>
+      <li><strong>负数</strong>: 损失价值大于击毁价值</li>
+    </ul>
+  </div>
+</el-dialog>
+</template>
         </el-result>
       </div>
 
@@ -46,19 +68,26 @@
             <div class="stat-content">
               <div class="stat-label">击毁</div>
               <div class="stat-value">{{ stats.kills_count || 0 }}</div>
-              <div class="stat-isk">{{ formatISK(stats.kills_isk) }} ISK</div>
+              <div class="stat-isk highlighted">{{ formatISK(stats.kills_isk) }} ISK</div>
             </div>
           </el-card>
           <el-card class="stat-card losses-card" shadow="hover">
             <div class="stat-content">
               <div class="stat-label">损失</div>
               <div class="stat-value">{{ stats.losses_count || 0 }}</div>
-              <div class="stat-isk">{{ formatISK(stats.losses_isk) }} ISK</div>
+              <div class="stat-isk highlighted">{{ formatISK(stats.losses_isk) }} ISK</div>
             </div>
           </el-card>
           <el-card class="stat-card efficiency-card" shadow="hover">
             <div class="stat-content">
-              <div class="stat-label">效率分</div>
+              <div class="stat-label">
+                效率分
+                <el-tooltip content="效率分 = (击毁总价值 - 损失总价值) / 击毁总价值 × 100%" placement="top">
+                  <el-button size="small" type="text" @click="showEfficiencyDialog = true" class="info-icon">
+                    <i class="el-icon-info"></i>
+                  </el-button>
+                </el-tooltip>
+              </div>
               <div class="stat-value" :class="getEfficiencyClass(stats.efficiency)">
                 {{ Math.round(parseFloat(stats.efficiency) || 0) }}
               </div>
@@ -666,6 +695,9 @@ const syncingOrder = ref(false)
 const buyOrders = ref([])
 const sellOrders = ref([])
 
+// 效率分详情弹窗
+const showEfficiencyDialog = ref(false)
+
 // 检查是否有killmail权限
 const hasKillmailScope = computed(() => {
   if (!characterInfo.value?.scopes) return false
@@ -1125,6 +1157,9 @@ const handleImgError = (e) => {
   color: #999;
   font-size: 14px;
   margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .stat-value {
@@ -1137,6 +1172,52 @@ const handleImgError = (e) => {
   color: #999;
   font-size: 12px;
   margin-top: 4px;
+}
+
+.stat-isk.highlighted {
+  color: #409eff;
+  font-size: 14px;
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+.info-icon {
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  color: #999;
+}
+
+.efficiency-explanation h4 {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  color: #303133;
+  font-size: 16px;
+}
+
+.efficiency-explanation h4:first-child {
+  margin-top: 0;
+}
+
+.efficiency-explanation .formula {
+  background-color: #f5f7fa;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #303133;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.efficiency-explanation ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.efficiency-explanation li {
+  margin-bottom: 8px;
+  color: #606266;
+  font-size: 14px;
 }
 
 .kills-card .stat-value { color: #67c23a; }
