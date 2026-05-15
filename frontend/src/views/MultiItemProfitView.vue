@@ -50,14 +50,14 @@
             <el-table-column label="物品名称" min-width="250">
               <template #default="scope">
                 <div class="item-name-container">
-                  <el-link type="primary" @click="showOrderDetails(scope.row)">{{ scope.row.type_name }}</el-link>
+                  <span class="clickable-link" @click="showOrderDetails(scope.row)">{{ scope.row.type_name }}</span>
                   <el-tag
                     :type="scope.row.profit_per_lp > 0 ? 'success' : 'danger'"
                     size="large"
                     class="lp-profit-tag"
                     :class="scope.row.profit_per_lp > 0 ? 'profit-positive' : 'profit-negative'"
                     style="margin-left: 10px">
-                    {{ scope.row.profit_per_lp > 0 ? '+' : '' }}每LP: {{ formatNumber(scope.row.profit_per_lp) }}
+                    {{ scope.row.profit_per_lp > 0 ? '+' : '' }}每LP: {{ Math.floor(parseFloat(scope.row.profit_per_lp) || 0) }}
                   </el-tag>
                 </div>
               </template>
@@ -372,5 +372,15 @@ onMounted(() => {
 .updated-at-text {
   font-size: 12px;
   color: #999;
+}
+
+.clickable-link {
+  color: #409eff;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.clickable-link:hover {
+  color: #66b1ff;
 }
 </style>
