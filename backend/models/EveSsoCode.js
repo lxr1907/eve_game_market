@@ -212,6 +212,18 @@ class EveSsoCode {
     if (!record) return false;
     return record.expires_at - Date.now() < thresholdMs;
   }
+
+  static async getAllCharacterNames(datasource = 'serenity') {
+    const [rows] = await pool.execute(
+      'SELECT character_id, character_name FROM eve_sso_codes WHERE character_id IS NOT NULL AND character_name IS NOT NULL AND datasource = ?',
+      [datasource]
+    );
+    const result = {};
+    for (const row of rows) {
+      result[row.character_id] = row.character_name;
+    }
+    return result;
+  }
 }
 
 module.exports = EveSsoCode;

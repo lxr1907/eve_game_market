@@ -266,9 +266,21 @@ const getSsoCodes = async (req, res) => {
   }
 };
 
+const getCharacterNames = async (req, res) => {
+  try {
+    const datasource = req.query.datasource || 'serenity';
+    const names = await EveSsoCode.getAllCharacterNames(datasource);
+    res.json({ success: true, data: names });
+  } catch (error) {
+    console.error('Get character names error:', error);
+    res.status(500).json({ error: '服务器内部错误' });
+  }
+};
+
 module.exports = {
   saveSsoCode,
   getSsoCodes,
+  getCharacterNames,
   getValidTokenWithRefresh,
   refreshAndUpdateToken
 };
