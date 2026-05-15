@@ -191,7 +191,7 @@
                   {{ detailData.victim.faction_id || '-' }}
                 </el-descriptions-item>
                 <el-descriptions-item label="舰船">
-                  <span class="ship-name loss">{{ detailData.victim.ship_type_name || '-' }}</span>
+                  <el-link type="primary" @click="showShipOrderDetails(detailData.victim)" class="ship-name loss">{{ detailData.victim.ship_type_name || '-' }}</el-link>
                   <span v-if="detailData.victim.ship_type_id" class="type-id"> ({{ detailData.victim.ship_type_id }})</span>
                 </el-descriptions-item>
                 <el-descriptions-item label="承受伤害">{{ detailData.victim.damage_taken || 0 }}</el-descriptions-item>
@@ -434,7 +434,7 @@
                   {{ detailData.main_attacker.faction_id || '-' }}
                 </el-descriptions-item>
                 <el-descriptions-item label="舰船">
-                  <span class="ship-name">{{ detailData.main_attacker.ship_type_name || '-' }}</span>
+                  <el-link type="primary" @click="showShipOrderDetails(detailData.main_attacker)" class="ship-name">{{ detailData.main_attacker.ship_type_name || '-' }}</el-link>
                   <span v-if="detailData.main_attacker.ship_type_id" class="type-id"> ({{ detailData.main_attacker.ship_type_id }})</span>
                 </el-descriptions-item>
                 <el-descriptions-item label="武器">
@@ -1070,6 +1070,20 @@ const handleAvatarError = (e) => {
 
 const handleImgError = (e) => {
   e.target.style.display = 'none'
+}
+
+// 显示舰船订单详情
+const showShipOrderDetails = (shipData) => {
+  if (!shipData?.ship_type_id) {
+    ElMessage.warning('无法获取舰船类型ID')
+    return
+  }
+  // 创建临时物品对象，复用showOrderDetails逻辑
+  const tempItem = {
+    item_type_id: shipData.ship_type_id,
+    type_name: shipData.ship_type_name
+  }
+  showOrderDetails(tempItem)
 }
 </script>
 
