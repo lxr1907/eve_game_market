@@ -341,25 +341,25 @@ class SystemKill {
     }
   }
 
-  // 检查并处理超过1小时的旧数据
+  // 检查并处理超过2小时的旧数据
   static async checkAndProcessOldData(datasource = 'infinity') {
     try {
-      // 1. 检查是否有超过1小时的旧数据
+      // 1. 检查是否有超过2小时的旧数据
       const checkOldDataQuery = `
         SELECT COUNT(*) as count 
         FROM system_kills 
-        WHERE datasource = ? AND timestamp < DATE_SUB(NOW(), INTERVAL 1 HOUR)
+        WHERE datasource = ? AND timestamp < DATE_SUB(NOW(), INTERVAL 2 HOUR)
       `;
       
       const [countResult] = await pool.execute(checkOldDataQuery, [datasource]);
       const oldDataCount = countResult[0].count;
       
       if (oldDataCount === 0) {
-        console.log(`No old data found for datasource ${datasource} (less than 1 hour)`);
+        console.log(`No old data found for datasource ${datasource} (less than 2 hours)`);
         return true;
       }
       
-      console.log(`Found ${oldDataCount} records older than 1 hour for datasource ${datasource}, starting aggregation...`);
+      console.log(`Found ${oldDataCount} records older than 2 hours for datasource ${datasource}, starting aggregation...`);
       
       // 2. 将旧数据聚合到新表中
       const aggregateQuery = `
@@ -377,7 +377,7 @@ class SystemKill {
           SUM(total_kills) as total_kills_sum,
           COUNT(*) as record_count
         FROM system_kills
-        WHERE datasource = ? AND timestamp < DATE_SUB(NOW(), INTERVAL 1 HOUR)
+        WHERE datasource = ? AND timestamp < DATE_SUB(NOW(), INTERVAL 2 HOUR)
         GROUP BY time_bucket, system_id, datasource
         ON DUPLICATE KEY UPDATE
           npc_kills_sum = VALUES(npc_kills_sum),
@@ -393,7 +393,7 @@ class SystemKill {
       // 3. 删除已聚合的旧数据
       const deleteQuery = `
         DELETE FROM system_kills 
-        WHERE datasource = ? AND timestamp < DATE_SUB(NOW(), INTERVAL 1 HOUR)
+        WHERE datasource = ? AND timestamp < DATE_SUB(NOW(), INTERVAL 2 HOUR)
       `;
       
       const [deleteResult] = await pool.execute(deleteQuery, [datasource]);
