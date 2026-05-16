@@ -1082,6 +1082,10 @@ const handleImgError = (e) => {
   e.target.style.display = 'none'
 }
 
+const handleShipImgError = (e) => {
+  e.target.style.display = 'none'
+}
+
 // 显示舰船订单详情
 const showShipOrderDetails = (shipData) => {
   if (!shipData?.ship_type_id) {
@@ -1296,6 +1300,15 @@ const showShipOrderDetails = (shipData) => {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  align-items: flex-start;
+}
+
+.victim-info img.ship-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background-color: #2d3040;
+  margin-bottom: 4px;
 }
 
 .ship-name { color: #67c23a; font-weight: 500; }
