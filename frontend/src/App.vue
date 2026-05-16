@@ -5,6 +5,12 @@ import Navbar from './components/Navbar.vue'
 
 <template>
   <div id="app" class="dark">
+    <!-- 顶部滚动横幅广告 -->
+    <div class="scroll-banner">
+      <div class="scroll-content">
+        📣 军团招募广告位招租中！进入 <a href="/donate" class="banner-link">捐赠页</a> 通过捐赠方式即可在此广告位展示您的军团招新广告，仅需100元/月！
+      </div>
+    </div>
     <Navbar />
     <div class="main-content">
       <router-view />
@@ -273,5 +279,79 @@ body {
 
 .el-radio-group--button .el-radio-button__inner {
   border-left: 1px solid #333 !important;
+}
+
+/* 顶部滚动横幅广告样式 */
+.scroll-banner {
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+  background-size: 200% 100%;
+  animation: bannerGradient 3s ease infinite;
+  padding: 8px 0;
+  overflow: hidden;
+  position: relative;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes bannerGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.scroll-content {
+  display: inline-block;
+  white-space: nowrap;
+  animation: scrollText 20s linear infinite;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 50px;
+}
+
+@keyframes scrollText {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.banner-link {
+  color: #ffd700;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+.banner-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.scroll-banner::before,
+.scroll-banner::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 50px;
+  height: 100%;
+  z-index: 1;
+}
+
+.scroll-banner::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(102, 126, 234, 0.8), transparent);
+}
+
+.scroll-banner::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(102, 126, 234, 0.8), transparent);
 }
 </style>

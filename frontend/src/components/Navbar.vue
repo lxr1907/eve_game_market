@@ -7,6 +7,10 @@
             <el-icon><House /></el-icon>
             首页
           </el-menu-item>
+          <el-menu-item index="donate">
+            <span>💝</span>
+            捐赠
+          </el-menu-item>
           <el-menu-item index="4">
             <el-icon><Document /></el-icon>
             订单查询
@@ -147,6 +151,7 @@ watch(() => route.path, () => {
 const activeIndex = computed(() => {
   const path = route.path
   if (path === '/') return '1'
+  if (path === '/donate') return 'donate'
   if (path === '/profile') return 'profile'
   if (path === '/types') return '2-1'
   if (path === '/regions') return '2-2'
@@ -188,6 +193,8 @@ const handleSelect = (key, keyPath) => {
   console.log(key, keyPath)
   if (key === '1') {
     router.push('/')
+  } else if (key === 'donate') {
+    router.push('/donate')
   } else if (key === 'profile') {
     router.push('/profile')
   } else if (key === '2-1') {
