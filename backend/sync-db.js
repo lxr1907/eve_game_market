@@ -62,30 +62,26 @@ async function syncTable(tableName) {
       return { success: true, rows: 0 };
     }
 
-    if (!useIgnore) {
-      const checkCmd = `mysql -u eve_user -peve_password eve_killboard -e "SELECT COUNT(*) as count FROM ${tableName}"`;
-      const checkResult = spawnSync('ssh', ['-i', 'C:\\Users\\41898\\Downloads\\ss (1).pem', 'eve-server', checkCmd]);
+    const checkCmd = `mysql -u eve_user -peve_password eve_killboard -e "SELECT COUNT(*) as count FROM ${tableName}"`;
+    const checkResult = spawnSync('ssh', ['-i', 'C:\\Users\\41898\\Downloads\\ss (1).pem', 'eve-server', checkCmd]);
 
-      if (checkResult.error) {
-        console.error(`  ❌ 检查服务器数据失败: ${checkResult.error.message}`);
-        await localConn.end();
-        return { success: false, error: checkResult.error.message };
-      }
-
-      const output = checkResult.stdout.toString();
-      const match = output.match(/(\d+)/);
-      const serverRowCount = match ? parseInt(match[1], 10) : 0;
-
-      if (serverRowCount >= localRowCount) {
-        console.log(`  服务器表 ${tableName} 已有 ${serverRowCount} 行 >= 本地 ${localRowCount} 行，跳过同步`);
-        await localConn.end();
-        return { success: true, rows: 0, skipped: true };
-      }
-
-      console.log(`  服务器 ${serverRowCount} 行 < 本地 ${localRowCount} 行，需要同步`);
-    } else {
-      console.log(`  使用 INSERT IGNORE 模式同步 (本地 ${localRowCount} 行)`);
+    if (checkResult.error) {
+      console.error(`  ❌ 检查服务器数据失败: ${checkResult.error.message}`);
+      await localConn.end();
+      return { success: false, error: checkResult.error.message };
     }
+
+    const output = checkResult.stdout.toString();
+    const match = output.match(/(\d+)/);
+    const serverRowCount = match ? parseInt(match[1], 10) : 0;
+
+    if (serverRowCount >= localRowCount) {
+      console.log(`  服务器表 ${tableName} 已有 ${serverRowCount} 行 >= 本地 ${localRowCount} 行，跳过同步`);
+      await localConn.end();
+      return { success: true, rows: 0, skipped: true };
+    }
+
+    console.log(`  服务器 ${serverRowCount} 行 < 本地 ${localRowCount} 行，${useIgnore ? '使用 INSERT IGNORE 模式' : '使用普通 INSERT 模式'}同步`);
 
     console.log(`  本地数据行数: ${localRowCount}`);
 
@@ -94,6 +90,7 @@ async function syncTable(tableName) {
 
     const batchSize = 500;
     const totalBatches = Math.ceil(localRowCount / batchSize);
+    let beforeCount = 0;
     let syncedRows = 0;
 
     for (let batch = 0; batch < totalBatches; batch++) {
@@ -131,7 +128,7 @@ async function syncTable(tableName) {
         return { success: false, error: uploadResult.error.message };
       }
 
-      const execResult = spawnSync('ssh', ['-i', 'C:\\Users\\41898\\Downloads\\ss (1).pem', 'eve-server', `mysql -u eve_user -peve_password eve_killboard < /tmp/temp_${tableName}_${batch}.sql`]);
+      const execResult = spawnSync('ssh', ['-i', 'C:\\Users\\41898\\Downloads\\ss (1).pem', 'eve-server', `mysql -u eve_user -peve_password eve_killboard < /tmp/temp_${tableName}_${batch}.sql 2>&1; echo "EXIT_CODE:$?"`]);
 
       if (execResult.error) {
         console.error(`  ❌ 执行失败: ${execResult.error.message}`);
@@ -140,26 +137,74 @@ async function syncTable(tableName) {
         return { success: false, error: execResult.error.message };
       }
 
-      if (execResult.stderr.toString()) {
-        const stderr = execResult.stderr.toString().trim();
-        if (stderr && !stderr.includes('Warning')) {
-          console.error(`  ❌ SQL错误: ${stderr}`);
-          fs.unlinkSync(tempFile);
-          await localConn.end();
-          return { success: false, error: stderr };
-        }
+      const execOutput = execResult.stdout.toString();
+      const stderr = execResult.stderr.toString();
+      const exitMatch = execOutput.match(/EXIT_CODE:(\d+)/);
+      const exitCode = exitMatch ? parseInt(exitMatch[1], 10) : 0;
+
+      const errorLines = execOutput.split('\n').filter(line => line.includes('ERROR') || line.includes('error') || line.includes('Failed'));
+      if (errorLines.length > 0) {
+        console.error(`  ❌ SQL错误: ${errorLines.join(', ')}`);
+        console.error(`  完整输出: ${execOutput.substring(0, 500)}`);
+        fs.unlinkSync(tempFile);
+        await localConn.end();
+        return { success: false, error: errorLines.join(', ') };
       }
+
+      if (exitCode !== 0) {
+        console.error(`  ❌ SQL执行失败，退出码: ${exitCode}`);
+        console.error(`  输出: ${execOutput.substring(0, 500)}`);
+        fs.unlinkSync(tempFile);
+        await localConn.end();
+        return { success: false, error: `Exit code: ${exitCode}` };
+      }
+
+      if (stderr && !stderr.includes('Warning') && stderr.includes('error')) {
+        console.error(`  ❌ SQL错误: ${stderr}`);
+        fs.unlinkSync(tempFile);
+        await localConn.end();
+        return { success: false, error: stderr };
+      }
+
+      const checkAfterCmd = `mysql -u eve_user -peve_password eve_killboard -e "SELECT COUNT(*) as count FROM ${tableName}"`;
+      const afterResult = spawnSync('ssh', ['-i', 'C:\\Users\\41898\\Downloads\\ss (1).pem', 'eve-server', checkAfterCmd]);
+      const afterOutput = afterResult.stdout.toString();
+      const afterMatch = afterOutput.match(/(\d+)/);
+      const afterCount = afterMatch ? parseInt(afterMatch[1], 10) : 0;
 
       fs.unlinkSync(tempFile);
       spawnSync('ssh', ['-i', 'C:\\Users\\41898\\Downloads\\ss (1).pem', 'eve-server', `rm -f /tmp/temp_${tableName}_${batch}.sql`]);
 
+      if (batch === 0) {
+        beforeCount = afterCount - rows.length;
+      }
+
       syncedRows += rows.length;
-      console.log(`  批次 ${batch + 1}/${totalBatches}: 同步 ${rows.length} 行 (总计: ${syncedRows})`);
+      const expectedCount = beforeCount + syncedRows;
+      console.log(`  批次 ${batch + 1}/${totalBatches}: 同步 ${rows.length} 行, 服务器验证: ${afterCount} 行 (期望: ${expectedCount})`);
+
+      if (afterCount < expectedCount) {
+        console.error(`  ❌ 数据验证失败: 服务器 ${afterCount} 行 < 期望 ${expectedCount} 行`);
+        await localConn.end();
+        return { success: false, error: '数据验证失败' };
+      }
     }
 
     await localConn.end();
-    console.log(`  ✅ 成功同步 ${syncedRows} 行数据`);
-    return { success: true, rows: syncedRows };
+
+    const finalCheckCmd = `mysql -u eve_user -peve_password eve_killboard -e "SELECT COUNT(*) as count FROM ${tableName}"`;
+    const finalResult = spawnSync('ssh', ['-i', 'C:\\Users\\41898\\Downloads\\ss (1).pem', 'eve-server', finalCheckCmd]);
+    const finalOutput = finalResult.stdout.toString();
+    const finalMatch = finalOutput.match(/(\d+)/);
+    const finalCount = finalMatch ? parseInt(finalMatch[1], 10) : 0;
+
+    console.log(`  ✅ 成功同步 ${syncedRows} 行数据, 服务器最终: ${finalCount} 行, 本地: ${localRowCount} 行`);
+
+    if (finalCount < localRowCount) {
+      console.error(`  ⚠️ 警告: 服务器数据 ${finalCount} 行 < 本地 ${localRowCount} 行`);
+    }
+
+    return { success: finalCount >= localRowCount, rows: syncedRows, serverCount: finalCount };
 
   } catch (error) {
     console.error(`  ❌ 同步失败: ${error.message}`);
