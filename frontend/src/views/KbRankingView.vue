@@ -173,6 +173,10 @@ const formatISK = (value) => {
   return num.toFixed(2)
 }
 
+const handleShipImgError = (e) => {
+  e.target.style.display = 'none'
+}
+
 onMounted(() => {
   fetchRanking()
 })
@@ -240,13 +244,26 @@ onMounted(() => {
   font-weight: 600;
 }
 
+.ship-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.ship-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background-color: #2d3040;
+}
+
 .ship-link {
   color: #409eff;
-  cursor: pointer;
   text-decoration: underline;
 }
 
-.ship-link:hover {
+.ship-info:hover .ship-link {
   color: #66b1ff;
 }
 
