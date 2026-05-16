@@ -27,11 +27,15 @@
               <span class="kill-value">{{ formatISK(row.total_value) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="舰船" width="150">
+          <el-table-column label="舰船" min-width="200">
             <template #default="{ row }">
-              <span class="ship-link" @click="viewDetail(row.killmail_id)">
-                {{ row.victim_ship_name || '未知舰船' }}
-              </span>
+              <div class="ship-info" @click="viewDetail(row.killmail_id)">
+                <img v-if="row.victim_ship_type_id" 
+                     :src="`https://images.evetech.net/types/${row.victim_ship_type_id}/render?size=32`" 
+                     class="ship-icon"
+                     @error="handleShipImgError" />
+                <span class="ship-link">{{ row.victim_ship_name || '未知舰船' }}</span>
+              </div>
             </template>
           </el-table-column>
           <el-table-column label="最后一击" min-width="180">
