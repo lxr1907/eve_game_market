@@ -5,6 +5,8 @@ const Stargate = require('../models/Stargate');
 const Constellation = require('../models/Constellation');
 const LoyaltySkipItem = require('../models/LoyaltySkipItem');
 const EveSsoCode = require('../models/EveSsoCode');
+const LoyaltyMultiItemProfit = require('../models/LoyaltyMultiItemProfit');
+const Corporation = require('../models/Corporation');
 
 async function addColumnIfNotExists(table, column, definition) {
   try {
@@ -186,6 +188,14 @@ async function syncDatabaseStructure() {
         datasource VARCHAR(20) NOT NULL DEFAULT "serenity"
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+    
+    // 10.5. 创建或更新 loyalty_multi_item_profit 表
+    await LoyaltyMultiItemProfit.createTable();
+    console.log(`✓ 表 loyalty_multi_item_profit 创建或验证成功`);
+    
+    // 10.6. 创建或更新 corporations 表
+    await Corporation.createTable();
+    console.log(`✓ 表 corporations 创建或验证成功`);
     
     // 11. 创建或更新 systems 表
     await System.createTable();

@@ -670,10 +670,10 @@ const getKillmailDetail = async (req, res) => {
     
     // 8. 为最后一击攻击者添加舰船估值
     if (mainAttacker && mainAttacker.ship_type_id) {
-      // 尝试从数据库获取已计算的舰船估值
-      let shipValue = parseFloat(km.attacker_ship_value) || 0;
+      // 初始化舰船价值为0（数据库中无此字段）
+      let shipValue = 0;
       
-      // 如果数据库中没有估值，实时计算
+      // 实时计算攻击者舰船价值
       if (!shipValue) {
         console.log(`Calculating ship value for attacker ship type ${mainAttacker.ship_type_id}...`);
         const calculated = await calculateShipValue(mainAttacker.ship_type_id, DEFAULT_REGION_ID, datasource);
@@ -715,7 +715,7 @@ const getKillmailDetail = async (req, res) => {
     }, 0);
     
     // 9. 获取/计算舰船价值
-    let shipValue = parseFloat(km.ship_value) || 0;
+    let shipValue = 0;
     
     // 如果数据库中没有舰船估值，实时计算
     if (!shipValue && km.victim_ship_type_id) {
@@ -757,7 +757,7 @@ const getKillmailDetail = async (req, res) => {
         damage_taken: km.victim_damage_taken,
         items: items,
         items_value: parseFloat(km.items_value) || itemsValue,
-        ship_value: parseFloat(km.ship_value) || shipValue,
+        ship_value: shipValue,
         total_loss_value: totalLossValue
       },
       main_attacker: mainAttacker,
@@ -801,8 +801,7 @@ const getKBRanking = async (req, res) => {
           vt.name as victim_ship_name,
           k.solar_system_id,
           s.name as solar_system_name,
-          k.total_value,
-          k.ship_value
+          k.total_value
         FROM killmails k
         LEFT JOIN types vt ON k.victim_ship_type_id = vt.id
         LEFT JOIN systems s ON k.solar_system_id = s.system_id AND k.datasource COLLATE utf8mb4_unicode_ci = s.datasource COLLATE utf8mb4_unicode_ci
@@ -815,7 +814,7 @@ const getKBRanking = async (req, res) => {
       );
       result = rows.map(km => ({
         ...km,
-        ship_value: km.ship_value || 0
+        ship_value: 0
       }));
 
     } else if (type === 'kills') {
