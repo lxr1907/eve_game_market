@@ -285,11 +285,15 @@ const handleSelect = (key, keyPath) => {
   color: #fff !important;
   border-bottom: 2px solid transparent;
   transition: all 0.3s;
+  padding: 0 12px !important;
+  min-width: auto !important;
 }
 
 :deep(.el-menu--horizontal > .el-menu-item) {
   color: #fff !important;
   border-bottom: 2px solid transparent;
+  padding: 0 12px !important;
+  min-width: auto !important;
 }
 
 :deep(.el-menu-item:hover) {
@@ -306,11 +310,15 @@ const handleSelect = (key, keyPath) => {
   color: #fff !important;
   border-bottom: 2px solid transparent;
   transition: all 0.3s;
+  padding: 0 12px !important;
+  min-width: auto !important;
 }
 
 :deep(.el-menu--horizontal > .el-sub-menu .el-sub-menu__title) {
   color: #fff !important;
   border-bottom: 2px solid transparent;
+  padding: 0 12px !important;
+  min-width: auto !important;
 }
 
 :deep(.el-sub-menu__title:hover) {
