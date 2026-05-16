@@ -64,8 +64,16 @@
             </el-table-column>
 
             <el-table-column prop="corporation_name" label="公司" min-width="150" />
-            <el-table-column prop="lp_cost" label="需要LP" min-width="80" :formatter="formatNumber" />
-            <el-table-column prop="isk_cost" label="需要ISK" min-width="100" :formatter="formatISK" />
+            <el-table-column label="需要LP" min-width="80">
+              <template #default="scope">
+                <span>{{ formatNumber(scope.row.lpCost || scope.row.lp_cost) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="需要ISK" min-width="100">
+              <template #default="scope">
+                <span>{{ formatISK(scope.row.iskCost || scope.row.isk_cost) }}</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="quantity" label="兑换数量" min-width="80" :formatter="formatNumber" />
 
             <el-table-column label="所需物品总价" min-width="120">

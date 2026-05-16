@@ -1216,7 +1216,10 @@ class LoyaltyController {
           ...item,
           type_name: typeNames[item.type_id] || `Type ${item.type_id}`,
           corporation_name: corpNames[item.corporation_id] || `Corporation ${item.corporation_id}`,
-          required_items: requiredItems
+          required_items: requiredItems,
+          // 同时返回驼峰命名的字段以确保前端兼容性
+          lpCost: item.lp_cost,
+          iskCost: item.isk_cost
         };
       });
 
