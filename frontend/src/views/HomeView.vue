@@ -17,10 +17,23 @@
         </template>
         <div class="intro-content">
           <p>"绕杆子"是EVE Online中一种经典的PVE玩法，指玩家驾驶飞船围绕空间信标（俗称"杆子"）进行环绕飞行，同时与NPC敌人战斗。</p>
+          <p class="intro-detail">
+            在新伊甸宇宙中，绕杆子玩法主要分为两大战场：<strong>势力战争(Faction Warfare)</strong>和<strong>游寇侵扰(Pirate Invasion)</strong>。
+            势力战争区域分布在帝国低安全星系，玩家为四大帝国（加达里、盖伦特、米玛塔尔、艾玛）效力，通过消灭敌对势力海军获取对应帝国的忠诚点。
+            而游寇侵扰则涉及古斯塔斯、血袭者、天使企业联合体等海盗势力的入侵事件，玩家需在特定区域抵御海盗舰队的进攻。
+          </p>
+          <p class="intro-detail">
+            无论哪种玩法，绕杆子的核心战术都是利用飞船的速度优势围绕信标进行高速环绕，使敌人难以瞄准，同时持续输出伤害。
+            这种玩法不仅考验玩家的舰船配置能力，更需要精准的操作技巧和对游戏机制的深入理解。
+          </p>
           <div class="intro-features">
             <div class="feature-item">
               <el-icon><CircleCheck /></el-icon>
               <span>通过完成忠诚点(LP)任务获取奖励</span>
+            </div>
+            <div class="feature-item">
+              <el-icon><CircleCheck /></el-icon>
+              <span>支持势力战争与游寇侵扰双战场</span>
             </div>
             <div class="feature-item">
               <el-icon><CircleCheck /></el-icon>
@@ -189,6 +202,18 @@ import {
   line-height: 1.8;
   color: #c0c4cc;
   margin-bottom: 20px;
+}
+
+.intro-detail {
+  font-size: 14px;
+  line-height: 1.9;
+  color: #a0a8b8;
+  text-indent: 2em;
+}
+
+.intro-detail strong {
+  color: #409eff;
+  font-weight: 600;
 }
 
 .intro-features {

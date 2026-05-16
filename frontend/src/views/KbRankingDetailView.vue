@@ -120,7 +120,13 @@
             <el-table :data="groupedItems.highSlots" style="width: 100%" size="small">
               <el-table-column label="物品" min-width="180">
                 <template #default="{ row }">
-                  <el-link type="primary" @click="showOrderDetails(row)" class="item-name-link">{{ row.type_name || '-' }}</el-link>
+                  <el-link 
+                    type="primary" 
+                    @click="handleItemClick(row)" 
+                    class="item-name-link"
+                  >
+                    {{ row.type_name || row.item_type_id || '-' }}
+                  </el-link>
                 </template>
               </el-table-column>
               <el-table-column label="掉落数量" width="80" align="center">
@@ -154,7 +160,13 @@
             <el-table :data="groupedItems.midSlots" style="width: 100%" size="small">
               <el-table-column label="物品" min-width="180">
                 <template #default="{ row }">
-                  <el-link type="primary" @click="showOrderDetails(row)" class="item-name-link">{{ row.type_name || '-' }}</el-link>
+                  <el-link 
+                    type="primary" 
+                    @click="handleItemClick(row)" 
+                    class="item-name-link"
+                  >
+                    {{ row.type_name || row.item_type_id || '-' }}
+                  </el-link>
                 </template>
               </el-table-column>
               <el-table-column label="掉落数量" width="80" align="center">
@@ -188,7 +200,13 @@
             <el-table :data="groupedItems.lowSlots" style="width: 100%" size="small">
               <el-table-column label="物品" min-width="180">
                 <template #default="{ row }">
-                  <el-link type="primary" @click="showOrderDetails(row)" class="item-name-link">{{ row.type_name || '-' }}</el-link>
+                  <el-link 
+                    type="primary" 
+                    @click="handleItemClick(row)" 
+                    class="item-name-link"
+                  >
+                    {{ row.type_name || row.item_type_id || '-' }}
+                  </el-link>
                 </template>
               </el-table-column>
               <el-table-column label="掉落数量" width="80" align="center">
@@ -222,7 +240,13 @@
             <el-table :data="groupedItems.rigs" style="width: 100%" size="small">
               <el-table-column label="物品" min-width="180">
                 <template #default="{ row }">
-                  <el-link type="primary" @click="showOrderDetails(row)" class="item-name-link">{{ row.type_name || '-' }}</el-link>
+                  <el-link 
+                    type="primary" 
+                    @click="handleItemClick(row)" 
+                    class="item-name-link"
+                  >
+                    {{ row.type_name || row.item_type_id || '-' }}
+                  </el-link>
                 </template>
               </el-table-column>
               <el-table-column label="掉落数量" width="80" align="center">
@@ -256,7 +280,13 @@
             <el-table :data="groupedItems.cargo" style="width: 100%" size="small">
               <el-table-column label="物品" min-width="180">
                 <template #default="{ row }">
-                  <el-link type="primary" @click="showOrderDetails(row)" class="item-name-link">{{ row.type_name || '-' }}</el-link>
+                  <el-link 
+                    type="primary" 
+                    @click="handleItemClick(row)" 
+                    class="item-name-link"
+                  >
+                    {{ row.type_name || row.item_type_id || '-' }}
+                  </el-link>
                 </template>
               </el-table-column>
               <el-table-column label="掉落数量" width="80" align="center">
@@ -436,7 +466,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElLoading } from 'element-plus'
 import { ArrowLeft, Refresh, Top, Bottom } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -604,6 +634,41 @@ const showShipOrderDetails = (shipData) => {
     type_name: shipData.ship_type_name
   }
   showOrderDetails(tempItem)
+}
+
+// 处理物品点击
+const handleItemClick = async (item) => {
+  // 如果没有类型名称，先同步类型数据
+  if (!item.type_name && item.item_type_id) {
+    const loading = ElLoading.service({ fullscreen: true, text: '正在同步类型数据...' })
+    try {
+      const response = await fetch(`${API_BASE}/types/sync-one`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ typeId: item.item_type_id, datasource: 'serenity' })
+      })
+      const data = await response.json()
+      if (data.success) {
+        ElMessage.success('类型数据同步成功')
+        // 重新加载详情页
+        if (route.params.id) {
+          await fetchDetail()
+        }
+      } else {
+        ElMessage.error(data.error || '同步类型数据失败')
+      }
+    } catch (error) {
+      console.error('同步类型数据失败:', error)
+      ElMessage.error('同步类型数据失败')
+    } finally {
+      loading.close()
+    }
+  } else {
+    // 有名称，直接显示订单详情
+    showOrderDetails(item)
+  }
 }
 
 // 显示订单详情弹窗
