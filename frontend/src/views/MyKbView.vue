@@ -555,9 +555,13 @@
                       {{ formatDate(row.killmail_time) }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="损失舰船" min-width="150">
+                  <el-table-column label="损失舰船" min-width="180">
                     <template #default="{ row }">
                       <div class="victim-info">
+                        <img v-if="row.victim_ship_type_id" 
+                             :src="`https://images.evetech.net/types/${row.victim_ship_type_id}/render?size=32`" 
+                             class="ship-icon"
+                             @error="handleShipImgError" />
                         <span class="ship-name loss clickable" @click="showDetail(row)">{{ row.victim_ship_name || `舰船ID: ${row.victim_ship_type_id}` }}</span>
                       </div>
                     </template>
