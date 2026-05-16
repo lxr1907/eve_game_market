@@ -15,7 +15,7 @@ console.log('Environment variables loaded:', process.env.PORT);
 
 const PORT = process.env.PORT || 3000;
 
-const server = app.listen(PORT, '127.0.0.1', async () => {
+const server = app.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
   console.log(`API documentation: http://localhost:${PORT}/api`);
