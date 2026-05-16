@@ -22,9 +22,16 @@
       <div v-if="rankingType === 'single'" v-loading="loading">
         <el-table :data="rankingData" style="width: 100%" size="small">
           <el-table-column type="index" label="排名" width="60" align="center" />
-          <el-table-column label="时间" width="160">
+          <el-table-column label="击毁估值" width="140" align="right">
             <template #default="{ row }">
-              {{ formatDate(row.killmail_time) }}
+              <span class="kill-value">{{ formatISK(row.total_value) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="舰船" width="150">
+            <template #default="{ row }">
+              <span class="ship-link" @click="viewDetail(row.killmail_id)">
+                {{ row.victim_ship_name || '未知舰船' }}
+              </span>
             </template>
           </el-table-column>
           <el-table-column label="最后一击" min-width="180">
@@ -35,26 +42,14 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="舰船" width="150">
-            <template #default="{ row }">
-              {{ row.victim_ship_name || '未知舰船' }}
-            </template>
-          </el-table-column>
           <el-table-column label="星系" width="120">
             <template #default="{ row }">
               {{ row.solar_system_name || '未知星系' }}
             </template>
           </el-table-column>
-          <el-table-column label="击毁估值" width="140" align="right">
+          <el-table-column label="时间" width="160">
             <template #default="{ row }">
-              <span class="kill-value">{{ formatISK(row.total_value) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="100" align="center">
-            <template #default="{ row }">
-              <el-button type="primary" size="small" @click="viewDetail(row.killmail_id)">
-                查看
-              </el-button>
+              {{ formatDate(row.killmail_time) }}
             </template>
           </el-table-column>
         </el-table>
@@ -239,6 +234,16 @@ onMounted(() => {
 .loss-count {
   color: #f56c6c;
   font-weight: 600;
+}
+
+.ship-link {
+  color: #409eff;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.ship-link:hover {
+  color: #66b1ff;
 }
 
 :deep(.el-card__header) {
