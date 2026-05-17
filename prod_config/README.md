@@ -27,6 +27,101 @@ Nginx (端口 80) - 反向代理
 | 后端 API | ✅ 运行中 | 3000 | Express API 服务 |
 | 前端页面 | ✅ 运行中 | 5175 | Vite 开发服务器 |
 
+## Forever 进程管理
+
+### 1. 安装 Forever
+```bash
+# 全局安装 Forever
+npm install -g forever
+```
+
+### 2. 启动服务
+
+#### 后端服务
+```bash
+cd /root/eve/backend
+forever start server.js
+```
+
+#### 前端服务
+```bash
+cd /root/eve/frontend
+forever start -c 'npm run dev -- --host 0.0.0.0' .
+```
+
+### 3. 服务管理命令
+
+#### 查看运行中的进程
+```bash
+forever list
+```
+
+#### 重启所有服务
+```bash
+forever restartall
+```
+
+#### 重启特定服务
+```bash
+# 根据 uid 或 pid 重启
+forever restart <uid_or_pid>
+```
+
+#### 停止所有服务
+```bash
+forever stopall
+```
+
+#### 停止特定服务
+```bash
+# 根据 uid 或 pid 停止
+forever stop <uid_or_pid>
+```
+
+### 4. 日志查看
+
+#### 查看所有日志
+```bash
+# 查看所有 Forever 日志
+forever logs
+```
+
+#### 查看特定服务日志
+```bash
+# 根据 uid 或 pid 查看日志
+forever logs <uid_or_pid>
+
+# 实时查看日志
+forever logs <uid_or_pid> -f
+```
+
+### 5. 常见问题排查
+
+#### 服务启动失败
+```bash
+# 查看最新日志
+forever logs 0
+
+# 检查端口占用
+lsof -i :3000  # 后端端口
+lsof -i :5175  # 前端端口
+
+# 杀死占用端口的进程
+kill -9 <pid>
+```
+
+#### 服务自动退出
+```bash
+# 查看服务退出原因
+forever logs <uid_or_pid>
+
+# 检查是否有足够的内存
+free -h
+
+# 检查 Node.js 版本兼容性
+node -v
+```
+
 ## 部署步骤
 
 ### 1. 环境安装
