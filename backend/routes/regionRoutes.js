@@ -1,5 +1,5 @@
 const express = require('express');
-const RegionController = require('../controllers/regionController');
+const RegionController = require('../controllers/RegionController');
 const router = express.Router();
 
 // Region Routes
