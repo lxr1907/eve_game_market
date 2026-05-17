@@ -72,20 +72,23 @@ class TypeController {
   // 获取层级结构（支持根据 regionId 过滤）
   static async getHierarchy(req, res) {
     try {
-      const { regionId, datasource = 'serenity', categoryId = 9 } = req.query;
+      const { regionId, datasource = 'serenity', categoryId } = req.query;
 
       let hierarchy = [];
 
       if (regionId) {
+        // 检查该 region 是否有数据
         const rows = await Type.findByRegionId(regionId, datasource);
 
+        // 如果没有数据，先同步
         if (rows.length === 0) {
           console.log(`No region_types data for region ${regionId}, syncing from EVE API...`);
           try {
             await Type.updateRegionTypes(parseInt(regionId), datasource);
+            // 重新查询
             const newRows = await Type.findByRegionId(regionId, datasource);
             if (newRows.length > 0) {
-              hierarchy = buildTreeFromRows(newRows);
+              hierarchy = buildTreeFromRows(newRows);     
             }
           } catch (syncError) {
             console.error(`Failed to sync region_types for region ${regionId}:`, syncError.message);
@@ -94,7 +97,8 @@ class TypeController {
           hierarchy = buildTreeFromRows(rows);
         }
       } else {
-        const rows = await Type.getHierarchyData(null, parseInt(categoryId));
+        // 不带 regionId，使用原有逻辑
+        const rows = await Type.getHierarchyData(null, categoryId);       
         hierarchy = buildTreeFromRows(rows);
       }
 
