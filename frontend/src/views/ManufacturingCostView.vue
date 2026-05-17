@@ -238,11 +238,56 @@ export default {
       }
     }
 
+    // 缓存相关函数
+    const getCacheKey = (categoryId) => {
+      return `manufacturing_tree_${categoryId}`
+    }
+
+    const saveToCache = (categoryId, data) => {
+      const cacheKey = getCacheKey(categoryId)
+      const cacheData = {
+        data: data,
+        timestamp: Date.now(),
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7天有效期
+      }
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData))
+    }
+
+    const getFromCache = (categoryId) => {
+      const cacheKey = getCacheKey(categoryId)
+      const cacheData = localStorage.getItem(cacheKey)
+      if (!cacheData) return null
+
+      try {
+        const parsed = JSON.parse(cacheData)
+        if (Date.now() > parsed.expires) {
+          localStorage.removeItem(cacheKey)
+          return null
+        }
+        return parsed.data
+      } catch (e) {
+        localStorage.removeItem(cacheKey)
+        return null
+      }
+    }
+
     const loadHierarchy = async () => {
       loadingTree.value = true
       try {
+        // 先尝试从缓存获取
+        const cachedData = getFromCache(9)
+        if (cachedData) {
+          treeData.value = cachedData
+          console.log('从缓存加载层级结构')
+          loadingTree.value = false
+          return
+        }
+
+        // 缓存不存在或过期，从API获取
         const response = await typeApi.getHierarchy(null, 'serenity', 9)
         treeData.value = response
+        // 保存到缓存
+        saveToCache(9, response)
       } catch (error) {
         console.error('加载层级结构失败:', error)
       } finally {

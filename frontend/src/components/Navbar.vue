@@ -47,7 +47,7 @@
             <el-icon><Trophy /></el-icon>
             KB榜单
           </el-menu-item>
-          <el-sub-menu index="2">
+          <el-sub-menu v-if="isLoggedIn" index="2">
             <template #title>
               <el-icon><Collection /></el-icon>
               <span>基础数据</span>

@@ -219,13 +219,59 @@ export default {
       }
     }
 
+    // 缓存相关函数
+    const getCacheKey = (regionId, datasource) => {
+      return `order_tree_${regionId}_${datasource}`
+    }
+
+    const saveToCache = (regionId, datasource, data) => {
+      const cacheKey = getCacheKey(regionId, datasource)
+      const cacheData = {
+        data: data,
+        timestamp: Date.now(),
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7天有效期
+      }
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData))
+    }
+
+    const getFromCache = (regionId, datasource) => {
+      const cacheKey = getCacheKey(regionId, datasource)
+      const cacheData = localStorage.getItem(cacheKey)
+      if (!cacheData) return null
+
+      try {
+        const parsed = JSON.parse(cacheData)
+        if (Date.now() > parsed.expires) {
+          localStorage.removeItem(cacheKey)
+          return null
+        }
+        return parsed.data
+      } catch (e) {
+        localStorage.removeItem(cacheKey)
+        return null
+      }
+    }
+
     const loadHierarchy = async () => {
       try {
         loadingTree.value = true
         console.log('开始加载物品树（根据区域过滤）...')
+        
+        // 先尝试从缓存获取
+        const cachedData = getFromCache(selectedRegionId.value, datasource.value)
+        if (cachedData) {
+          treeData.value = cachedData
+          console.log('从缓存加载物品树')
+          loadingTree.value = false
+          return
+        }
+
+        // 缓存不存在或过期，从API获取
         const response = await typeApi.getHierarchy(selectedRegionId.value, datasource.value)
         console.log('物品树加载成功，数据长度:', response?.length || 0)
         treeData.value = response
+        // 保存到缓存
+        saveToCache(selectedRegionId.value, datasource.value, response)
       } catch (error) {
         console.error('加载物品树失败:', error)
         ElMessage.error('加载物品树失败: ' + (error.message || error))
