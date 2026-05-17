@@ -305,7 +305,7 @@ const handleSerenityLogin = async () => {
       serenityCallbackUrl.value = ''
 
       setTimeout(() => {
-        window.location.href = '/profile'
+        window.location.href = '/my-kb?auto_sync=1'
       }, 1000)
     } else {
       ElMessage.error(result.error || '保存授权信息失败')

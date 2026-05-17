@@ -845,6 +845,16 @@ const groupedItems = computed(() => {
 
 onMounted(async () => {
   loadCharacterInfo()
+  
+  // 检查是否需要自动同步
+  const urlParams = new URLSearchParams(window.location.search)
+  const autoSync = urlParams.get('auto_sync')
+  if (autoSync === '1') {
+    // 延迟执行，确保页面已加载
+    setTimeout(() => {
+      syncKB()
+    }, 1000)
+  }
 })
 
 const loadCharacterInfo = async () => {
