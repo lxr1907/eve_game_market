@@ -3,11 +3,16 @@ const EveSsoCode = require('../models/EveSsoCode');
 const { getValidTokenWithRefresh } = require('./EveSsoController');
 const pool = require('../config/database');
 
-// ESI基础URL
-const ESI_BASE_URL = 'https://ali-esi.evepc.163.com/latest';
-
 // 默认使用吉他海空间站所在区域（The Forge）
 const DEFAULT_REGION_ID = 10000002;
+
+// 根据数据源获取对应的ESI基础URL
+const getEsiBaseUrl = (datasource) => {
+  if (datasource.toLowerCase() === 'tranquility') {
+    return 'https://esi.evetech.net/latest';
+  }
+  return 'https://ali-esi.evepc.163.com/latest';
+};
 
 // 从orders表获取物品价格
 const getItemPriceFromOrders = async (typeId, regionId = DEFAULT_REGION_ID, datasource = 'serenity') => {
@@ -44,7 +49,8 @@ const syncOrdersForType = async (typeId, regionId = DEFAULT_REGION_ID, datasourc
   try {
     console.log(`Syncing orders for type ${typeId} in region ${regionId}...`);
     
-    const url = `${ESI_BASE_URL}/markets/${regionId}/orders/?datasource=${datasource}&type_id=${typeId}`;
+    const esiBaseUrl = getEsiBaseUrl(datasource);
+    const url = `${esiBaseUrl}/markets/${regionId}/orders/?datasource=${datasource}&type_id=${typeId}`;
     const response = await fetch(url, {
       headers: { 'Accept': 'application/json' }
     });
@@ -199,7 +205,8 @@ const fetchRecentKillmails = async (characterId, accessToken, datasource = 'sere
 
 // 从ESI获取击毁详情
 const fetchKillmailDetail = async (killmailId, killmailHash, datasource = 'serenity') => {
-  const url = `${ESI_BASE_URL}/killmails/${killmailId}/${killmailHash}/?datasource=${datasource}`;
+  const esiBaseUrl = getEsiBaseUrl(datasource);
+  const url = `${esiBaseUrl}/killmails/${killmailId}/${killmailHash}/?datasource=${datasource}`;
   
   const response = await fetch(url, {
     headers: {

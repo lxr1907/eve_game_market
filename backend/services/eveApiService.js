@@ -828,15 +828,34 @@ class EveApiService {
     this.lastRequestTime = Date.now();
 
     try {
-      const response = await this.client.get(`/markets/${regionId}/orders/`, {
-        params: {
-          datasource: datasource,
-          type_id: typeId,
-          order_type: orderType,
-          page: page
-        },
-        timeout: 10000 // 设置10秒超时
-      });
+      let response;
+      // 欧服使用不同的API端点
+      if (datasource.toLowerCase() === 'tranquility') {
+        const fullUrl = `https://esi.evetech.net/latest/markets/${regionId}/orders/`;
+        response = await axios.get(fullUrl, {
+          params: {
+            datasource: datasource,
+            type_id: typeId,
+            order_type: orderType,
+            page: page
+          },
+          headers: {
+            'Accept': 'application/json',
+            'X-Compatibility-Date': process.env.EVE_API_COMPATIBILITY_DATE || '2025-11-06'
+          },
+          timeout: 10000 // 设置10秒超时
+        });
+      } else {
+        response = await this.client.get(`/markets/${regionId}/orders/`, {
+          params: {
+            datasource: datasource,
+            type_id: typeId,
+            order_type: orderType,
+            page: page
+          },
+          timeout: 10000 // 设置10秒超时
+        });
+      }
       return response.data;
     } catch (error) {
       if (error.response?.status === 500 && error.response?.data?.error?.includes('Requested page does not exist')) {
