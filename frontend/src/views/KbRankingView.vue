@@ -18,6 +18,14 @@
         </div>
       </template>
 
+      <!-- 上传按钮 -->
+      <div class="kb-upload-info">
+        <el-button type="primary" size="small" @click="goToLogin">
+          <el-icon><Upload /></el-icon>
+          上传KB信息
+        </el-button>
+      </div>
+
       <!-- 单次击毁排行 -->
       <div v-if="rankingType === 'single'" v-loading="loading">
         <el-table :data="rankingData" style="width: 100%" size="small">
@@ -118,7 +126,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, Upload } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
@@ -177,6 +185,10 @@ const handleShipImgError = (e) => {
   e.target.style.display = 'none'
 }
 
+const goToLogin = () => {
+  router.push('/login')
+}
+
 onMounted(() => {
   fetchRanking()
 })
@@ -201,6 +213,11 @@ onMounted(() => {
   align-items: center;
   color: #e0e0e0;
   font-weight: 600;
+}
+
+.kb-upload-info {
+  padding: 0 10px;
+  margin-bottom: 20px;
 }
 
 .header-actions {
