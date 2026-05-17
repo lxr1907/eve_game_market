@@ -581,13 +581,17 @@ const getKillmailDetail = async (req, res) => {
     const { killmail_id } = req.params;
     const datasource = req.query.datasource || 'serenity';
     
-    // 1. 从数据库获取killmail记录，关联eve_sso_codes获取最后一击角色名称
+    // 1. 从数据库获取killmail记录，关联eve_sso_codes获取最后一击角色名称，关联corporations获取公司名称
     const [rows] = await pool.execute(
       `SELECT k.*, 
         COALESCE(k.final_blow_character_name, sso.character_name) as final_blow_character_name,
-        sso.character_id as final_blow_character_id
+        sso.character_id as final_blow_character_id,
+        COALESCE(k.final_blow_corporation_name, fc.name) as final_blow_corporation_name,
+        COALESCE(k.victim_corporation_name, vc.name) as victim_corporation_name
        FROM killmails k
        LEFT JOIN eve_sso_codes sso ON k.final_blow_character_id = sso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso.datasource COLLATE utf8mb4_unicode_ci
+       LEFT JOIN corporations fc ON k.final_blow_corporation_id = fc.id AND k.datasource COLLATE utf8mb4_unicode_ci = fc.datasource COLLATE utf8mb4_unicode_ci
+       LEFT JOIN corporations vc ON k.victim_corporation_id = vc.id AND k.datasource COLLATE utf8mb4_unicode_ci = vc.datasource COLLATE utf8mb4_unicode_ci
        WHERE k.killmail_id = ? AND k.datasource = ?`,
       [killmail_id, datasource]
     );
@@ -739,6 +743,28 @@ const getKillmailDetail = async (req, res) => {
       return supporter;
     });
     
+    // 构造受害者信息
+    const victim = {
+      character_id: km.victim_character_id,
+      corporation_id: km.victim_corporation_id,
+      corporation_name: km.victim_corporation_name || null,
+      alliance_id: km.victim_alliance_id,
+      faction_id: null,
+      ship_type_id: km.victim_ship_type_id,
+      ship_type_name: typeNames[km.victim_ship_type_id] || null,
+      damage_taken: km.victim_damage_taken,
+      items: items,
+      items_value: parseFloat(km.items_value) || itemsValue,
+      ship_value: shipValue,
+      total_loss_value: totalLossValue
+    };
+    
+    // 补充最后一击公司名称
+    const mainAttackerWithCorpName = mainAttacker ? {
+      ...mainAttacker,
+      corporation_name: km.final_blow_corporation_name || null
+    } : null;
+    
     res.json({
       success: true,
       killmail_id: km.killmail_id,
@@ -747,20 +773,8 @@ const getKillmailDetail = async (req, res) => {
       total_value: totalLossValue,
       attackers_count: km.attackers_count,
       is_npc: km.is_npc,
-      victim: {
-        character_id: km.victim_character_id,
-        corporation_id: km.victim_corporation_id,
-        alliance_id: km.victim_alliance_id,
-        faction_id: null,
-        ship_type_id: km.victim_ship_type_id,
-        ship_type_name: typeNames[km.victim_ship_type_id] || null,
-        damage_taken: km.victim_damage_taken,
-        items: items,
-        items_value: parseFloat(km.items_value) || itemsValue,
-        ship_value: shipValue,
-        total_loss_value: totalLossValue
-      },
-      main_attacker: mainAttacker,
+      victim: victim,
+      main_attacker: mainAttackerWithCorpName,
       supporters: supportersWithShipValue
     });
     
@@ -796,7 +810,11 @@ const getKBRanking = async (req, res) => {
           k.final_blow_character_id,
           COALESCE(k.final_blow_character_name, sso.character_name) as final_blow_character_name,
           k.final_blow_corporation_id,
-          k.final_blow_corporation_name,
+          COALESCE(k.final_blow_corporation_name, fc.name) as final_blow_corporation_name,
+          k.victim_character_id,
+          COALESCE(k.victim_character_name, sso_victim.character_name) as victim_character_name,
+          k.victim_corporation_id,
+          COALESCE(k.victim_corporation_name, vc.name) as victim_corporation_name,
           k.victim_ship_type_id,
           vt.name as victim_ship_name,
           k.solar_system_id,
@@ -806,6 +824,9 @@ const getKBRanking = async (req, res) => {
         LEFT JOIN types vt ON k.victim_ship_type_id = vt.id
         LEFT JOIN systems s ON k.solar_system_id = s.system_id AND k.datasource COLLATE utf8mb4_unicode_ci = s.datasource COLLATE utf8mb4_unicode_ci
         LEFT JOIN eve_sso_codes sso ON k.final_blow_character_id = sso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso.datasource COLLATE utf8mb4_unicode_ci
+        LEFT JOIN eve_sso_codes sso_victim ON k.victim_character_id = sso_victim.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso_victim.datasource COLLATE utf8mb4_unicode_ci
+        LEFT JOIN corporations fc ON k.final_blow_corporation_id = fc.id AND k.datasource COLLATE utf8mb4_unicode_ci = fc.datasource COLLATE utf8mb4_unicode_ci
+        LEFT JOIN corporations vc ON k.victim_corporation_id = vc.id AND k.datasource COLLATE utf8mb4_unicode_ci = vc.datasource COLLATE utf8mb4_unicode_ci
         WHERE k.killmail_time >= ? AND k.datasource = ?
           AND k.final_blow_character_id IS NOT NULL
         ORDER BY k.total_value DESC
@@ -824,16 +845,17 @@ const getKBRanking = async (req, res) => {
           k.final_blow_character_id as character_id,
           COALESCE(k.final_blow_character_name, sso.character_name) as character_name,
           k.final_blow_corporation_id as corporation_id,
-          k.final_blow_corporation_name as corporation_name,
+          COALESCE(k.final_blow_corporation_name, c.name) as corporation_name,
           COUNT(*) as kill_count,
           SUM(k.total_value) as total_value
         FROM killmails k
         LEFT JOIN eve_sso_codes sso ON k.final_blow_character_id = sso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso.datasource COLLATE utf8mb4_unicode_ci
+        LEFT JOIN corporations c ON k.final_blow_corporation_id = c.id AND k.datasource COLLATE utf8mb4_unicode_ci = c.datasource COLLATE utf8mb4_unicode_ci
         WHERE k.killmail_time >= ? AND k.datasource = ?
           AND k.final_blow_character_id IS NOT NULL
         GROUP BY k.final_blow_character_id, k.final_blow_character_name,
                  k.final_blow_corporation_id, k.final_blow_corporation_name,
-                 sso.character_name
+                 sso.character_name, c.name
         ORDER BY total_value DESC
         LIMIT ${safeLimit}`,
         [oneMonthAgoStr, datasource]
@@ -847,16 +869,17 @@ const getKBRanking = async (req, res) => {
           k.victim_character_id as character_id,
           COALESCE(k.victim_character_name, sso.character_name) as character_name,
           k.victim_corporation_id as corporation_id,
-          k.victim_corporation_name as corporation_name,
+          COALESCE(k.victim_corporation_name, c.name) as corporation_name,
           COUNT(*) as loss_count,
           SUM(k.total_value) as total_value
         FROM killmails k
         LEFT JOIN eve_sso_codes sso ON k.victim_character_id = sso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso.datasource COLLATE utf8mb4_unicode_ci
+        LEFT JOIN corporations c ON k.victim_corporation_id = c.id AND k.datasource COLLATE utf8mb4_unicode_ci = c.datasource COLLATE utf8mb4_unicode_ci
         WHERE k.killmail_time >= ? AND k.datasource = ?
           AND k.victim_character_id IS NOT NULL
         GROUP BY k.victim_character_id, k.victim_character_name,
                  k.victim_corporation_id, k.victim_corporation_name,
-                 sso.character_name
+                 sso.character_name, c.name
         ORDER BY total_value DESC
         LIMIT ${safeLimit}`,
         [oneMonthAgoStr, datasource]

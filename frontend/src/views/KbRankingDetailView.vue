@@ -62,7 +62,10 @@
               {{ detailData.victim?.character_id || '-' }}
             </el-descriptions-item>
             <el-descriptions-item label="公司">
-              {{ detailData.victim?.corporation_id || '-' }}
+              <span v-if="detailData.victim?.corporation_name">
+                {{ detailData.victim.corporation_name }} ({{ detailData.victim.corporation_id }})
+              </span>
+              <span v-else>{{ detailData.victim?.corporation_id || '-' }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="联盟">
               {{ detailData.victim?.alliance_id || '-' }}
@@ -87,7 +90,10 @@
               <span v-else>{{ detailData.main_attacker.character_id || '-' }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="公司">
-              {{ detailData.main_attacker.corporation_id || '-' }}
+              <span v-if="detailData.main_attacker.corporation_name">
+                {{ detailData.main_attacker.corporation_name }} ({{ detailData.main_attacker.corporation_id }})
+              </span>
+              <span v-else>{{ detailData.main_attacker.corporation_id || '-' }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="联盟">
               {{ detailData.main_attacker.alliance_id || '-' }}

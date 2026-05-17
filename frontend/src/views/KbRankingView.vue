@@ -46,6 +46,14 @@
               </div>
             </template>
           </el-table-column>
+          <el-table-column label="受害者" min-width="180">
+            <template #default="{ row }">
+              <div class="character-info">
+                <span class="character-name">{{ row.victim_character_name ? `${row.victim_character_name} (${row.victim_character_id})` : `ID: ${row.victim_character_id}` }}</span>
+                <span class="corp-name">{{ row.victim_corporation_name || '' }}</span>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column label="最后一击" min-width="180">
             <template #default="{ row }">
               <div class="character-info">
