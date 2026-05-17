@@ -72,7 +72,7 @@ class TypeController {
   // 获取层级结构（支持根据 regionId 过滤）
   static async getHierarchy(req, res) {
     try {
-      const { regionId, datasource = 'serenity' } = req.query;
+      const { regionId, datasource = 'serenity', categoryId = 9 } = req.query;
 
       let hierarchy = [];
 
@@ -94,7 +94,7 @@ class TypeController {
           hierarchy = buildTreeFromRows(rows);
         }
       } else {
-        const rows = await Type.getHierarchyData(null, 9);
+        const rows = await Type.getHierarchyData(null, parseInt(categoryId));
         hierarchy = buildTreeFromRows(rows);
       }
 

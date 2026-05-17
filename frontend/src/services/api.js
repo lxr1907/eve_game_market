@@ -94,9 +94,10 @@ export const typeApi = {
   },
 
   // 获取层级结构数据
-  async getHierarchy(regionId = null, datasource = 'serenity') {
+  async getHierarchy(regionId = null, datasource = 'serenity', categoryId = null) {
     const params = { datasource };
     if (regionId) params.regionId = regionId;
+    if (categoryId) params.categoryId = categoryId;
     const response = await apiClient.get(`/types/hierarchy`, { params });
     return response;
   },
