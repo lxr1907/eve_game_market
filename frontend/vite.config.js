@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     port: 5174,
+    allowedHosts: ['raoganzi.com', 'localhost', '127.0.0.1'],
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
