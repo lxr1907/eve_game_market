@@ -456,7 +456,7 @@ class LoyaltyController {
 
           // 对于 LP 收益计算，只获取第一页买单通常已经足够（1000条数据足以包含最高出价）
           // 这样可以避免不必要的翻页尝试和"Page 2 does not exist"的冗余日志
-          const orders = await eveApiService.getMarketOrdersByRegionAndType(
+          const buyOrders = await eveApiService.getMarketOrdersByRegionAndType(
             regionId,
             offer.type_id,
             'buy',
@@ -464,16 +464,37 @@ class LoyaltyController {
             datasource
           );
 
-          if (orders && orders.length > 0) {
+          if (buyOrders && buyOrders.length > 0) {
             // 为每个订单添加region_id和type_id
-            const ordersWithRegionAndType = orders.map(order => ({
+            const buyOrdersWithRegionAndType = buyOrders.map(order => ({
               ...order,
               region_id: regionId,
               type_id: offer.type_id
             }));
 
             // 批量插入或更新数据库
-            await Order.insertOrUpdate(ordersWithRegionAndType, datasource);
+            await Order.insertOrUpdate(buyOrdersWithRegionAndType, datasource);
+          }
+
+          // 同时获取卖单数据，以便其他地方使用
+          const sellOrders = await eveApiService.getMarketOrdersByRegionAndType(
+            regionId,
+            offer.type_id,
+            'sell',
+            1, // page 1
+            datasource
+          );
+
+          if (sellOrders && sellOrders.length > 0) {
+            // 为每个订单添加region_id和type_id
+            const sellOrdersWithRegionAndType = sellOrders.map(order => ({
+              ...order,
+              region_id: regionId,
+              type_id: offer.type_id
+            }));
+
+            // 批量插入或更新数据库
+            await Order.insertOrUpdate(sellOrdersWithRegionAndType, datasource);
           }
 
           syncedOffers++;
