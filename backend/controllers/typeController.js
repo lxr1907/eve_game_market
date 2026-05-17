@@ -77,15 +77,12 @@ class TypeController {
       let hierarchy = [];
 
       if (regionId) {
-        // 检查该 region 是否有数据
         const rows = await Type.findByRegionId(regionId, datasource);
 
-        // 如果没有数据，先同步
         if (rows.length === 0) {
           console.log(`No region_types data for region ${regionId}, syncing from EVE API...`);
           try {
             await Type.updateRegionTypes(parseInt(regionId), datasource);
-            // 重新查询
             const newRows = await Type.findByRegionId(regionId, datasource);
             if (newRows.length > 0) {
               hierarchy = buildTreeFromRows(newRows);
@@ -97,8 +94,7 @@ class TypeController {
           hierarchy = buildTreeFromRows(rows);
         }
       } else {
-        // 不带 regionId，使用原有逻辑
-        const rows = await Type.getHierarchyData();
+        const rows = await Type.getHierarchyData(null, 9);
         hierarchy = buildTreeFromRows(rows);
       }
 

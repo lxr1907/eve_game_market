@@ -221,7 +221,8 @@ class Type {
   }
 
   // 获取完整的层级结构数据 (Category -> Group -> Type)
-  static async getHierarchyData(regionId = null) {
+  // categoryId: 可选，用于过滤特定分类（如 9 为蓝图）
+  static async getHierarchyData(regionId = null, categoryId = null) {
     let query = `
       SELECT DISTINCT
         c.category_id, c.name as category_name,
@@ -231,18 +232,23 @@ class Type {
       JOIN item_groups g ON t.group_id = g.group_id
       JOIN item_categories c ON g.category_id = c.category_id
     `;
-    
+
     const params = [];
+    let whereClause = " WHERE t.name IS NOT NULL AND t.name != ''";
+
     if (regionId) {
       query += ` LEFT JOIN region_types rt ON t.id = rt.type_id `;
-      query += ` WHERE (t.name IS NOT NULL AND t.name != '') AND (rt.region_id = ? OR rt.region_id IS NULL) `;
+      whereClause += ` AND (rt.region_id = ? OR rt.region_id IS NULL)`;
       params.push(regionId);
-    } else {
-      query += ` WHERE t.name IS NOT NULL AND t.name != '' `;
     }
-    
-    query += ` ORDER BY c.name, g.name, t.name `;
-    
+
+    if (categoryId) {
+      whereClause += ` AND c.category_id = ?`;
+      params.push(categoryId);
+    }
+
+    query += whereClause + ` ORDER BY c.name, g.name, t.name `;
+
     try {
       const [rows] = await pool.execute(query, params);
       return rows;
