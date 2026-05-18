@@ -9,7 +9,7 @@ const VALID_CATEGORIES = ['势力战', '深渊', '扫描', '其他'];
  */
 async function tableExists(tableName) {
   const [rows] = await pool.query(
-    `SELECT COUNT(*) as count FROM information_schema.tables 
+    `SELECT COUNT(*) as count FROM information_schema.tables
      WHERE table_schema = DATABASE() AND table_name = ?`,
     [tableName]
   );
@@ -17,31 +17,65 @@ async function tableExists(tableName) {
 }
 
 /**
- * 初始化 bilibili_videos 表（如果不存在则导入）
+ * 检查表中的数据量
  */
-async function initTable() {
+async function getTableRowCount(tableName) {
+  const [rows] = await pool.query(
+    `SELECT COUNT(*) as count FROM \`${tableName}\``
+  );
+  return rows[0].count;
+}
+
+/**
+ * 初始化 bilibili_videos 表（如果不存在则导入，或表为空则重新导入）
+ */
+async function initTable(forceReimport = false) {
   const tableName = 'bilibili_videos';
-  
-  if (await tableExists(tableName)) {
-    console.log(`Table ${tableName} already exists, skipping import`);
-    return;
-  }
-  
-  console.log(`Table ${tableName} not found, importing from SQL file...`);
-  
-  const sqlPath = path.join(__dirname, '../static_data/bilibili/bilibili_videos.sql');
-  const sql = fs.readFileSync(sqlPath, 'utf8');
-  
-  // 分割 SQL 语句并执行
-  const statements = sql.split(/;\s*\n/).filter(s => s.trim());
-  
-  for (const stmt of statements) {
-    if (stmt.trim()) {
-      await pool.query(stmt);
+
+  const exists = await tableExists(tableName);
+
+  if (!exists) {
+    // 表不存在，创建表并导入数据
+    console.log(`Table ${tableName} not found, importing from SQL file...`);
+    const sqlPath = path.join(__dirname, '../static_data/bilibili/bilibili_videos.sql');
+    const sql = fs.readFileSync(sqlPath, 'utf8');
+
+    const statements = sql.split(/;\s*\n/).filter(s => s.trim());
+
+    for (const stmt of statements) {
+      if (stmt.trim()) {
+        await pool.query(stmt);
+      }
+    }
+    console.log(`Table ${tableName} imported successfully`);
+  } else {
+    // 表已存在，检查数据量
+    const rowCount = await getTableRowCount(tableName);
+    console.log(`Table ${tableName} exists with ${rowCount} rows`);
+
+    if (rowCount === 0 || forceReimport) {
+      // 表为空或强制重新导入，清空并重新导入
+      console.log(`Table ${tableName} is empty or reimport requested, importing from SQL file...`);
+
+      // 先清空表
+      await pool.query(`DELETE FROM \`${tableName}\``);
+
+      const sqlPath = path.join(__dirname, '../static_data/bilibili/bilibili_videos.sql');
+      const sql = fs.readFileSync(sqlPath, 'utf8');
+
+      // 分割 SQL 语句并执行（跳过 CREATE TABLE 语句）
+      const statements = sql.split(/;\s*\n/).filter(s => s.trim());
+
+      for (const stmt of statements) {
+        if (stmt.trim() && !stmt.trim().toUpperCase().startsWith('CREATE TABLE')) {
+          await pool.query(stmt);
+        }
+      }
+      console.log(`Table ${tableName} data reimported successfully`);
+    } else {
+      console.log(`Table ${tableName} already has data, skipping import`);
     }
   }
-  
-  console.log(`Table ${tableName} imported successfully`);
 }
 
 /**
