@@ -66,8 +66,7 @@
                   <el-button 
                     type="primary" 
                     link 
-                    size="small" 
-                    style="margin-left: 5px; padding: 0;"
+                    style="margin-left: 8px; padding: 0; font-size: 16px;"
                     @click="showTypeDetails(scope.row.type_id)"
                     title="查看物品详情"
                   >

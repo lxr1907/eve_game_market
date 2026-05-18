@@ -165,14 +165,14 @@
 
 <script>
 import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { regionApi, orderApi, typeApi } from '../services/api'
 import { ElMessage } from 'element-plus'
 
 export default {
   name: 'OrderQueryView',
   setup() {
-    const router = useRouter()
+    const router = useRoute()
     
     // 状态定义
     const regions = ref([])
@@ -341,6 +341,16 @@ export default {
     onMounted(() => {
       loadRegions()
       loadHierarchy()
+      
+      // 检查是否有从 LP 商店传来的查询参数
+      const route = router
+      if (route.query.typeId) {
+        selectedTypeId.value = parseInt(route.query.typeId)
+        // 延迟查询订单，等待树结构加载完成
+        setTimeout(() => {
+          queryOrders()
+        }, 2000)
+      }
     })
     
     return {
