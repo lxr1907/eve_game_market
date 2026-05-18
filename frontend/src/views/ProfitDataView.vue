@@ -120,19 +120,20 @@
           :title="`${selectedOrderData?.type_name || ''} - 订单详情`"
           width="70%"
           destroy-on-close
+          class="dark-dialog"
         >
-          <div v-loading="queryingOrders">
+          <div v-loading="queryingOrders" class="dark-dialog-content">
             <el-row :gutter="20">
               <!-- 卖单表格 -->
               <el-col :span="12">
-                <div class="section-header">
-                  <h3 class="section-title sell">
+                <div class="dialog-section-header">
+                  <h3 class="dialog-title sell">
                     <el-icon><Top /></el-icon> 卖出订单 (Sell)
                   </h3>
                 </div>
-                <el-table 
-                  :data="sellOrders" 
-                  style="width: 100%" 
+                <el-table
+                  :data="sellOrders"
+                  style="width: 100%"
                   height="400px"
                   size="small"
                 >
@@ -141,7 +142,11 @@
                       <span style="color: #f56c6c; font-weight: bold;">{{ formatISK(row.price) }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="volume_total" label="数量" sortable width="100" />
+                  <el-table-column prop="volume_total" label="数量" sortable width="100">
+                    <template #default="{ row }">
+                      {{ formatNumber(row.volume_total) }}
+                    </template>
+                  </el-table-column>
                   <el-table-column prop="location_id" label="位置 ID" width="100" />
                   <el-table-column prop="created_at" label="创建时间" sortable min-width="140">
                     <template #default="{ row }">
@@ -153,14 +158,14 @@
 
               <!-- 买单表格 -->
               <el-col :span="12">
-                <div class="section-header">
-                  <h3 class="section-title buy">
+                <div class="dialog-section-header">
+                  <h3 class="dialog-title buy">
                     <el-icon><Bottom /></el-icon> 买入订单 (Buy)
                   </h3>
                 </div>
-                <el-table 
-                  :data="buyOrders" 
-                  style="width: 100%" 
+                <el-table
+                  :data="buyOrders"
+                  style="width: 100%"
                   height="400px"
                   size="small"
                 >
@@ -169,7 +174,11 @@
                       <span style="color: #67c23a; font-weight: bold;">{{ formatISK(row.price) }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="volume_total" label="数量" sortable width="100" />
+                  <el-table-column prop="volume_total" label="数量" sortable width="100">
+                    <template #default="{ row }">
+                      {{ formatNumber(row.volume_total) }}
+                    </template>
+                  </el-table-column>
                   <el-table-column prop="location_id" label="位置 ID" width="100" />
                   <el-table-column prop="created_at" label="创建时间" sortable min-width="140">
                     <template #default="{ row }">
@@ -559,30 +568,28 @@ onMounted(() => {
   box-shadow: 0 2px 8px rgba(245, 108, 108, 0.3) !important;
 }
 
-/* 订单弹窗样式 */
-.section-header {
-  margin-bottom: 10px;
-  padding-bottom: 5px;
-  border-bottom: 1px solid #ebeef5;
+/* 深色主题弹窗样式 */
+.dialog-section-header {
+  margin-bottom: 12px;
 }
 
-.section-title {
+.dialog-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
-.section-title.sell {
-  color: #f56c6c;
+.dialog-title.sell {
+  color: #f56c6c;  /* 红色 - 卖出订单 */
 }
 
-.section-title.buy {
-  color: #67c23a;
+.dialog-title.buy {
+  color: #67c23a;  /* 绿色 - 买入订单 */
 }
 
-/* 深色主题弹窗和描述列表样式 */
+/* 深色主题弹窗样式 */
 :deep(.dark-dialog) {
   background-color: #1d1e1f !important;
 }
@@ -603,6 +610,33 @@ onMounted(() => {
   color: #e5eaf3;
 }
 
+:deep(.dark-dialog) .el-table {
+  background-color: transparent !important;
+}
+
+:deep(.dark-dialog) .el-table__header-wrapper {
+  background-color: #242736 !important;
+}
+
+:deep(.dark-dialog) .el-table__header th {
+  background-color: #242736 !important;
+  color: #94a3b8 !important;
+}
+
+:deep(.dark-dialog) .el-table__body-wrapper {
+  background-color: transparent !important;
+}
+
+:deep(.dark-dialog) .el-table__row {
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
+}
+
+:deep(.dark-dialog) .el-table__row:hover > td {
+  background-color: #2a2d3d !important;
+}
+
+/* 物品详情弹窗样式 */
 :deep(.dark-descriptions) {
   background-color: transparent;
 }

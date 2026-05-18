@@ -55,7 +55,9 @@
             <el-table-column label="物品名称" min-width="250">
               <template #default="scope">
                 <div class="item-name-container">
-                  <span class="clickable-link" @click="showOrderDetails(scope.row)">{{ scope.row.type_name }}</span>
+                  <span class="clickable-link" @click="showOrderDetails(scope.row)" :title="'点击查看订单详情'">
+                    {{ scope.row.type_name || '物品ID: ' + scope.row.type_id }}
+                  </span>
                   <el-tag
                     :type="scope.row.profit_per_lp > 0 ? 'success' : 'danger'"
                     size="large"
@@ -152,27 +154,65 @@
 
     <!-- 订单详情弹窗 -->
     <el-dialog
-      :title="'订单详情 - ' + selectedItem?.type_name"
-      :visible.sync="orderDialogVisible"
-      width="900px"
+      v-model="orderDialogVisible"
+      :title="`${selectedItem?.type_name || '产品'} - 订单详情`"
+      width="70%"
+      destroy-on-close
+      class="dark-dialog"
     >
-      <div v-if="queryingOrders" v-loading="queryingOrders" element-loading-text="加载订单数据..."></div>
-      <div v-else>
+      <div v-loading="queryingOrders">
         <el-row :gutter="20">
+          <!-- 卖单表格 -->
           <el-col :span="12">
-            <h4 style="margin-bottom: 10px;">买单 (购买玩家)</h4>
-            <el-table :data="buyOrders" size="small" max-height="300" style="width: 100%">
-              <el-table-column prop="price" label="价格" :formatter="(row) => formatISK(row.price)" />
-              <el-table-column prop="volume_remaining" label="剩余数量" />
-              <el-table-column prop="order_id" label="订单ID" width="120" />
+            <div class="dialog-section-header">
+              <h3 class="dialog-title sell">
+                <el-icon><Top /></el-icon> 卖出订单 (Sell)
+              </h3>
+            </div>
+            <el-table
+              :data="sellOrders"
+              style="width: 100%"
+              height="350px"
+              size="small"
+            >
+              <el-table-column prop="price" label="价格 (ISK)" sortable min-width="120">
+                <template #default="{ row }">
+                  <span style="color: #f56c6c; font-weight: bold;">{{ formatISKShort(row.price) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="volume_remaining" label="剩余数量" sortable width="100">
+                <template #default="{ row }">
+                  {{ formatNumber(row.volume_remaining) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="location_id" label="位置 ID" width="100" />
             </el-table>
           </el-col>
+
+          <!-- 买单表格 -->
           <el-col :span="12">
-            <h4 style="margin-bottom: 10px;">卖单 (出售玩家)</h4>
-            <el-table :data="sellOrders" size="small" max-height="300" style="width: 100%">
-              <el-table-column prop="price" label="价格" :formatter="(row) => formatISK(row.price)" />
-              <el-table-column prop="volume_remaining" label="剩余数量" />
-              <el-table-column prop="order_id" label="订单ID" width="120" />
+            <div class="dialog-section-header">
+              <h3 class="dialog-title buy">
+                <el-icon><Bottom /></el-icon> 买入订单 (Buy)
+              </h3>
+            </div>
+            <el-table
+              :data="buyOrders"
+              style="width: 100%"
+              height="350px"
+              size="small"
+            >
+              <el-table-column prop="price" label="价格 (ISK)" sortable min-width="120">
+                <template #default="{ row }">
+                  <span style="color: #67c23a; font-weight: bold;">{{ formatISKShort(row.price) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="volume_remaining" label="剩余数量" sortable width="100">
+                <template #default="{ row }">
+                  {{ formatNumber(row.volume_remaining) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="location_id" label="位置 ID" width="100" />
             </el-table>
           </el-col>
         </el-row>
@@ -183,7 +223,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { Search, CirclePlus, InfoFilled } from '@element-plus/icons-vue'
+import { Search, CirclePlus, InfoFilled, Loading, Top, Bottom } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
@@ -274,15 +314,32 @@ const showOrderDetails = async (row) => {
   sellOrders.value = []
 
   try {
-    const response = await fetch(`/api/orders?regionId=${row.region_id || 10000002}&typeId=${row.type_id}&datasource=${filters.datasource}`)
+    const regionId = row.region_id || 10000002
+    const typeId = row.type_id
+    const datasource = filters.datasource
+
+    console.log('Fetching orders for:', { regionId, typeId, datasource })
+
+    const response = await fetch(`/api/orders?regionId=${regionId}&typeId=${typeId}&datasource=${datasource}`)
     const result = await response.json()
-    if (result.buyOrders && result.sellOrders) {
-      buyOrders.value = result.buyOrders.data || []
-      sellOrders.value = result.sellOrders.data || []
+
+    console.log('Orders API response:', result)
+
+    if (result.buyOrders && result.buyOrders.data) {
+      buyOrders.value = result.buyOrders.data
+    }
+    if (result.sellOrders && result.sellOrders.data) {
+      sellOrders.value = result.sellOrders.data
+    }
+
+    if (buyOrders.value.length === 0 && sellOrders.value.length === 0) {
+      ElMessage.warning('暂无订单数据')
+    } else {
+      console.log(`Loaded ${buyOrders.value.length} buy orders and ${sellOrders.value.length} sell orders`)
     }
   } catch (error) {
     console.error('获取订单详情失败:', error)
-    ElMessage.error('获取订单详情失败')
+    ElMessage.error('获取订单详情失败: ' + error.message)
   } finally {
     queryingOrders.value = false
   }
@@ -293,6 +350,19 @@ const formatNumber = (value) => {
   const num = parseFloat(value)
   if (isNaN(num)) return '-'
   return num.toLocaleString()
+}
+
+// 简短 ISK 格式化（用于表格显示）
+const formatISKShort = (value) => {
+  if (value === null || value === undefined || value === '') return '-'
+  const num = parseFloat(value)
+  if (isNaN(num)) return '-'
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(2) + 'M'
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(2) + 'K'
+  }
+  return num.toFixed(2)
 }
 
 // 兑换数量格式化
@@ -450,5 +520,69 @@ onMounted(() => {
 .required-item-row .item-total {
   color: #67c23a;
   font-weight: bold;
+}
+
+/* 深色主题弹窗样式 */
+.dialog-section-header {
+  margin-bottom: 12px;
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dialog-title.sell {
+  color: #f56c6c;  /* 红色 - 卖出订单 */
+}
+
+.dialog-title.buy {
+  color: #67c23a;  /* 绿色 - 买入订单 */
+}
+
+/* 深色主题弹窗样式 */
+:deep(.dark-dialog) {
+  background-color: #1d1e1f !important;
+}
+
+:deep(.dark-dialog) .el-dialog__title {
+  color: #e5eaf3;
+}
+
+:deep(.dark-dialog) .el-dialog__header {
+  border-bottom: 1px solid #36364a;
+}
+
+:deep(.dark-dialog) .el-dialog__body {
+  background-color: #1d1e1f !important;
+}
+
+:deep(.dark-dialog) .el-table {
+  background-color: transparent !important;
+}
+
+:deep(.dark-dialog) .el-table__header-wrapper {
+  background-color: #242736 !important;
+}
+
+:deep(.dark-dialog) .el-table__header th {
+  background-color: #242736 !important;
+  color: #94a3b8 !important;
+}
+
+:deep(.dark-dialog) .el-table__body-wrapper {
+  background-color: transparent !important;
+}
+
+:deep(.dark-dialog) .el-table__row {
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
+}
+
+:deep(.dark-dialog) .el-table__row:hover > td {
+  background-color: #2a2d3d !important;
 }
 </style>
