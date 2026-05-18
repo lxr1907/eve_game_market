@@ -24,7 +24,7 @@
           </div>
 
           <div class="payment-methods">
-            <h4>支持方式</h4>
+            <!-- <h4>支持方式</h4> -->
             <div class="payment-grid">
               <div class="payment-item">
                 <div class="payment-icon">
@@ -44,6 +44,13 @@
                 </div>
                 <div class="payment-label">QQ交流群</div>
                 <div class="payment-hint">扫码加入交流群</div>
+                <a
+                  target="_blank"
+                  href="https://qm.qq.com/q/xDgrhG3plu"
+                  class="qq-join-btn"
+                >
+                  一键加群
+                </a>
               </div>
             </div>
           </div>
@@ -277,6 +284,23 @@ const formatTime = (row) => {
   font-size: 12px;
   color: #909399;
   margin-top: 5px;
+}
+
+.qq-join-btn {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 20px;
+  background-color: #409eff;
+  color: #fff;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.qq-join-btn:hover {
+  background-color: #66b1ff;
 }
 
 .payment-label {
