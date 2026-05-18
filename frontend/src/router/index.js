@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import DonateView from '../views/DonateView.vue'
+import VideoView from '../views/VideoView.vue'
 import OnlinePlayerStatsView from '../views/OnlinePlayerStatsView.vue'
 import TypeListView from '../views/TypeListView.vue'
 import RegionListView from '../views/RegionListView.vue'
@@ -33,6 +34,11 @@ const router = createRouter({
       path: '/donate',
       name: 'donate',
       component: DonateView
+    },
+    {
+      path: '/video',
+      name: 'video',
+      component: VideoView
     },
     {
       path: '/login',

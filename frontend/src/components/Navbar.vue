@@ -11,6 +11,10 @@
             <span>💝</span>
             捐赠
           </el-menu-item>
+          <el-menu-item index="video">
+            <el-icon><VideoCamera /></el-icon>
+            视频
+          </el-menu-item>
           <el-menu-item index="4">
             <el-icon><Document /></el-icon>
             订单查询
@@ -112,7 +116,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { House, Collection, MapLocation, Document, Star, Money, UserFilled, User, ArrowDown, SwitchButton, Aim, Trophy, ShoppingCart } from '@element-plus/icons-vue'
+import { House, Collection, MapLocation, Document, Star, Money, UserFilled, User, ArrowDown, SwitchButton, Aim, Trophy, ShoppingCart, VideoCamera } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -152,6 +156,7 @@ const activeIndex = computed(() => {
   const path = route.path
   if (path === '/') return '1'
   if (path === '/donate') return 'donate'
+  if (path === '/video') return 'video'
   if (path === '/profile') return 'profile'
   if (path === '/types') return '2-1'
   if (path === '/regions') return '2-2'
@@ -195,6 +200,8 @@ const handleSelect = (key, keyPath) => {
     router.push('/')
   } else if (key === 'donate') {
     router.push('/donate')
+  } else if (key === 'video') {
+    router.push('/video')
   } else if (key === 'profile') {
     router.push('/profile')
   } else if (key === '2-1') {
