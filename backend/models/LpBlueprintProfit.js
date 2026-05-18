@@ -24,6 +24,7 @@ class LpBlueprintProfit {
         sell_profit DECIMAL(20,2) DEFAULT 0,
         profit_per_lp_buy DECIMAL(20,2) DEFAULT 0,
         profit_per_lp_sell DECIMAL(20,2) DEFAULT 0,
+        status VARCHAR(20) DEFAULT 'active', -- active/no_orders/error
         datasource VARCHAR(20) NOT NULL DEFAULT 'serenity',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -39,7 +40,8 @@ class LpBlueprintProfit {
       { name: 'buy_profit', type: 'DECIMAL(20,2) DEFAULT 0' },
       { name: 'sell_profit', type: 'DECIMAL(20,2) DEFAULT 0' },
       { name: 'profit_per_lp_buy', type: 'DECIMAL(20,2) DEFAULT 0' },
-      { name: 'profit_per_lp_sell', type: 'DECIMAL(20,2) DEFAULT 0' }
+      { name: 'profit_per_lp_sell', type: 'DECIMAL(20,2) DEFAULT 0' },
+      { name: 'status', type: 'VARCHAR(20) DEFAULT "active"' }
     ];
 
     // 先检查表是否存在
@@ -115,8 +117,8 @@ class LpBlueprintProfit {
       INSERT INTO lp_blueprint_profits 
         (type_id, offer_id, corporation_id, region_id, lp_cost, isk_cost, material_cost, 
          total_cost, product_type_id, product_buy_price, product_sell_price, total_profit, profit_per_lp, 
-         buy_profit, sell_profit, profit_per_lp_buy, profit_per_lp_sell, datasource)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         buy_profit, sell_profit, profit_per_lp_buy, profit_per_lp_sell, status, datasource)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         offer_id = VALUES(offer_id),
         corporation_id = VALUES(corporation_id),
@@ -133,6 +135,7 @@ class LpBlueprintProfit {
         sell_profit = VALUES(sell_profit),
         profit_per_lp_buy = VALUES(profit_per_lp_buy),
         profit_per_lp_sell = VALUES(profit_per_lp_sell),
+        status = VALUES(status),
         updated_at = CURRENT_TIMESTAMP
     `;
     await pool.execute(query, [
@@ -141,6 +144,7 @@ class LpBlueprintProfit {
       data.product_type_id, data.product_buy_price, data.product_sell_price,
       data.total_profit, data.profit_per_lp,
       data.buy_profit || 0, data.sell_profit || 0, data.profit_per_lp_buy || 0, data.profit_per_lp_sell || 0,
+      data.status || 'active',
       data.datasource
     ]);
   }
