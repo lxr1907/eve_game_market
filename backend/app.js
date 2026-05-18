@@ -30,6 +30,7 @@ const EveSsoCode = require('./models/EveSsoCode');
 const Killmail = require('./models/Killmail');
 const { syncDatabaseStructure } = require('./utils/syncDatabaseStructure');
 const { unifyDatabaseCharset } = require('./utils/unifyCharset');
+const { initTable: initBilibiliTable } = require('./services/BilibiliService');
 
 const app = express();
 
@@ -52,6 +53,8 @@ app.use(express.urlencoded({ extended: true }));
     // 初始化LP蓝图收益表并添加新列
     await LpBlueprintProfit.createTable();
     await LpBlueprintProfit.addNewColumns();
+    // 初始化 bilibili_videos 表
+    await initBilibiliTable();
     console.log('Database tables initialized successfully');
   } catch (err) {
     console.error('Error initializing database tables:', err);

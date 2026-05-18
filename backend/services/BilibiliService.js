@@ -1,6 +1,48 @@
 const pool = require('../config/database');
+const fs = require('fs');
+const path = require('path');
 
 const VALID_CATEGORIES = ['势力战', '深渊', '扫描', '其他'];
+
+/**
+ * 检查表是否存在
+ */
+async function tableExists(tableName) {
+  const [rows] = await pool.query(
+    `SELECT COUNT(*) as count FROM information_schema.tables 
+     WHERE table_schema = DATABASE() AND table_name = ?`,
+    [tableName]
+  );
+  return rows[0].count > 0;
+}
+
+/**
+ * 初始化 bilibili_videos 表（如果不存在则导入）
+ */
+async function initTable() {
+  const tableName = 'bilibili_videos';
+  
+  if (await tableExists(tableName)) {
+    console.log(`Table ${tableName} already exists, skipping import`);
+    return;
+  }
+  
+  console.log(`Table ${tableName} not found, importing from SQL file...`);
+  
+  const sqlPath = path.join(__dirname, '../static_data/bilibili/bilibili_videos.sql');
+  const sql = fs.readFileSync(sqlPath, 'utf8');
+  
+  // 分割 SQL 语句并执行
+  const statements = sql.split(/;\s*\n/).filter(s => s.trim());
+  
+  for (const stmt of statements) {
+    if (stmt.trim()) {
+      await pool.query(stmt);
+    }
+  }
+  
+  console.log(`Table ${tableName} imported successfully`);
+}
 
 /**
  * 按分类分页获取视频列表
@@ -45,4 +87,4 @@ async function getCategorySummary() {
   return rows;
 }
 
-module.exports = { getVideosByCategory, getCategorySummary, VALID_CATEGORIES };
+module.exports = { getVideosByCategory, getCategorySummary, VALID_CATEGORIES, initTable };
