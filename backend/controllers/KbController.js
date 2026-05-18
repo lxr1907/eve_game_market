@@ -187,6 +187,7 @@ const calculateItemsValue = async (items, regionId = DEFAULT_REGION_ID, datasour
 
 // 从ESI获取角色最近击毁记录
 const fetchRecentKillmails = async (characterId, accessToken, datasource = 'serenity') => {
+  const ESI_BASE_URL = getEsiBaseUrl(datasource);
   const url = `${ESI_BASE_URL}/characters/${characterId}/killmails/recent/?datasource=${datasource}`;
   
   const response = await fetch(url, {

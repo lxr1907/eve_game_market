@@ -212,9 +212,9 @@ class LoyaltyTypeLpIsk {
       if (corporationId) queryParams.push(corporationId); // l.corporation_id = ?
       if (regionId) queryParams.push(regionId); // l.region_id = ?
       
-      // 添加分页参数 - 直接传递数字类型，避免转换
-      queryParams.push(limit); // LIMIT ?
-      queryParams.push(offset); // OFFSET ?
+      // 添加分页参数 - MySQL 8 需要确保是原生数字类型
+      queryParams.push(Number(limit)); // LIMIT ?
+      queryParams.push(Number(offset)); // OFFSET ?
       
       // 添加详细调试日志
       const placeholderCount = (query.match(/\?/g) || []).length;
@@ -227,8 +227,9 @@ class LoyaltyTypeLpIsk {
       console.log('Debug - Filters:', { corporationId, regionId, datasource });
       console.log('Debug - CorporationId type:', typeof corporationId, 'RegionId type:', typeof regionId);
       
-      // 执行主查询
-      const [rows] = await pool.execute(query, queryParams);
+      // 执行主查询 - MySQL 8 下 pool.execute() 对 LIMIT/OFFSET 有严格类型要求
+      // 如果 Number() 修复无效，可尝试 pool.query() 替代 pool.execute()
+      const [rows] = await pool.query(query, queryParams);
       
       // 获取总行数
       const [countResult] = await pool.execute('SELECT FOUND_ROWS() as total');

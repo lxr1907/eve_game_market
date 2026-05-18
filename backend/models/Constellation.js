@@ -103,7 +103,7 @@ class Constellation {
       LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.execute(query, [limitInt, offset]);
+    const [rows] = await pool.query(query, [Number(limitInt), Number(offset)]);
     return rows;
   }
 

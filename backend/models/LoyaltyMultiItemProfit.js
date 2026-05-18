@@ -143,7 +143,7 @@ class LoyaltyMultiItemProfit {
       ORDER BY updated_at ASC
       LIMIT ?
     `;
-    const [rows] = await pool.execute(query, [datasource, limit]);
+    const [rows] = await pool.query(query, [datasource, Number(limit)]);
     return rows;
   }
 
@@ -162,7 +162,7 @@ class LoyaltyMultiItemProfit {
       ORDER BY updated_at ASC
       LIMIT ?
     `;
-    const [rows] = await pool.execute(query, [corporationId, datasource, limit]);
+    const [rows] = await pool.query(query, [corporationId, datasource, Number(limit)]);
     return rows;
   }
 

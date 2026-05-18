@@ -95,7 +95,7 @@ async function syncTable(tableName) {
 
     for (let batch = 0; batch < totalBatches; batch++) {
       const offset = batch * batchSize;
-      const [rows] = await localConn.execute(`SELECT * FROM ${tableName} LIMIT ?, ?`, [offset, batchSize]);
+      const [rows] = await localConn.query(`SELECT * FROM ${tableName} LIMIT ?, ?`, [Number(offset), Number(batchSize)]);
 
       if (rows.length === 0) break;
 

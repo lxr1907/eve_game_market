@@ -71,11 +71,11 @@ class Category {
     if (limit !== null) {
       const offset = (page - 1) * limit;
       sql += ' LIMIT ? OFFSET ?';
-      params.push(limit, offset);
+      params.push(Number(limit), Number(offset));
     }
 
     try {
-      const [rows] = await pool.execute(sql, params);
+      const [rows] = await pool.query(sql, params);
       return rows;
     } catch (error) {
       console.error('Error finding all categories:', error);
