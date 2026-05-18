@@ -471,4 +471,22 @@ export const systemKillApi = {
   }
 };
 
+// Bilibili 视频 API
+export const bilibiliApi = {
+  // 按分类分页获取视频列表
+  // offset: 已加载数量（首次0，加载更多后累加）；limit: 本次加载数量（首次1，后续10）
+  async getVideos(category = '势力战', offset = 0, limit = 10) {
+    const response = await apiClient.get('/bilibili/videos', {
+      params: { category, offset, limit }
+    });
+    return response;
+  },
+
+  // 获取所有分类及数量
+  async getCategories() {
+    const response = await apiClient.get('/bilibili/categories');
+    return response;
+  },
+};
+
 export default apiClient

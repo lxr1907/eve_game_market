@@ -31,7 +31,7 @@ warnings.filterwarnings("ignore")
 # ── 配置 ─────────────────────────────────────────────────────────────────────
 
 UID = 1965152257
-ENV_PATH = os.path.join(os.path.dirname(__file__), "backend", ".env")
+ENV_PATH = os.path.join(os.path.dirname(__file__), "../backend", ".env")
 COOKIE_FILE = os.path.join(os.path.dirname(__file__), "bilibili_cookie.txt")
 
 BASE_HEADERS = {

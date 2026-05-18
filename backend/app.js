@@ -14,6 +14,7 @@ const systemRoutes = require('./routes/systemRoutes');
 const systemKillRoutes = require('./routes/systemKillRoutes');
 const eveSsoRoutes = require('./routes/eveSsoRoutes');
 const kbRoutes = require('./routes/kbRoutes');
+const bilibiliRoutes = require('./routes/bilibiliRoutes');
 const Type = require('./models/Type');
 const Region = require('./models/Region');
 const RegionType = require('./models/RegionType');
@@ -69,6 +70,7 @@ app.use('/api', systemRoutes);
 app.use('/api', systemKillRoutes);
 app.use('/api', eveSsoRoutes);
 app.use('/api/kb', kbRoutes);
+app.use('/api/bilibili', bilibiliRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
