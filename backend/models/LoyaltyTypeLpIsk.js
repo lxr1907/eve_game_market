@@ -174,7 +174,7 @@ class LoyaltyTypeLpIsk {
       
       // 先执行主查询，使用SQL_CALC_FOUND_ROWS获取总行数
       
-      // 构建主查询 - 使用窗口函数优化订单查询
+      // 构建主查询 - 使用相关子查询兼容MySQL 5.x（不支持窗口函数）
       const query = `
         SELECT SQL_CALC_FOUND_ROWS l.*, t.name as type_name, 
                o.volume_remaining as max_buy_order_volume_remaining,
@@ -185,13 +185,15 @@ class LoyaltyTypeLpIsk {
                ) as is_unique
         FROM loyalty_type_lp_isk l
         LEFT JOIN types t ON l.type_id = t.id
-        LEFT JOIN (
-          SELECT 
-            *,
-            ROW_NUMBER() OVER (PARTITION BY type_id, region_id ORDER BY price DESC, order_id DESC) as rn
-          FROM orders 
-          WHERE is_buy_order = 1 AND datasource = ?
-        ) o ON l.type_id = o.type_id AND l.region_id = o.region_id AND o.rn = 1
+        LEFT JOIN orders o ON 
+          l.type_id = o.type_id AND 
+          l.region_id = o.region_id AND 
+          o.is_buy_order = 1 AND 
+          o.datasource = ?
+          AND o.price = (
+            SELECT MAX(price) FROM orders 
+            WHERE type_id = o.type_id AND region_id = o.region_id AND is_buy_order = 1 AND datasource = o.datasource
+          )
         WHERE l.datasource = ?
         ${corporationId ? ' AND l.corporation_id = ?' : ''}
         ${regionId ? ' AND l.region_id = ?' : ''}
@@ -229,11 +231,22 @@ class LoyaltyTypeLpIsk {
       const [rows] = await pool.execute(query, queryParams);
       
       // 获取总行数
-      const [newCountResult] = await pool.execute('SELECT FOUND_ROWS() as total');
-      const total = newCountResult[0].total;
+      const [countResult] = await pool.execute('SELECT FOUND_ROWS() as total');
+      const total = countResult[0].total;
   
       console.log('Debug - Main query result length:', rows.length);
       console.log('Debug - Total from FOUND_ROWS():', total);
+      
+      // 如果没有数据，直接返回空结果
+      if (total === 0) {
+        return {
+          data: [],
+          total: 0,
+          page,
+          limit,
+          totalPages: 0
+        };
+      }
   
         // 检查第一个结果的订单数据
       if (rows.length > 0) {
