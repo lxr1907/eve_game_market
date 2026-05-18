@@ -4,7 +4,12 @@
         <el-card shadow="hover">
           <template #header>
             <div class="card-header">
-              <span>LP多物品兑换收益</span>
+              <div class="header-title">
+                <span>LP多物品兑换收益</span>
+                <el-tooltip content="总收益 = (结果物品卖价 × 兑换数量) - 所需物品总价 - ISK成本" placement="bottom">
+                  <el-icon class="info-icon"><InfoFilled /></el-icon>
+                </el-tooltip>
+              </div>
               <div class="filters">
                 <el-select
                   v-model="filters.corporationId"
@@ -63,7 +68,6 @@
               </template>
             </el-table-column>
 
-            <el-table-column prop="corporation_name" label="公司" min-width="150" />
             <el-table-column label="需要LP" min-width="80">
               <template #default="scope">
                 <span>{{ formatNumber(scope.row.lpCost || scope.row.lp_cost) }}</span>
@@ -74,7 +78,11 @@
                 <span>{{ formatISK(scope.row.iskCost || scope.row.isk_cost) }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="quantity" label="兑换数量" min-width="80" :formatter="formatNumber" />
+            <el-table-column label="兑换数量" min-width="100">
+              <template #default="scope">
+                <span>{{ formatQuantity(scope.row.quantity) }}</span>
+              </template>
+            </el-table-column>
 
             <el-table-column label="所需物品总价" min-width="120">
               <template #default="scope">
@@ -94,23 +102,20 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="所需物品" min-width="200">
+            <el-table-column label="所需物品" min-width="300">
               <template #default="scope">
-                <el-popover
-                  v-if="scope.row.required_items && scope.row.required_items.length > 0"
-                  trigger="click"
-                  placement="top"
-                >
-                  <template #reference>
-                    <el-button type="text" size="small">查看所需物品</el-button>
-                  </template>
-                  <el-table :data="scope.row.required_items" size="small" style="width: 400px;">
-                    <el-table-column prop="type_name" label="物品名称" />
-                    <el-table-column prop="quantity" label="数量" />
-                    <el-table-column label="单价" :formatter="(row) => formatISK(row.sell_price)" />
-                    <el-table-column label="总价" :formatter="(row) => formatISK(row.total_price)" />
-                  </el-table>
-                </el-popover>
+                <div v-if="scope.row.required_items && scope.row.required_items.length > 0" class="required-items-list">
+                  <div
+                    v-for="(item, index) in scope.row.required_items"
+                    :key="index"
+                    class="required-item-row"
+                  >
+                    <span class="item-name">{{ item.type_name || item.typeId }}</span>
+                    <span class="item-quantity">×{{ formatNumber(item.quantity) }}</span>
+                    <span class="item-price">@{{ formatISK(item.sell_price) }}</span>
+                    <span class="item-total">={{ formatISK(item.total_price) }}</span>
+                  </div>
+                </div>
                 <span v-else>-</span>
               </template>
             </el-table-column>
@@ -178,7 +183,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { Search, CirclePlus } from '@element-plus/icons-vue'
+import { Search, CirclePlus, InfoFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
@@ -290,6 +295,16 @@ const formatNumber = (value) => {
   return num.toLocaleString()
 }
 
+// 兑换数量格式化
+const formatQuantity = (value) => {
+  if (value === null || value === undefined || value === '' || value === 0) {
+    return '-'
+  }
+  const num = parseInt(value, 10)
+  if (isNaN(num)) return '-'
+  return num.toLocaleString()
+}
+
 const formatISK = (value) => {
   if (value === null || value === undefined || value === '') return '0 ISK'
   const num = parseFloat(value)
@@ -391,5 +406,49 @@ onMounted(() => {
 
 .clickable-link:hover {
   color: #66b1ff;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-icon {
+  color: #909399;
+  cursor: help;
+}
+
+.required-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.required-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  padding: 2px 0;
+}
+
+.required-item-row .item-name {
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.required-item-row .item-quantity {
+  color: #909399;
+}
+
+.required-item-row .item-price {
+  color: #f56c6c;
+  font-size: 12px;
+}
+
+.required-item-row .item-total {
+  color: #67c23a;
+  font-weight: bold;
 }
 </style>
