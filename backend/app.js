@@ -75,6 +75,48 @@ app.use('/api', eveSsoRoutes);
 app.use('/api/kb', kbRoutes);
 app.use('/api/bilibili', bilibiliRoutes);
 
+// 图片代理路由 - 解决 B站 CDN 防盗链问题
+const https = require('https');
+const http = require('http');
+const { URL } = require('url');
+
+app.get('/api/proxy/image', async (req, res) => {
+  const { url } = req.query;
+  
+  if (!url) {
+    return res.status(400).json({ error: 'Missing url parameter' });
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    const protocol = parsedUrl.protocol === 'https:' ? https : http;
+    
+    const options = {
+      headers: {
+        'Referer': 'https://www.bilibili.com',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    };
+
+    protocol.get(url, options, (proxyRes) => {
+      // 处理重定向
+      if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
+        return res.redirect(proxyRes.statusCode, proxyRes.headers.location);
+      }
+      
+      res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 缓存 1 天
+      proxyRes.pipe(res);
+    }).on('error', (err) => {
+      console.error('Proxy error:', err);
+      res.status(502).json({ error: 'Failed to fetch image' });
+    });
+  } catch (err) {
+    console.error('Invalid URL:', err);
+    res.status(400).json({ error: 'Invalid URL' });
+  }
+});
+
 // Health check route
 app.get('/health', (req, res) => {
   console.log('Health check request received!');

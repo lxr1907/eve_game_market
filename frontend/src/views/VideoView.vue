@@ -245,6 +245,14 @@ function formatDuration(seconds) {
 
 function convertHttps(url) {
   if (!url) return ''
+  
+  // B站图片通过后端代理访问，避免 403 错误
+  if (url.includes('hdslb.com')) {
+    // 编码 URL 并通过代理访问
+    const encodedUrl = encodeURIComponent(url)
+    return `/api/proxy/image?url=${encodedUrl}`
+  }
+  
   return url.replace(/^http:\/\//, 'https://')
 }
 
