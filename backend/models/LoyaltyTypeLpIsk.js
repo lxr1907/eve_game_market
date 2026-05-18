@@ -172,37 +172,11 @@ class LoyaltyTypeLpIsk {
       const offset = (page - 1) * limit;
       const { corporationId, regionId, datasource = 'serenity' } = filters;
       
-      // 构建总数查询
-      const countQuery = `
-        SELECT COUNT(*) as total
-        FROM loyalty_type_lp_isk l
-        WHERE l.datasource = ?
-        ${corporationId ? ' AND l.corporation_id = ?' : ''}
-        ${regionId ? ' AND l.region_id = ?' : ''}
-      `;
+      // 先执行主查询，使用SQL_CALC_FOUND_ROWS获取总行数
       
-      // 执行总数查询
-      const countParams = [datasource];
-      if (corporationId) countParams.push(corporationId.toString());
-      if (regionId) countParams.push(regionId.toString());
-      
-      const [countResult] = await pool.execute(countQuery, countParams);
-      const total = countResult[0].total;
-      
-      // 如果没有数据，直接返回空结果
-      if (total === 0) {
-        return {
-          data: [],
-          total: 0,
-          page,
-          limit,
-          totalPages: 0
-        };
-      }
-      
-      // 构建主查询
+      // 构建主查询 - 使用窗口函数优化订单查询
       const query = `
-        SELECT l.*, t.name as type_name, 
+        SELECT SQL_CALC_FOUND_ROWS l.*, t.name as type_name, 
                o.volume_remaining as max_buy_order_volume_remaining,
                ((l.total_profit / l.quantity) * o.volume_remaining) as max_buy_order_total_profit,
                NOT EXISTS(
@@ -212,18 +186,12 @@ class LoyaltyTypeLpIsk {
         FROM loyalty_type_lp_isk l
         LEFT JOIN types t ON l.type_id = t.id
         LEFT JOIN (
-          SELECT o1.*
-          FROM orders o1
-          WHERE o1.is_buy_order = 1 AND o1.datasource = ?
-          AND o1.order_id = (
-            SELECT o2.order_id
-            FROM orders o2
-            WHERE o2.type_id = o1.type_id AND o2.region_id = o1.region_id
-            AND o2.is_buy_order = 1 AND o2.datasource = ?
-            ORDER BY o2.price DESC, o2.order_id DESC
-            LIMIT 1
-          )
-        ) o ON l.type_id = o.type_id AND l.region_id = o.region_id
+          SELECT 
+            *,
+            ROW_NUMBER() OVER (PARTITION BY type_id, region_id ORDER BY price DESC, order_id DESC) as rn
+          FROM orders 
+          WHERE is_buy_order = 1 AND datasource = ?
+        ) o ON l.type_id = o.type_id AND l.region_id = o.region_id AND o.rn = 1
         WHERE l.datasource = ?
         ${corporationId ? ' AND l.corporation_id = ?' : ''}
         ${regionId ? ' AND l.region_id = ?' : ''}
@@ -234,18 +202,17 @@ class LoyaltyTypeLpIsk {
       // 构建查询参数数组
       const queryParams = [];
       
-      // 添加子查询和JOIN条件的datasource参数
+      // 添加JOIN条件的datasource参数
       queryParams.push(datasource); // orders.datasource
-      queryParams.push(datasource); // orders subquery.datasource
       queryParams.push(datasource); // loyalty_type_lp_isk.datasource
       
-      // 添加过滤条件参数
-      if (corporationId) queryParams.push(corporationId.toString()); // l.corporation_id = ?
-      if (regionId) queryParams.push(regionId.toString()); // l.region_id = ?
+      // 添加过滤条件参数 - 直接传递数字类型，避免转换
+      if (corporationId) queryParams.push(corporationId); // l.corporation_id = ?
+      if (regionId) queryParams.push(regionId); // l.region_id = ?
       
-      // 添加分页参数
-      queryParams.push(limit.toString()); // LIMIT ?
-      queryParams.push(offset.toString()); // OFFSET ?
+      // 添加分页参数 - 直接传递数字类型，避免转换
+      queryParams.push(limit); // LIMIT ?
+      queryParams.push(offset); // OFFSET ?
       
       // 添加详细调试日志
       const placeholderCount = (query.match(/\?/g) || []).length;
@@ -260,11 +227,15 @@ class LoyaltyTypeLpIsk {
       
       // 执行主查询
       const [rows] = await pool.execute(query, queryParams);
-
+      
+      // 获取总行数
+      const [newCountResult] = await pool.execute('SELECT FOUND_ROWS() as total');
+      const total = newCountResult[0].total;
+  
       console.log('Debug - Main query result length:', rows.length);
-      console.log('Debug - Total from count query:', total);
-
-      // 检查第一个结果的订单数据
+      console.log('Debug - Total from FOUND_ROWS():', total);
+  
+        // 检查第一个结果的订单数据
       if (rows.length > 0) {
         console.log('Debug - First row order data:', {
           type_id: rows[0].type_id,

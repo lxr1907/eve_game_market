@@ -7,6 +7,7 @@ const stargateScheduler = require('./utils/stargateScheduler');
 const systemDistanceScheduler = require('./utils/systemDistanceScheduler');
 const loyaltyProfitScheduler = require('./utils/loyaltyProfitScheduler');
 const lpBlueprintScheduler = require('./utils/lpBlueprintScheduler');
+const loyaltyMultiItemProfitScheduler = require('./utils/loyaltyMultiItemProfitScheduler');
 const Type = require('./models/Type');
 
 
@@ -44,6 +45,9 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
 
   // Start the LP blueprint profit scheduler
   lpBlueprintScheduler.startScheduler();
+
+  // Start the LP multi-item profit scheduler (incremental, every minute)
+  loyaltyMultiItemProfitScheduler.startLoyaltyMultiItemProfitScheduler();
 });
 
 server.on('error', (err) => {

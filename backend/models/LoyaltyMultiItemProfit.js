@@ -129,6 +129,103 @@ class LoyaltyMultiItemProfit {
     const query = `DELETE FROM loyalty_multi_item_profit WHERE datasource = ?`;
     await pool.execute(query, [datasource]);
   }
+
+  /**
+   * 查找最老的记录（按updated_at排序），用于增量更新
+   * @param {string} datasource 数据源
+   * @param {number} limit 限制条数
+   * @returns {Promise<Array>} 最老的记录列表
+   */
+  static async findOldest(datasource = 'serenity', limit = 5) {
+    const query = `
+      SELECT * FROM loyalty_multi_item_profit
+      WHERE datasource = ?
+      ORDER BY updated_at ASC
+      LIMIT ?
+    `;
+    const [rows] = await pool.execute(query, [datasource, limit]);
+    return rows;
+  }
+
+  /**
+   * 获取指定势力的所有offer记录（按updated_at排序，最老的在前）
+   * 用于增量更新：每次只更新最老的N条
+   * @param {number} corporationId 势力公司ID
+   * @param {string} datasource 数据源
+   * @param {number} limit 限制条数
+   * @returns {Promise<Array>} 记录列表
+   */
+  static async findByCorporationIdOldestFirst(corporationId, datasource = 'serenity', limit = 5) {
+    const query = `
+      SELECT * FROM loyalty_multi_item_profit
+      WHERE corporation_id = ? AND datasource = ?
+      ORDER BY updated_at ASC
+      LIMIT ?
+    `;
+    const [rows] = await pool.execute(query, [corporationId, datasource, limit]);
+    return rows;
+  }
+
+  /**
+   * 检查指定势力的offer是否已有记录
+   * @param {number} typeId 物品类型ID
+   * @param {number} corporationId 势力公司ID
+   * @param {string} datasource 数据源
+   * @returns {Promise<boolean>}
+   */
+  static async exists(typeId, corporationId, datasource = 'serenity') {
+    const query = `
+      SELECT COUNT(*) as count FROM loyalty_multi_item_profit
+      WHERE type_id = ? AND corporation_id = ? AND datasource = ?
+    `;
+    const [rows] = await pool.execute(query, [typeId, corporationId, datasource]);
+    return rows[0].count > 0;
+  }
+
+  /**
+   * 插入占位数据（当没有市场订单时使用）
+   * @param {Object} data 占位数据
+   * @param {string} datasource 数据源
+   */
+  static async insertPlaceholder(data, datasource = 'serenity') {
+    const query = `
+      INSERT INTO loyalty_multi_item_profit (
+        type_id, corporation_id, region_id, lp_cost, isk_cost,
+        quantity, required_items_total_sell_price, result_item_sell_price,
+        result_item_buy_price, total_profit, profit_per_lp, required_items_json, datasource
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        required_items_total_sell_price = VALUES(required_items_total_sell_price),
+        result_item_sell_price = VALUES(result_item_sell_price),
+        result_item_buy_price = VALUES(result_item_buy_price),
+        total_profit = VALUES(total_profit),
+        profit_per_lp = VALUES(profit_per_lp),
+        required_items_json = VALUES(required_items_json),
+        updated_at = CURRENT_TIMESTAMP
+    `;
+
+    try {
+      await pool.execute(query, [
+        data.type_id,
+        data.corporation_id,
+        data.region_id,
+        data.lp_cost || 0,
+        data.isk_cost || 0,
+        data.quantity || 1,
+        data.required_items_total_sell_price || 0,
+        data.result_item_sell_price || 0,
+        data.result_item_buy_price || 0,
+        data.total_profit || 0,
+        data.profit_per_lp || 0,
+        data.required_items_json ? JSON.stringify(data.required_items_json) : null,
+        datasource
+      ]);
+      return true;
+    } catch (error) {
+      console.error('Error inserting placeholder:', error);
+      return false;
+    }
+  }
 }
 
 module.exports = LoyaltyMultiItemProfit;

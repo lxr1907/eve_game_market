@@ -1291,19 +1291,45 @@ class LoyaltyController {
   }
 
   // 内部方法：执行LP多物品兑换收益计算
-  static async calculateMultiItemProfitInternal(corporationId, datasource = 'serenity') {
+  // incremental: true-增量模式，每次只更新最老的limit条记录；false-全量模式
+  static async calculateMultiItemProfitInternal(corporationId, datasource = 'serenity', limit = 0, incremental = false) {
     const regionId = datasource === 'infinity' ? 10000016 : 10000002;
 
-    const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId, datasource);
-    const offers = allOffers.offers;
-    const totalOffersCount = offers.length;
+    let offers;
+    let totalOffersCount;
+    let existingRecords = [];
 
-    console.log(`=== Starting multi-item LP profit calculation for ${datasource} ===`);
-    console.log(`Total offers to process: ${totalOffersCount}`);
+    // 增量模式：从数据库获取最老的记录，只更新这些
+    if (incremental) {
+      existingRecords = await LoyaltyMultiItemProfit.findByCorporationIdOldestFirst(corporationId, datasource, limit);
+      if (existingRecords.length === 0) {
+        console.log(`No existing records found for corporation ${corporationId} in ${datasource}, skipping incremental update.`);
+        return;
+      }
+      // 从现有记录中提取type_id，构造offer列表
+      offers = existingRecords.map(r => ({
+        type_id: r.type_id,
+        corporation_id: r.corporation_id,
+        lp_cost: r.lp_cost,
+        isk_cost: Number(r.isk_cost),
+        quantity: r.quantity,
+        required_items: r.required_items_json ? JSON.parse(r.required_items_json) : []
+      }));
+      totalOffersCount = offers.length;
+      console.log(`=== Starting INCREMENTAL multi-item LP profit calculation for ${datasource} ===`);
+      console.log(`Updating ${totalOffersCount} oldest records for corporation ${corporationId}`);
+    } else {
+      const allOffers = await LoyaltyOffer.findAll(1, 10000, '', corporationId, datasource);
+      offers = allOffers.offers;
+      totalOffersCount = offers.length;
+      console.log(`=== Starting FULL multi-item LP profit calculation for ${datasource} ===`);
+      console.log(`Total offers to process: ${totalOffersCount}`);
+    }
 
     let processedOffers = 0;
     let savedOffers = 0;
     let skippedOffers = 0;
+    let placeholderOffers = 0;
 
     for (const offer of offers) {
       processedOffers++;
@@ -1311,7 +1337,7 @@ class LoyaltyController {
 
       try {
         if (processedOffers % 20 === 0 || processedOffers === 1 || processedOffers === totalOffersCount) {
-          process.stdout.write(`\rProgress: [${processedOffers}/${totalOffersCount}] ${progress}% | Saved: ${savedOffers} | Skipped: ${skippedOffers}   `);
+          process.stdout.write(`\rProgress: [${processedOffers}/${totalOffersCount}] ${progress}% | Saved: ${savedOffers} | Placeholder: ${placeholderOffers} | Skipped: ${skippedOffers}   `);
         }
 
         // 只处理有required_items的offer
@@ -1328,7 +1354,7 @@ class LoyaltyController {
         // 检查所有所需物品是否有卖订单，并计算总价
         for (const requiredItem of requiredItems) {
           const sellOrders = await Order.findByRegionAndType(regionId, requiredItem.type_id, 'sell', 1, 1, datasource);
-          
+
           if (sellOrders.length === 0) {
             allRequiredItemsHaveOrders = false;
             break;
@@ -1336,7 +1362,7 @@ class LoyaltyController {
 
           const minSellPrice = sellOrders[0].price;
           const itemTotalPrice = minSellPrice * requiredItem.quantity;
-          
+
           requiredItemsTotalSellPrice += itemTotalPrice;
           requiredItemsWithPrice.push({
             ...requiredItem,
@@ -1345,46 +1371,57 @@ class LoyaltyController {
           });
         }
 
-        if (!allRequiredItemsHaveOrders) {
-          skippedOffers++;
-          continue;
-        }
-
         // 获取兑换结果物品的卖单和买单价格
         const resultSellOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'sell', 1, 1, datasource);
         const resultBuyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1, datasource);
 
-        if (resultSellOrders.length === 0 && resultBuyOrders.length === 0) {
-          skippedOffers++;
-          continue;
-        }
-
         const resultItemSellPrice = resultSellOrders.length > 0 ? resultSellOrders[0].price : 0;
         const resultItemBuyPrice = resultBuyOrders.length > 0 ? resultBuyOrders[0].price : 0;
 
-        // 计算总收益：(结果物品卖单价 * 数量) - 所需物品总价 - ISK成本
-        const totalRevenue = resultItemSellPrice * offer.quantity;
-        const totalCost = requiredItemsTotalSellPrice + offer.isk_cost;
-        const totalProfit = totalRevenue - totalCost;
-        const profitPerLp = offer.lp_cost > 0 ? totalProfit / offer.lp_cost : 0;
+        // 判断是否有市场订单
+        const hasRequiredItemOrders = allRequiredItemsHaveOrders;
+        const hasResultItemOrders = resultSellOrders.length > 0 || resultBuyOrders.length > 0;
 
-        // 存储结果
-        await LoyaltyMultiItemProfit.insertOrUpdate({
-          type_id: offer.type_id,
-          corporation_id: corporationId,
-          region_id: regionId,
-          lp_cost: offer.lp_cost,
-          isk_cost: offer.isk_cost,
-          quantity: offer.quantity,
-          required_items_total_sell_price: requiredItemsTotalSellPrice,
-          result_item_sell_price: resultItemSellPrice,
-          result_item_buy_price: resultItemBuyPrice,
-          total_profit: totalProfit,
-          profit_per_lp: profitPerLp,
-          required_items_json: requiredItemsWithPrice
-        }, datasource);
+        if (!hasRequiredItemOrders || !hasResultItemOrders) {
+          // 没有订单，插入占位数据（收益为0）
+          await LoyaltyMultiItemProfit.insertPlaceholder({
+            type_id: offer.type_id,
+            corporation_id: corporationId,
+            region_id: regionId,
+            lp_cost: offer.lp_cost,
+            isk_cost: offer.isk_cost,
+            quantity: offer.quantity,
+            required_items_total_sell_price: hasRequiredItemOrders ? requiredItemsTotalSellPrice : 0,
+            result_item_sell_price: resultItemSellPrice,
+            result_item_buy_price: resultItemBuyPrice,
+            total_profit: 0,
+            profit_per_lp: 0,
+            required_items_json: requiredItemsWithPrice.length > 0 ? requiredItemsWithPrice : null
+          }, datasource);
+          placeholderOffers++;
+        } else {
+          // 有订单，计算收益并存储（无论收益是否大于0都存储）
+          const totalRevenue = resultItemSellPrice * offer.quantity;
+          const totalCost = requiredItemsTotalSellPrice + offer.isk_cost;
+          const totalProfit = totalRevenue - totalCost;
+          const profitPerLp = offer.lp_cost > 0 ? totalProfit / offer.lp_cost : 0;
 
-        savedOffers++;
+          await LoyaltyMultiItemProfit.insertOrUpdate({
+            type_id: offer.type_id,
+            corporation_id: corporationId,
+            region_id: regionId,
+            lp_cost: offer.lp_cost,
+            isk_cost: offer.isk_cost,
+            quantity: offer.quantity,
+            required_items_total_sell_price: requiredItemsTotalSellPrice,
+            result_item_sell_price: resultItemSellPrice,
+            result_item_buy_price: resultItemBuyPrice,
+            total_profit: totalProfit,
+            profit_per_lp: profitPerLp,
+            required_items_json: requiredItemsWithPrice
+          }, datasource);
+          savedOffers++;
+        }
       } catch (error) {
         console.error(`Error processing offer ${offer.type_id}: ${error.message}`);
         skippedOffers++;
@@ -1392,7 +1429,7 @@ class LoyaltyController {
     }
 
     console.log(`\n=== Multi-item LP profit calculation completed for ${datasource} ===`);
-    console.log(`Processed: ${processedOffers}, Saved: ${savedOffers}, Skipped: ${skippedOffers}`);
+    console.log(`Processed: ${processedOffers}, Saved: ${savedOffers}, Placeholder: ${placeholderOffers}, Skipped: ${skippedOffers}`);
   }
 }
 
