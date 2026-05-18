@@ -1,6 +1,6 @@
 const pool = require('../config/database');
 
-const VALID_CATEGORIES = ['势力战', '深渊', '其他'];
+const VALID_CATEGORIES = ['势力战', '深渊', '扫描', '其他'];
 
 /**
  * 按分类分页获取视频列表
@@ -40,7 +40,7 @@ async function getCategorySummary() {
     `SELECT category, COUNT(*) AS count
      FROM bilibili_videos
      GROUP BY category
-     ORDER BY FIELD(category, '势力战', '深渊', '其他')`
+     ORDER BY FIELD(category, '势力战', '深渊', '扫描', '其他')`
   );
   return rows;
 }
