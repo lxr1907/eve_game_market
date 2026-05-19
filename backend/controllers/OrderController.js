@@ -133,8 +133,11 @@ class OrderController {
       let sellTotal = await Order.countByRegionAndType(regionId, typeId, 'sell', datasource);
 
       // 如果本地没有数据，从官方API同步
-      if (buyTotal === 0 && sellTotal === 0) {
-        console.log(`No orders found in local database for region ${regionId}, type ${typeId}, datasource ${datasource}. Synchronizing from official API...`);
+      const needSyncBuy = buyTotal === 0;
+      const needSyncSell = sellTotal === 0;
+      
+      if (needSyncBuy || needSyncSell) {
+        console.log(`No ${needSyncBuy ? 'buy ' : ''}${needSyncSell ? 'sell ' : ''}orders found in local database for region ${regionId}, type ${typeId}, datasource ${datasource}. Synchronizing from official API...`);
         
         // 只删除该区域和类型的1小时之前的订单数据
         const deletedCount = await Order.deleteOlderThanOneHourByRegionAndType(regionId, typeId, datasource);
@@ -156,26 +159,30 @@ class OrderController {
         };
 
         // 获取买入订单
-        console.log(`Fetching buy orders for region ${regionId}, type ${typeId}, datasource ${datasource}`);
-        await eveApiService.getAllMarketOrdersByRegionAndType(
-          regionId, 
-          typeId, 
-          'buy', 
-          1, // startPage
-          processOrders,
-          datasource
-        );
+        if (needSyncBuy) {
+          console.log(`Fetching buy orders for region ${regionId}, type ${typeId}, datasource ${datasource}`);
+          await eveApiService.getAllMarketOrdersByRegionAndType(
+            regionId, 
+            typeId, 
+            'buy', 
+            1, // startPage
+            processOrders,
+            datasource
+          );
+        }
 
         // 获取卖出订单
-        console.log(`Fetching sell orders for region ${regionId}, type ${typeId}, datasource ${datasource}`);
-        await eveApiService.getAllMarketOrdersByRegionAndType(
-          regionId, 
-          typeId, 
-          'sell', 
-          1, // startPage
-          processOrders,
-          datasource
-        );
+        if (needSyncSell) {
+          console.log(`Fetching sell orders for region ${regionId}, type ${typeId}, datasource ${datasource}`);
+          await eveApiService.getAllMarketOrdersByRegionAndType(
+            regionId, 
+            typeId, 
+            'sell', 
+            1, // startPage
+            processOrders,
+            datasource
+          );
+        }
 
         console.log(`Order synchronization completed for region ${regionId}, type ${typeId}, datasource ${datasource}`);
         
