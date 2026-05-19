@@ -367,7 +367,7 @@ const formatISKShort = (value) => {
   } else if (num >= 10000) {
     return (num / 10000).toFixed(2) + '万'
   }
-  return num.toFixed(2)
+  return Math.floor(num).toLocaleString()
 }
 
 // 兑换数量格式化
@@ -389,7 +389,7 @@ const formatISK = (value) => {
   } else if (num >= 10000) {
     return (num / 10000).toFixed(2) + '万 ISK'
   }
-  return num.toFixed(2) + ' ISK'
+  return Math.floor(num).toLocaleString() + ' ISK'
 }
 
 const formatUpdatedAt = (dateStr) => {
