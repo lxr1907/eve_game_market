@@ -67,6 +67,20 @@ class LoyaltySkipItem {
       return false;
     }
   }
+
+  static async deleteAllByDatasource(datasource = 'serenity') {
+    const query = `DELETE FROM loyalty_skip_items WHERE datasource = ?`;
+    try {
+      const [result] = await pool.execute(query, [datasource]);
+      if (result.affectedRows > 0) {
+        console.log(`Cleared ${result.affectedRows} skip items for ${datasource}`);
+      }
+      return result.affectedRows;
+    } catch (error) {
+      console.error('Error clearing skip items:', error);
+      return 0;
+    }
+  }
 }
 
 module.exports = LoyaltySkipItem;

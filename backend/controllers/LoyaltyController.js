@@ -350,6 +350,9 @@ class LoyaltyController {
             await LoyaltyTypeLpIsk.deleteByCorporationId(corporationId, ds);
             console.log(`Successfully deleted loyalty_type_lp_isk data for corporation ${corporationId} and datasource ${ds}`);
             
+            // 清除该数据源的skip记录，避免旧跳过数据影响重新计算
+            await LoyaltySkipItem.deleteAllByDatasource(ds);
+            
             // 重新计算利润 - 直接调用静态方法
             await LoyaltyController.calculateProfitInternal(corporationId, ds);
             console.log(`Profit recalculation completed for datasource ${ds}`);
