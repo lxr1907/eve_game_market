@@ -1297,7 +1297,8 @@ class LoyaltyController {
 
           await Promise.all(datasources.map(async (ds) => {
             console.log(`Processing datasource: ${ds}`);
-            await LoyaltyMultiItemProfit.deleteByCorporationId(corporationId, ds);
+            // 只清理更新时间超过1天的旧数据，保留新数据
+            await LoyaltyMultiItemProfit.deleteOldDataByCorporationId(corporationId, 1, ds);
             await LoyaltyController.calculateMultiItemProfitInternal(corporationId, ds);
             console.log(`Multi-item profit calculation completed for datasource ${ds}`);
           }));
@@ -1376,7 +1377,25 @@ class LoyaltyController {
 
         // 检查所有所需物品是否有卖订单，并计算总价
         for (const requiredItem of requiredItems) {
-          const sellOrders = await Order.findByRegionAndType(regionId, requiredItem.type_id, 'sell', 1, 1, datasource);
+          let sellOrders = await Order.findByRegionAndType(regionId, requiredItem.type_id, 'sell', 1, 1, datasource);
+
+          // 如果本地没有订单数据，尝试从ESI同步
+          if (sellOrders.length === 0) {
+            const fetchedOrders = await eveApiService.getMarketOrdersByRegionAndType(
+              regionId, requiredItem.type_id, 'sell', 1, datasource
+            );
+            if (fetchedOrders && fetchedOrders.length > 0) {
+              // 同步到本地数据库
+              const ordersWithRegionAndType = fetchedOrders.map(order => ({
+                ...order,
+                region_id: regionId,
+                type_id: requiredItem.type_id
+              }));
+              await Order.insertOrUpdate(ordersWithRegionAndType, datasource);
+              // 重新查询
+              sellOrders = await Order.findByRegionAndType(regionId, requiredItem.type_id, 'sell', 1, 1, datasource);
+            }
+          }
 
           if (sellOrders.length === 0) {
             allRequiredItemsHaveOrders = false;
@@ -1395,8 +1414,33 @@ class LoyaltyController {
         }
 
         // 获取兑换结果物品的卖单和买单价格
-        const resultSellOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'sell', 1, 1, datasource);
-        const resultBuyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1, datasource);
+        let resultSellOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'sell', 1, 1, datasource);
+        let resultBuyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1, datasource);
+
+        // 如果本地没有结果物品的订单数据，尝试从ESI同步
+        if (resultSellOrders.length === 0 && resultBuyOrders.length === 0) {
+          const fetchedSellOrders = await eveApiService.getMarketOrdersByRegionAndType(
+            regionId, offer.type_id, 'sell', 1, datasource
+          );
+          const fetchedBuyOrders = await eveApiService.getMarketOrdersByRegionAndType(
+            regionId, offer.type_id, 'buy', 1, datasource
+          );
+          if (fetchedSellOrders && fetchedSellOrders.length > 0) {
+            const ordersWithRegionAndType = fetchedSellOrders.map(order => ({
+              ...order, region_id: regionId, type_id: offer.type_id
+            }));
+            await Order.insertOrUpdate(ordersWithRegionAndType, datasource);
+          }
+          if (fetchedBuyOrders && fetchedBuyOrders.length > 0) {
+            const ordersWithRegionAndType = fetchedBuyOrders.map(order => ({
+              ...order, region_id: regionId, type_id: offer.type_id
+            }));
+            await Order.insertOrUpdate(ordersWithRegionAndType, datasource);
+          }
+          // 重新查询
+          resultSellOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'sell', 1, 1, datasource);
+          resultBuyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1, datasource);
+        }
 
         const resultItemSellPrice = resultSellOrders.length > 0 ? resultSellOrders[0].price : 0;
         const resultItemBuyPrice = resultBuyOrders.length > 0 ? resultBuyOrders[0].price : 0;
@@ -1423,8 +1467,8 @@ class LoyaltyController {
           }, datasource);
           placeholderOffers++;
         } else {
-          // 有订单，计算收益并存储（无论收益是否大于0都存储）
-          const totalRevenue = resultItemSellPrice * offer.quantity;
+          // 有订单，计算收益并存储（结果物品按最高买单计算收益）
+          const totalRevenue = resultItemBuyPrice * offer.quantity;
           const totalCost = requiredItemsTotalSellPrice + offer.isk_cost;
           const totalProfit = totalRevenue - totalCost;
           const profitPerLp = offer.lp_cost > 0 ? totalProfit / offer.lp_cost : 0;

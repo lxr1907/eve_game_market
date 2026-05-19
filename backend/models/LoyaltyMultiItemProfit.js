@@ -103,9 +103,17 @@ class LoyaltyMultiItemProfit {
     return rows;
   }
 
-  static async count(datasource = 'serenity') {
-    const query = `SELECT COUNT(*) as count FROM loyalty_multi_item_profit WHERE datasource = '${datasource}'`;
-    const [rows] = await pool.execute(query);
+  static async count(datasource = 'serenity', corporationId = null) {
+    let query;
+    const params = [];
+    if (corporationId) {
+      query = `SELECT COUNT(*) as count FROM loyalty_multi_item_profit WHERE datasource = ? AND corporation_id = ?`;
+      params.push(datasource, corporationId);
+    } else {
+      query = `SELECT COUNT(*) as count FROM loyalty_multi_item_profit WHERE datasource = ?`;
+      params.push(datasource);
+    }
+    const [rows] = await pool.execute(query, params);
     return rows[0].count;
   }
 
@@ -123,6 +131,14 @@ class LoyaltyMultiItemProfit {
       WHERE corporation_id = ? AND datasource = ?
     `;
     await pool.execute(query, [corporationId, datasource]);
+  }
+
+  static async deleteOldDataByCorporationId(corporationId, days = 1, datasource = 'serenity') {
+    const query = `
+      DELETE FROM loyalty_multi_item_profit 
+      WHERE corporation_id = ? AND datasource = ? AND updated_at < NOW() - INTERVAL ? DAY
+    `;
+    await pool.execute(query, [corporationId, datasource, days]);
   }
 
   static async deleteAll(datasource = 'serenity') {

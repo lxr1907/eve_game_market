@@ -1,4 +1,5 @@
 const LoyaltyController = require('../controllers/LoyaltyController');
+const LoyaltyMultiItemProfit = require('../models/LoyaltyMultiItemProfit');
 
 // 势力公司ID列表
 const factionCorporations = [
@@ -51,14 +52,29 @@ async function syncAllFactionMultiItemProfits() {
       for (const corporationId of factionCorporations) {
         console.log(`\nSyncing LP multi-item profit for corporation ${corporationId} (${datasource})...`);
         try {
-          // 增量更新：每次只更新最老的5条记录
-          await LoyaltyController.calculateMultiItemProfitInternal(
-            corporationId,
-            datasource,
-            BATCH_SIZE,
-            true // incremental mode
-          );
-          console.log(`✅ LP multi-item profit sync completed for corporation ${corporationId} (${datasource})`);
+          // 检查该势力+数据源是否有已存在的记录
+          const existingCount = await LoyaltyMultiItemProfit.count(datasource, corporationId);
+
+          if (existingCount === 0) {
+            // 初次运行：全量计算
+            console.log(`[${datasource}] No existing records for corporation ${corporationId}, running full calculation...`);
+            await LoyaltyController.calculateMultiItemProfitInternal(
+              corporationId,
+              datasource
+              // incremental=false, limit=0 → 全量模式
+            );
+            console.log(`✅ LP multi-item profit full sync completed for corporation ${corporationId} (${datasource})`);
+          } else {
+            // 已有记录：增量更新，每次只更新最老的5条
+            console.log(`[${datasource}] Corporation ${corporationId} has ${existingCount} existing records, updating oldest ${BATCH_SIZE}...`);
+            await LoyaltyController.calculateMultiItemProfitInternal(
+              corporationId,
+              datasource,
+              BATCH_SIZE,
+              true // incremental mode
+            );
+            console.log(`✅ LP multi-item profit incremental sync completed for corporation ${corporationId} (${datasource})`);
+          }
         } catch (error) {
           console.error(`❌ Error syncing LP multi-item profit for corporation ${corporationId} (${datasource}):`, error.message);
         }
