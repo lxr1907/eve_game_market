@@ -22,6 +22,39 @@ class Order {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     await pool.execute(query);
+    
+    // 添加查询性能索引（如果不存在）
+    await Order.addIndexes();
+  }
+
+  static async addIndexes() {
+    const indexes = [
+      'idx_orders_lookup',
+      'idx_orders_type_region_buy',
+      'idx_orders_region_datasource'
+    ];
+    
+    for (const indexName of indexes) {
+      try {
+        const [existing] = await pool.execute(
+          `SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND INDEX_NAME = ?`,
+          [indexName]
+        );
+        if (existing.length === 0) {
+          console.log(`Creating index ${indexName} on orders table...`);
+          if (indexName === 'idx_orders_lookup') {
+            await pool.execute(`ALTER TABLE orders ADD INDEX idx_orders_lookup (type_id, region_id, datasource, is_buy_order, price)`);
+          } else if (indexName === 'idx_orders_type_region_buy') {
+            await pool.execute(`ALTER TABLE orders ADD INDEX idx_orders_type_region_buy (type_id, region_id, is_buy_order)`);
+          } else if (indexName === 'idx_orders_region_datasource') {
+            await pool.execute(`ALTER TABLE orders ADD INDEX idx_orders_region_datasource (region_id, datasource)`);
+          }
+          console.log(`Index ${indexName} created successfully.`);
+        }
+      } catch (err) {
+        console.error(`Error adding index ${indexName}:`, err.message);
+      }
+    }
   }
 
   static async insertOrUpdate(orders, datasource = 'serenity') {
