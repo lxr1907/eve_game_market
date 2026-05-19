@@ -83,11 +83,13 @@ class LoyaltyMultiItemProfit {
     return rows;
   }
 
-  static async findByCorporationId(corporationId, datasource = 'serenity') {
+  static async findByCorporationId(corporationId, datasource = 'serenity', page = 1, limit = 50) {
+    const offset = (page - 1) * limit;
     const query = `
       SELECT * FROM loyalty_multi_item_profit 
       WHERE corporation_id = ? AND datasource = ? 
       ORDER BY profit_per_lp DESC
+      LIMIT ${limit} OFFSET ${offset}
     `;
     const [rows] = await pool.execute(query, [corporationId, datasource]);
     return rows;

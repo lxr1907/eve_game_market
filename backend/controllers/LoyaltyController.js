@@ -323,7 +323,7 @@ class LoyaltyController {
     }
   }
 
-  // 清理并重新计算LP收益
+  // 清理并重新计算LP收益（带15分钟冷却锁）
   static async cleanAndRecalculateProfit(req, res) {
     try {
       // 添加更健壮的错误处理，确保即使req.body是undefined也不会抛出错误
@@ -332,6 +332,26 @@ class LoyaltyController {
       if (!corporationId) {
         return res.status(400).json({ message: 'corporationId is required' });
       }
+
+      // 检查冷却锁
+      const now = Date.now();
+      const lastRun = profitCalculationLocks.get(corporationId);
+      if (lastRun) {
+        const elapsed = now - lastRun;
+        if (elapsed < PROFIT_COOLDOWN_MS) {
+          const remainingMin = Math.ceil((PROFIT_COOLDOWN_MS - elapsed) / 60000);
+          const remainingSec = Math.ceil(((PROFIT_COOLDOWN_MS - elapsed) % 60000) / 1000);
+          const timeStr = remainingMin > 0 ? `${remainingMin}分${remainingSec}秒` : `${remainingSec}秒`;
+          return res.status(429).json({
+            message: `收益计算冷却中，请 ${timeStr} 后再试`,
+            status: 'cooldown',
+            remainingSeconds: Math.ceil((PROFIT_COOLDOWN_MS - elapsed) / 1000)
+          });
+        }
+      }
+
+      // 设置冷却锁
+      profitCalculationLocks.set(corporationId, now);
 
       // 直接返回成功给前端，任务在后台执行
       res.status(202).json({
@@ -1206,8 +1226,8 @@ class LoyaltyController {
       let totalCount = 0;
 
       if (corporationId) {
-        result = await LoyaltyMultiItemProfit.findByCorporationId(parseInt(corporationId), datasource);
-        totalCount = result.length;
+        result = await LoyaltyMultiItemProfit.findByCorporationId(parseInt(corporationId), datasource, parseInt(page), parseInt(limit));
+        totalCount = await LoyaltyMultiItemProfit.count(datasource, parseInt(corporationId));
       } else if (typeId) {
         result = await LoyaltyMultiItemProfit.findByTypeId(parseInt(typeId), datasource);
         totalCount = result.length;

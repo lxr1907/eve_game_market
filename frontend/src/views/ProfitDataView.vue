@@ -415,7 +415,7 @@ async function calculateProfit() {
 
     loading.value = true
     // 只调用一次API，后端会自动处理所有数据源
-    await loyaltyApi.cleanAndRecalculateProfit(filters.value.corporationId)
+    const res = await loyaltyApi.cleanAndRecalculateProfit(filters.value.corporationId)
     
     // 显示成功消息
     ElMessage.success('收益计算任务已启动，将同时处理所有数据源')
@@ -425,7 +425,11 @@ async function calculateProfit() {
       fetchProfitData()
     }, 2000) // 延迟2秒，给后台一些处理时间
   } catch (error) {
-    if (error !== 'cancel') {
+    if (error?.response?.status === 429) {
+      // 冷却中提示
+      const msg = error.response.data?.message || '收益计算冷却中，请稍后再试'
+      ElMessage.warning(msg)
+    } else if (error !== 'cancel') {
       console.error('清理并计算LP收益失败:', error)
       ElMessage.error('清理并计算LP收益失败')
     }
