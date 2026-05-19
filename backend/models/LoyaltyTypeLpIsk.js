@@ -170,9 +170,19 @@ class LoyaltyTypeLpIsk {
   static async getProfitDataWithTypeNames(page = 1, limit = 10, filters = {}) {
     try {
       const offset = (page - 1) * limit;
-      const { corporationId, regionId, datasource = 'serenity' } = filters;
+      const { corporationId, regionId, datasource = 'serenity', search = '', profitFilter = '' } = filters;
       
-      // 先执行主查询，使用SQL_CALC_FOUND_ROWS获取总行数
+      // 构建利润筛选条件
+      let profitCondition = '';
+      if (profitFilter === 'gt0') {
+        profitCondition = ' AND l.profit_per_lp > 0';
+      } else if (profitFilter === 'gt500') {
+        profitCondition = ' AND l.profit_per_lp > 500';
+      } else if (profitFilter === 'gt1000') {
+        profitCondition = ' AND l.profit_per_lp > 1000';
+      } else if (profitFilter === 'gt1500') {
+        profitCondition = ' AND l.profit_per_lp > 1500';
+      }
       
       // 构建主查询 - 使用相关子查询兼容MySQL 5.x（不支持窗口函数）
       const query = `
@@ -197,6 +207,8 @@ class LoyaltyTypeLpIsk {
         WHERE l.datasource = ?
         ${corporationId ? ' AND l.corporation_id = ?' : ''}
         ${regionId ? ' AND l.region_id = ?' : ''}
+        ${search ? ' AND t.name LIKE ?' : ''}
+        ${profitCondition}
         ORDER BY l.profit_per_lp DESC
         LIMIT ? OFFSET ?
       `;
@@ -211,6 +223,7 @@ class LoyaltyTypeLpIsk {
       // 添加过滤条件参数 - 直接传递数字类型，避免转换
       if (corporationId) queryParams.push(corporationId); // l.corporation_id = ?
       if (regionId) queryParams.push(regionId); // l.region_id = ?
+      if (search) queryParams.push(`%${search}%`); // t.name LIKE ?
       
       // 添加分页参数 - MySQL 8 需要确保是原生数字类型
       queryParams.push(Number(limit)); // LIMIT ?

@@ -7,6 +7,10 @@ const Corporation = require('../models/Corporation');
 const Type = require('../models/Type');
 const eveApiService = require('../services/eveApiService');
 
+// LP收益计算冷却锁：15分钟内同一公司只能计算一次
+const profitCalculationLocks = new Map();
+const PROFIT_COOLDOWN_MS = 15 * 60 * 1000; // 15分钟
+
 class LoyaltyController {
   // 同步特定公司的忠诚度商店商品
   static async syncLoyaltyOffers(req, res) {
@@ -294,11 +298,13 @@ class LoyaltyController {
       const corporationId = req.query.corporationId ? parseInt(req.query.corporationId) : null;
       const regionId = req.query.regionId ? parseInt(req.query.regionId) : null;
       const datasource = req.query.datasource || 'serenity';
+      const search = req.query.search || '';
+      const profitFilter = req.query.profitFilter || '';
       
-      console.log('getProfitData params:', { page, limit, corporationId, regionId, datasource });
+      console.log('getProfitData params:', { page, limit, corporationId, regionId, datasource, search, profitFilter });
       
       // 调用模型方法获取分页数据
-      const result = await LoyaltyTypeLpIsk.getProfitDataWithTypeNames(page, limit, { corporationId, regionId, datasource });
+      const result = await LoyaltyTypeLpIsk.getProfitDataWithTypeNames(page, limit, { corporationId, regionId, datasource, search, profitFilter });
       
       console.log('getProfitData result:', { total: result.total, dataLength: result.data.length });
       
@@ -506,32 +512,22 @@ class LoyaltyController {
         // 查询该type_id在特定区域的最高价买单
         const buyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1, datasource);
 
-        // 判断是否为非晨曦服务器（曙光/欧服不限制买单和利润门槛）
-        const isNonSerenity = datasource.toLowerCase() !== 'serenity';
-
         if (buyOrders.length === 0) {
-          if (isNonSerenity) {
-            // 曙光/欧服：无买单也写入，使用默认值
-            const lpIskData = {
-              type_id: offer.type_id,
-              corporation_id: corporationId,
-              region_id: regionId,
-              lp_cost: offer.lp_cost,
-              isk_cost: offer.isk_cost,
-              sell_price: 0,
-              quantity: offer.quantity,
-              total_profit: 0,
-              profit_per_lp: 0
-            };
-            const saved = await LoyaltyTypeLpIsk.insertOrUpdate(lpIskData, datasource);
-            if (saved) {
-              savedOffers++;
-            }
-          } else {
-            skippedOffers++;
-            skipReasons.noBuyOrders++;
-            // 记录到跳过表
-            await LoyaltySkipItem.addSkipItem(offer.type_id, datasource, 'no_buy_orders');
+          // 无买单也写入，使用默认值
+          const lpIskData = {
+            type_id: offer.type_id,
+            corporation_id: corporationId,
+            region_id: regionId,
+            lp_cost: offer.lp_cost,
+            isk_cost: offer.isk_cost,
+            sell_price: 0,
+            quantity: offer.quantity,
+            total_profit: 0,
+            profit_per_lp: 0
+          };
+          const saved = await LoyaltyTypeLpIsk.insertOrUpdate(lpIskData, datasource);
+          if (saved) {
+            savedOffers++;
           }
           continue;
         }
@@ -543,23 +539,6 @@ class LoyaltyController {
           const totalRevenue = highestBuyPrice * offer.quantity;
           const totalProfit = totalRevenue - offer.isk_cost;
           const profitPerLp = offer.lp_cost > 0 ? totalProfit / offer.lp_cost : 0;
-
-          // 根据不同服务器设置不同的存储门槛
-          // 晨曦/无限服务器每LP收益1300以上，欧服(tranquility)560以上
-          const profitThreshold = datasource.toLowerCase() === 'tranquility' ? 560 : 1300;
-          // 总利润门槛：1000W
-          const minTotalProfit = 10000000;
-
-          // 只有晨曦服务器才过滤利润不足的offer
-          if (!isNonSerenity && (profitPerLp <= profitThreshold || totalProfit < minTotalProfit)) {
-            skippedOffers++;
-            skipReasons.profitBelowThreshold++;
-            // 前5个打印详情
-            if (skipReasons.profitBelowThreshold <= 5) {
-              console.log(`[${datasource}] Skip reason: profitBelowThreshold | type_id=${offer.type_id} | profitPerLp=${profitPerLp.toFixed(2)} (threshold=${profitThreshold}) | totalProfit=${totalProfit.toFixed(0)} (min=${minTotalProfit})`);
-            }
-            continue;
-          }
 
           // 准备数据
           const lpIskData = {

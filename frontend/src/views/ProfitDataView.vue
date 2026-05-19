@@ -40,6 +40,26 @@
                   <el-option label="曙光(infinity)" value="infinity" />
                   <el-option label="欧服(tranquility)" value="tranquility" />
                 </el-select>
+                <el-input
+                  v-model="filters.search"
+                  placeholder="搜索物品名称"
+                  clearable
+                  style="width: 180px; margin-right: 10px"
+                  @keyup.enter="fetchProfitData"
+                  @clear="fetchProfitData"
+                />
+                <el-select
+                  v-model="filters.profitFilter"
+                  placeholder="利润筛选"
+                  style="width: 140px; margin-right: 10px"
+                  @change="fetchProfitData"
+                >
+                  <el-option label="全部" value="" />
+                  <el-option label="> 0" value="gt0" />
+                  <el-option label="> 500" value="gt500" />
+                  <el-option label="> 1000" value="gt1000" />
+                  <el-option label="> 1500" value="gt1500" />
+                </el-select>
                 <el-button type="primary" @click="fetchProfitData">
                   <el-icon><Search /></el-icon>
                   查询
@@ -262,7 +282,9 @@ const loadingType = ref(false)
 const filters = ref({
   corporationId: 1000180, // 默认公司ID
   regionId: 10000002,     // 默认区域ID
-  datasource: 'serenity'  // 默认数据源
+  datasource: 'serenity',  // 默认数据源
+  search: '',              // 搜索关键词
+  profitFilter: ''         // 利润筛选
 })
 
 // 监听数据源变化，自动更新区域ID并查询数据
@@ -651,5 +673,172 @@ onMounted(() => {
 
 :deep(.dark-descriptions) .el-descriptions__content {
   color: #e5eaf3;
+}
+
+/* 深色主题 filter 区域样式 — 通过 CSS 变量全局覆盖 */
+:deep(.el-card) {
+  background-color: #1a1a2e;
+  border-color: #36364a;
+}
+
+:deep(.el-card__header) {
+  background-color: #1a1a2e;
+  border-bottom: 1px solid #36364a;
+  color: #e5eaf3;
+}
+
+:deep(.el-card__body) {
+  background-color: #1a1a2e;
+  color: #e5eaf3;
+}
+
+/* 通过 CSS 变量覆盖 Element Plus 主题色 */
+.filters {
+  display: flex;
+  align-items: center;
+  --el-fill-color: #242736;
+  --el-fill-color-light: #242736;
+  --el-fill-color-lighter: #242736;
+  --el-fill-color-blank: #242736;
+  --el-input-bg-color: #242736;
+  --el-input-hover-border-color: #409eff;
+  --el-input-border-color: #36364a;
+  --el-input-focus-border-color: #409eff;
+  --el-select-input-focus-bg-color: #242736;
+  --el-text-color-placeholder: #6b7280;
+  --el-border-color: #36364a;
+  --el-border-color-hover: #409eff;
+}
+
+/* 选择器/输入框深色样式 */
+:deep(.el-select) {
+  --el-select-input-focus-bg-color: #242736;
+}
+:deep(.el-select .el-input__wrapper) {
+  background-color: #242736 !important;
+  box-shadow: 0 0 0 1px #36364a inset !important;
+}
+:deep(.el-select .el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #409eff inset !important;
+}
+:deep(.el-select .el-input__inner) {
+  color: #e5eaf3 !important;
+}
+:deep(.el-select .el-select__caret) {
+  color: #94a3b8 !important;
+}
+:deep(.el-select .el-select__placeholder) {
+  color: #e5eaf3 !important;
+}
+:deep(.el-select-dropdown) {
+  background-color: #1d1e1f !important;
+  border: 1px solid #36364a !important;
+  --el-fill-color: transparent;
+}
+:deep(.el-select-dropdown__item) {
+  color: #e5eaf3 !important;
+}
+:deep(.el-select-dropdown__item.hover) {
+  background-color: #2a2d3d !important;
+}
+:deep(.el-select-dropdown__item.selected) {
+  color: #409eff !important;
+  background-color: #2a2d3d !important;
+}
+
+/* 输入框深色样式 */
+:deep(.el-input__wrapper) {
+  background-color: #242736 !important;
+  box-shadow: 0 0 0 1px #36364a inset !important;
+}
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #409eff inset !important;
+}
+:deep(.el-input__inner) {
+  color: #e5eaf3 !important;
+}
+:deep(.el-input__inner::placeholder) {
+  color: #6b7280 !important;
+}
+:deep(.el-input__clear) {
+  color: #94a3b8 !important;
+}
+:deep(.el-input-group__append) {
+  background-color: #242736 !important;
+  border-color: #36364a !important;
+  color: #cbd5e1 !important;
+}
+
+/* 分页深色样式 */
+:deep(.el-pagination) {
+  color: #cbd5e1 !important;
+}
+
+:deep(.el-pagination button) {
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
+}
+
+:deep(.el-pagination button:disabled) {
+  color: #6b7280 !important;
+}
+
+:deep(.el-pager li) {
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
+}
+
+:deep(.el-pager li.active) {
+  color: #409eff !important;
+}
+
+:deep(.el-pagination .el-select .el-input__wrapper) {
+  background-color: #242736 !important;
+}
+
+:deep(.el-pagination .el-select .el-input__inner) {
+  color: #e5eaf3 !important;
+}
+
+/* 按钮样式优化 */
+:deep(.el-button--primary) {
+  background-color: #409eff;
+  border-color: #409eff;
+}
+
+:deep(.el-button--success) {
+  background-color: #67c23a;
+  border-color: #67c23a;
+}
+
+/* 表格深色样式 */
+:deep(.el-table) {
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
+}
+
+:deep(.el-table__header th) {
+  background-color: #242736 !important;
+  color: #94a3b8 !important;
+}
+
+:deep(.el-table__row) {
+  background-color: transparent !important;
+}
+
+:deep(.el-table__row:hover > td) {
+  background-color: #2a2d3d !important;
+}
+
+:deep(.el-table td) {
+  border-bottom: 1px solid #36364a !important;
+}
+
+:deep(.el-table__body tr:hover > td) {
+  background-color: #2a2d3d !important;
+}
+
+:deep(.el-table th.el-table__cell) {
+  background-color: #242736 !important;
 }
 </style>

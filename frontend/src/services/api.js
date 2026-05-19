@@ -310,7 +310,9 @@ export const loyaltyApi = {
         limit, 
         corporationId: filters.corporationId, 
         regionId: filters.regionId,
-        datasource: filters.datasource || 'serenity'
+        datasource: filters.datasource || 'serenity',
+        search: filters.search || '',
+        profitFilter: filters.profitFilter || ''
       } 
     });
     return response;
