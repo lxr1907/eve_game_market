@@ -371,8 +371,8 @@ const formatNumber = (row, column, cellValue) => {
     // 大于等于1万
     return (value / 10000).toFixed(2) + '万';
   } else {
-    // 小于1万，保留2位小数
-    return value.toFixed(2);
+    // 小于1万，只保留整数
+    return Math.floor(value).toLocaleString();
   }
 }
 
