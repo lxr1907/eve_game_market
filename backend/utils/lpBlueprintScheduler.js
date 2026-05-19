@@ -349,84 +349,92 @@ async function runCalculation() {
   try {
     console.log(`[LP Blueprint Scheduler] Starting calculation...`);
 
-    // 删除超过1天的跳过记录
-    await LoyaltySkipItem.deleteOldSkipItems('serenity');
-    await LoyaltySkipItem.deleteOldSkipItems('tranquility');
-    await LoyaltySkipItem.deleteOldSkipItems('infinity');
-
     const regionId = DEFAULT_REGION_ID;
-    const datasource = DEFAULT_DATASOURCE;
+    const datasources = ['serenity', 'infinity', 'tranquility'];
 
-    // 获取有收购订单的蓝图列表
-    const blueprints = await getBlueprintsWithBuyOrders(regionId, datasource);
-    if (blueprints.length === 0) {
-      console.log('[LP Blueprint Scheduler] No blueprints with buy orders found');
-      return;
-    }
+    for (const datasource of datasources) {
+      try {
+        console.log(`\n[LP Blueprint Scheduler] Processing datasource: ${datasource} >>>`);
 
-    // 获取已计算的蓝图（包含收益信息）
-    const calculatedList = await LpBlueprintProfit.getAllCalculated(regionId, datasource);
-    const calculatedMap = new Map(calculatedList.map(r => [r.type_id, r]));
+        // 删除超过1天的跳过记录
+        await LoyaltySkipItem.deleteOldSkipItems(datasource);
 
-    // 找出未计算的蓝图
-    const uncalculated = blueprints.filter(bp => !calculatedMap.has(bp.type_id));
-
-    let targetBlueprint = null;
-
-    if (uncalculated.length > 0) {
-      // 优先计算未计算的蓝图
-      targetBlueprint = uncalculated[0];
-      console.log(`[LP Blueprint Scheduler] Calculating new blueprint: ${targetBlueprint.type_name || targetBlueprint.type_id}`);
-    } else {
-      // 所有蓝图都已计算，更新最老的记录（排除负收益且未过期7天的）
-      const oldest = await LpBlueprintProfit.getOldestRecord(regionId, datasource);
-      if (oldest) {
-        targetBlueprint = blueprints.find(bp => bp.type_id === oldest.type_id);
-        if (targetBlueprint) {
-          console.log(`[LP Blueprint Scheduler] Updating oldest record: ${targetBlueprint.type_name || targetBlueprint.type_id}`);
-        } else {
-          console.log(`[LP Blueprint Scheduler] Blueprint with type_id ${oldest.type_id} not found in blueprints list, skipping...`);
+        // 获取有收购订单的蓝图列表
+        const blueprints = await getBlueprintsWithBuyOrders(regionId, datasource);
+        if (blueprints.length === 0) {
+          console.log(`[LP Blueprint Scheduler] No blueprints with buy orders found for ${datasource}`);
+          continue;
         }
-      }
-    }
 
-    if (targetBlueprint) {
-      const profitData = await calculateBlueprintProfit(targetBlueprint, regionId, datasource);
-      if (profitData) {
-        await LpBlueprintProfit.upsert(profitData);
-        console.log(`[LP Blueprint Scheduler] Calculated: ${targetBlueprint.type_name || targetBlueprint.type_id}, profit_per_lp: ${profitData.profit_per_lp.toFixed(2)}`);
-      } else {
-        // 如果没有计算出收益数据（可能是因为无订单），插入保底数据
-        console.log(`[LP Blueprint Scheduler] Inserting fallback data for blueprint: ${targetBlueprint.type_name || targetBlueprint.type_id}`);
-        
-        // 插入保底数据（收益为0，status标记为'no_orders'）
-        const fallbackData = {
-          type_id: targetBlueprint.type_id,
-          offer_id: targetBlueprint.offer_id,
-          corporation_id: targetBlueprint.corporation_id,
-          region_id: regionId,
-          lp_cost: targetBlueprint.lp_cost,
-          isk_cost: targetBlueprint.isk_cost,
-          material_cost: 0,
-          total_cost: targetBlueprint.lp_cost * LP_TO_ISK_RATIO + targetBlueprint.isk_cost,
-          product_type_id: null,
-          product_buy_price: 0,
-          product_sell_price: 0,
-          total_profit: 0,
-          profit_per_lp: 0,
-          buy_profit: 0,
-          sell_profit: 0,
-          profit_per_lp_buy: 0,
-          profit_per_lp_sell: 0,
-          status: 'no_orders',
-          datasource: datasource
-        };
-        
-        await LpBlueprintProfit.upsert(fallbackData);
-        console.log(`[LP Blueprint Scheduler] Fallback data inserted for blueprint: ${targetBlueprint.type_name || targetBlueprint.type_id}`);
+        // 获取已计算的蓝图（包含收益信息）
+        const calculatedList = await LpBlueprintProfit.getAllCalculated(regionId, datasource);
+        const calculatedMap = new Map(calculatedList.map(r => [r.type_id, r]));
+
+        // 找出未计算的蓝图
+        const uncalculated = blueprints.filter(bp => !calculatedMap.has(bp.type_id));
+
+        let targetBlueprint = null;
+
+        if (uncalculated.length > 0) {
+          // 优先计算未计算的蓝图
+          targetBlueprint = uncalculated[0];
+          console.log(`[LP Blueprint Scheduler] Calculating new blueprint for ${datasource}: ${targetBlueprint.type_name || targetBlueprint.type_id}`);
+        } else {
+          // 所有蓝图都已计算，更新最老的记录（排除负收益且未过期7天的）
+          const oldest = await LpBlueprintProfit.getOldestRecord(regionId, datasource);
+          if (oldest) {
+            targetBlueprint = blueprints.find(bp => bp.type_id === oldest.type_id);
+            if (targetBlueprint) {
+              console.log(`[LP Blueprint Scheduler] Updating oldest record for ${datasource}: ${targetBlueprint.type_name || targetBlueprint.type_id}`);
+            } else {
+              console.log(`[LP Blueprint Scheduler] Blueprint with type_id ${oldest.type_id} not found in blueprints list for ${datasource}, skipping...`);
+            }
+          }
+        }
+
+        if (targetBlueprint) {
+          const profitData = await calculateBlueprintProfit(targetBlueprint, regionId, datasource);
+          if (profitData) {
+            await LpBlueprintProfit.upsert(profitData);
+            console.log(`[LP Blueprint Scheduler] Calculated for ${datasource}: ${targetBlueprint.type_name || targetBlueprint.type_id}, profit_per_lp: ${profitData.profit_per_lp.toFixed(2)}`);
+          } else {
+            // 如果没有计算出收益数据（可能是因为无订单），插入保底数据
+            console.log(`[LP Blueprint Scheduler] Inserting fallback data for blueprint: ${targetBlueprint.type_name || targetBlueprint.type_id}`);
+            
+            // 插入保底数据（收益为0，status标记为'no_orders'）
+            const fallbackData = {
+              type_id: targetBlueprint.type_id,
+              offer_id: targetBlueprint.offer_id,
+              corporation_id: targetBlueprint.corporation_id,
+              region_id: regionId,
+              lp_cost: targetBlueprint.lp_cost,
+              isk_cost: targetBlueprint.isk_cost,
+              material_cost: 0,
+              total_cost: targetBlueprint.lp_cost * LP_TO_ISK_RATIO + targetBlueprint.isk_cost,
+              product_type_id: null,
+              product_buy_price: 0,
+              product_sell_price: 0,
+              total_profit: 0,
+              profit_per_lp: 0,
+              buy_profit: 0,
+              sell_profit: 0,
+              profit_per_lp_buy: 0,
+              profit_per_lp_sell: 0,
+              status: 'no_orders',
+              datasource: datasource
+            };
+            
+            await LpBlueprintProfit.upsert(fallbackData);
+            console.log(`[LP Blueprint Scheduler] Fallback data inserted for blueprint: ${targetBlueprint.type_name || targetBlueprint.type_id}`);
+          }
+        } else {
+          console.log(`[LP Blueprint Scheduler] No valid blueprint to calculate for ${datasource}`);
+        }
+
+        console.log(`[LP Blueprint Scheduler] Completed datasource: ${datasource} <<<\n`);
+      } catch (error) {
+        console.error(`[LP Blueprint Scheduler] Error processing datasource ${datasource}:`, error.message);
       }
-    } else {
-      console.log(`[LP Blueprint Scheduler] No valid blueprint to calculate`);
     }
 
   } catch (error) {

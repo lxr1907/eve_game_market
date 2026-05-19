@@ -1113,7 +1113,7 @@ class LoyaltyController {
           AND lo.lp_cost > 0
           AND lo.isk_cost > 0
           AND lo.type_id NOT IN (
-            SELECT DISTINCT lor.type_id FROM loyalty_offer_required_items lor
+            SELECT DISTINCT lor.type_id FROM loyalty_offer_required_items lor WHERE lor.datasource = lo.datasource
           )`;
       
       const trimmedSearch = search?.trim();
