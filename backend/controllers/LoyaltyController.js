@@ -503,16 +503,38 @@ class LoyaltyController {
         // 查询该type_id在特定区域的最高价买单
         const buyOrders = await Order.findByRegionAndType(regionId, offer.type_id, 'buy', 1, 1, datasource);
 
+        // 判断是否为非晨曦服务器（曙光/欧服不限制买单和利润门槛）
+        const isNonSerenity = datasource.toLowerCase() !== 'serenity';
+
         if (buyOrders.length === 0) {
-          skippedOffers++;
-          skipReasons.noBuyOrders++;
-          // 记录到跳过表
-          await LoyaltySkipItem.addSkipItem(offer.type_id, datasource, 'no_buy_orders');
+          if (isNonSerenity) {
+            // 曙光/欧服：无买单也写入，使用默认值
+            const lpIskData = {
+              type_id: offer.type_id,
+              corporation_id: corporationId,
+              region_id: regionId,
+              lp_cost: offer.lp_cost,
+              isk_cost: offer.isk_cost,
+              sell_price: 0,
+              quantity: offer.quantity,
+              total_profit: 0,
+              profit_per_lp: 0
+            };
+            const saved = await LoyaltyTypeLpIsk.insertOrUpdate(lpIskData, datasource);
+            if (saved) {
+              savedOffers++;
+            }
+          } else {
+            skippedOffers++;
+            skipReasons.noBuyOrders++;
+            // 记录到跳过表
+            await LoyaltySkipItem.addSkipItem(offer.type_id, datasource, 'no_buy_orders');
+          }
           continue;
         }
 
         if (buyOrders.length > 0) {
-          const highestBuyPrice = buyOrders[0].price;
+          const highestBuyPrice = parseFloat(buyOrders[0].price);
 
           // 计算总收益和每LP收益
           const totalRevenue = highestBuyPrice * offer.quantity;
@@ -525,7 +547,8 @@ class LoyaltyController {
           // 总利润门槛：1000W
           const minTotalProfit = 10000000;
 
-          if (profitPerLp <= profitThreshold || totalProfit < minTotalProfit) {
+          // 只有晨曦服务器才过滤利润不足的offer
+          if (!isNonSerenity && (profitPerLp <= profitThreshold || totalProfit < minTotalProfit)) {
             skippedOffers++;
             skipReasons.profitBelowThreshold++;
             // 前5个打印详情
