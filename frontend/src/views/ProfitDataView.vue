@@ -110,7 +110,7 @@
             <el-table-column prop="lp_cost" label="LP成本" min-width="80" :formatter="formatNumber" />
             <el-table-column prop="isk_cost" label="ISK成本" min-width="100" :formatter="formatNumber" />
             <el-table-column prop="sell_price" label="售价" min-width="100" :formatter="formatNumber" />
-            <el-table-column prop="quantity" label="数量" min-width="80" :formatter="formatNumber" />
+            <el-table-column prop="quantity" label="数量" min-width="80" :formatter="formatQuantity" />
             <el-table-column prop="total_profit" label="总收益" min-width="100" :formatter="formatNumber" />
             <el-table-column prop="updated_at" label="更新时间" min-width="140" sortable>
               <template #default="{ row }">
@@ -366,14 +366,33 @@ const formatNumber = (row, column, cellValue) => {
   // 格式化逻辑：添加单位转换
   if (value >= 100000000) {
     // 大于等于1亿
-    return (value / 100000000).toFixed(1) + '亿';
+    return (value / 100000000).toFixed(2) + '亿';
   } else if (value >= 10000) {
     // 大于等于1万
-    return (value / 10000).toFixed(1) + 'w';
+    return (value / 10000).toFixed(2) + '万';
   } else {
-    // 小于1万，保留整数
-    return Math.floor(value).toString();
+    // 小于1万，保留2位小数
+    return value.toFixed(2);
   }
+}
+
+// 数量格式化（只保留整数）
+const formatQuantity = (row, column, cellValue) => {
+  let value;
+  if (column === undefined && cellValue === undefined) {
+    value = row;
+  } else {
+    value = cellValue;
+  }
+  if (value === null || value === undefined) return '';
+  value = Number(value);
+  if (isNaN(value)) return '';
+  if (value >= 100000000) {
+    return (value / 100000000).toFixed(2) + '亿';
+  } else if (value >= 10000) {
+    return (value / 10000).toFixed(2) + '万';
+  }
+  return Math.floor(value).toLocaleString();
 }
 
 // 获取收益数据
@@ -453,7 +472,13 @@ function handleCurrentChange(page) {
 // 格式化 ISK (用于订单详情)
 const formatISK = (value) => {
   if (value === null || value === undefined) return '0.00'
-  return Number(value).toLocaleString('zh-CN', {
+  const num = Number(value)
+  if (num >= 100000000) {
+    return (num / 100000000).toFixed(2) + '亿'
+  } else if (num >= 10000) {
+    return (num / 10000).toFixed(2) + '万'
+  }
+  return num.toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })

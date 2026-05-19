@@ -349,6 +349,11 @@ const formatNumber = (value) => {
   if (value === null || value === undefined) return '-'
   const num = parseFloat(value)
   if (isNaN(num)) return '-'
+  if (num >= 100000000) {
+    return (num / 100000000).toFixed(2) + '亿'
+  } else if (num >= 10000) {
+    return (num / 10000).toFixed(2) + '万'
+  }
   return num.toLocaleString()
 }
 
@@ -357,10 +362,10 @@ const formatISKShort = (value) => {
   if (value === null || value === undefined || value === '') return '-'
   const num = parseFloat(value)
   if (isNaN(num)) return '-'
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(2) + 'M'
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(2) + 'K'
+  if (num >= 100000000) {
+    return (num / 100000000).toFixed(2) + '亿'
+  } else if (num >= 10000) {
+    return (num / 10000).toFixed(2) + '万'
   }
   return num.toFixed(2)
 }
@@ -379,10 +384,10 @@ const formatISK = (value) => {
   if (value === null || value === undefined || value === '') return '0 ISK'
   const num = parseFloat(value)
   if (isNaN(num)) return '0 ISK'
-  if (num >= 1000000000) {
-    return (num / 1000000000).toFixed(2) + ' 亿 ISK'
+  if (num >= 100000000) {
+    return (num / 100000000).toFixed(2) + '亿 ISK'
   } else if (num >= 10000) {
-    return (num / 10000).toFixed(2) + ' 万 ISK'
+    return (num / 10000).toFixed(2) + '万 ISK'
   }
   return num.toFixed(2) + ' ISK'
 }

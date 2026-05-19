@@ -76,7 +76,7 @@
               <span class="bp-lp">{{ formatNumber(bp.lp_cost) }} LP</span>
               <span class="bp-isk">{{ formatISKShort(bp.isk_cost) }} ISK</span>
               <span v-if="bp.profit_per_lp !== null && bp.profit_per_lp !== undefined" class="bp-profit" :class="{ 'profit-positive': bp.profit_per_lp > 0, 'profit-negative': bp.profit_per_lp <= 0 }">
-                {{ bp.profit_per_lp > 0 ? '+' : '' }}{{ formatISKShort(bp.profit_per_lp) }}/LP
+                {{ bp.profit_per_lp > 0 ? '+' : '' }}{{ parseInt(bp.profit_per_lp) }}/LP
               </span>
             </div>
           </div>
@@ -413,24 +413,26 @@ export default {
     // 格式化工具
     const formatISK = (val) => {
       if (val === undefined || val === null) return '0.00'
-      return parseFloat(val).toLocaleString('zh-CN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })
+      const num = parseFloat(val)
+      if (num >= 100000000) return (num / 100000000).toFixed(2) + '亿'
+      if (num >= 10000) return (num / 10000).toFixed(2) + '万'
+      return Math.floor(num).toLocaleString()
     }
 
     const formatISKShort = (val) => {
       if (val === undefined || val === null) return '0'
       const num = parseFloat(val)
       if (num >= 100000000) return (num / 100000000).toFixed(2) + '亿'
-      if (num >= 10000000) return (num / 10000000).toFixed(2) + 'kw'
-      if (num >= 10000) return (num / 10000).toFixed(1) + 'w'
-      return num.toLocaleString('zh-CN', { maximumFractionDigits: 0 })
+      if (num >= 10000) return (num / 10000).toFixed(2) + '万'
+      return Math.floor(num).toLocaleString()
     }
 
     const formatNumber = (val) => {
       if (val === undefined || val === null) return '0'
-      return Number(val).toLocaleString('zh-CN')
+      const num = Number(val)
+      if (num >= 100000000) return (num / 100000000).toFixed(2) + '亿'
+      if (num >= 10000) return (num / 10000).toFixed(2) + '万'
+      return Math.floor(num).toLocaleString()
     }
 
     // 加载区域列表
@@ -534,8 +536,8 @@ export default {
 
         // 4. 收益概览（分开显示买/卖收益）
         profitDisplay.value = [
-          { label: '每LP收益（按买价）', value: formatISKShort(detailData.profit_per_lp_buy), class: detailData.profit_per_lp_buy > 0 ? 'profit-positive' : 'profit-negative' },
-          { label: '每LP收益（按卖价）', value: formatISKShort(detailData.profit_per_lp_sell), class: detailData.profit_per_lp_sell > 0 ? 'profit-positive' : 'profit-negative' },
+          { label: '每LP收益（按买价）', value: parseInt(detailData.profit_per_lp_buy), class: detailData.profit_per_lp_buy > 0 ? 'profit-positive' : 'profit-negative' },
+          { label: '每LP收益（按卖价）', value: parseInt(detailData.profit_per_lp_sell), class: detailData.profit_per_lp_sell > 0 ? 'profit-positive' : 'profit-negative' },
           { label: '总收益（按买价）', value: formatISKShort(detailData.buy_profit), class: detailData.buy_profit > 0 ? 'profit-positive' : 'profit-negative' },
           { label: '总收益（按卖价）', value: formatISKShort(detailData.sell_profit), class: detailData.sell_profit > 0 ? 'profit-positive' : 'profit-negative' },
           { label: '收益率（按买价）', value: `${detailData.buy_profit_rate.toFixed(2)}%`, class: detailData.buy_profit_rate > 0 ? 'profit-positive' : 'profit-negative' },
