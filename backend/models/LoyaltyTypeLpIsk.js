@@ -185,25 +185,31 @@ class LoyaltyTypeLpIsk {
       }
       
       // 构建主查询 - 使用相关子查询兼容MySQL 5.x（不支持窗口函数）
+      // 使用子查询获取每个物品的最大买单信息，避免JOIN产生重复数据
       const query = `
         SELECT SQL_CALC_FOUND_ROWS l.*, t.name as type_name, 
-               o.volume_remaining as max_buy_order_volume_remaining,
-               ((l.total_profit / l.quantity) * o.volume_remaining) as max_buy_order_total_profit,
+               o.max_volume_remaining as max_buy_order_volume_remaining,
+               ((l.total_profit / l.quantity) * o.max_volume_remaining) as max_buy_order_total_profit,
                NOT EXISTS(
                  SELECT 1 FROM loyalty_offers lo
                  WHERE lo.type_id = l.type_id AND lo.corporation_id != l.corporation_id
                ) as is_unique
         FROM loyalty_type_lp_isk l
         LEFT JOIN types t ON l.type_id = t.id
-        LEFT JOIN orders o ON 
+        LEFT JOIN (
+          SELECT type_id, region_id, datasource, 
+                 SUM(volume_remaining) as max_volume_remaining
+          FROM orders 
+          WHERE is_buy_order = 1 AND datasource = ?
+            AND price = (
+              SELECT MAX(price) FROM orders 
+              WHERE type_id = orders.type_id AND region_id = orders.region_id AND is_buy_order = 1 AND datasource = orders.datasource
+            )
+          GROUP BY type_id, region_id, datasource
+        ) o ON 
           l.type_id = o.type_id AND 
           l.region_id = o.region_id AND 
-          o.is_buy_order = 1 AND 
           o.datasource = ?
-          AND o.price = (
-            SELECT MAX(price) FROM orders 
-            WHERE type_id = o.type_id AND region_id = o.region_id AND is_buy_order = 1 AND datasource = o.datasource
-          )
         WHERE l.datasource = ?
         ${corporationId ? ' AND l.corporation_id = ?' : ''}
         ${regionId ? ' AND l.region_id = ?' : ''}
@@ -216,8 +222,9 @@ class LoyaltyTypeLpIsk {
       // 构建查询参数数组
       const queryParams = [];
       
-      // 添加JOIN条件的datasource参数
-      queryParams.push(datasource); // orders.datasource
+      // 添加子查询条件的datasource参数
+      queryParams.push(datasource); // orders.datasource in subquery
+      queryParams.push(datasource); // o.datasource in JOIN condition
       queryParams.push(datasource); // loyalty_type_lp_isk.datasource
       
       // 添加过滤条件参数 - 直接传递数字类型，避免转换
