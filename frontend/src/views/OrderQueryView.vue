@@ -354,7 +354,8 @@ export default {
         const response = await orderApi.getOrders({
           regionId: selectedRegionId.value,
           typeId: selectedTypeId.value,
-          datasource: datasource.value
+          datasource: datasource.value,
+          locationId: 60003760
         })
         buyOrders.value = response.buyOrders.data
         sellOrders.value = response.sellOrders.data

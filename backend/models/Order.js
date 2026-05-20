@@ -170,7 +170,7 @@ class Order {
     throw new Error('Failed to insert/update orders after multiple retries due to deadlocks');
   }
 
-  static async findByRegionAndType(regionId, typeId, orderType = null, page = 1, limit = 10, datasource = 'serenity') {
+  static async findByRegionAndType(regionId, typeId, orderType = null, page = 1, limit = 10, datasource = 'serenity', locationId = null) {
     // 将page和limit转换为整数
     const pageInt = parseInt(page) || 1;
     const limitInt = parseInt(limit) || 10;
@@ -186,6 +186,11 @@ class Order {
       query += ` AND is_buy_order = 1`;
     } else if (orderType === 'sell') {
       query += ` AND is_buy_order = 0`;
+    }
+
+    if (locationId) {
+      query += ` AND location_id = ?`;
+      params.push(locationId);
     }
 
     query += ` ORDER BY price ${orderType === 'buy' ? 'DESC' : 'ASC'}`;

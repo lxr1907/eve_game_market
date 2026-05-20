@@ -112,6 +112,7 @@ class OrderController {
       const datasource = req.query.datasource || req.query.datasource || 'serenity';
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
+      const locationId = req.query.locationId ? parseInt(req.query.locationId) : null;
       
       // 验证参数
       if (!regionId || !typeId) {
@@ -131,11 +132,11 @@ class OrderController {
       }
 
       // 获取买入订单数据
-      let buyOrders = await Order.findByRegionAndType(regionId, typeId, 'buy', page, limit, datasource);
+      let buyOrders = await Order.findByRegionAndType(regionId, typeId, 'buy', page, limit, datasource, locationId);
       let buyTotal = await Order.countByRegionAndType(regionId, typeId, 'buy', datasource);
       
       // 获取卖出订单数据
-      let sellOrders = await Order.findByRegionAndType(regionId, typeId, 'sell', page, limit, datasource);
+      let sellOrders = await Order.findByRegionAndType(regionId, typeId, 'sell', page, limit, datasource, locationId);
       let sellTotal = await Order.countByRegionAndType(regionId, typeId, 'sell', datasource);
 
       // 如果本地没有数据，从官方API同步（欧服不可达时跳过）
@@ -198,10 +199,10 @@ class OrderController {
         console.log(`Order synchronization completed for region ${regionId}, type ${typeId}, datasource ${datasource}`);
         
         // 再次查询本地数据库
-        buyOrders = await Order.findByRegionAndType(regionId, typeId, 'buy', page, limit, datasource);
+        buyOrders = await Order.findByRegionAndType(regionId, typeId, 'buy', page, limit, datasource, locationId);
         buyTotal = await Order.countByRegionAndType(regionId, typeId, 'buy', datasource);
         
-        sellOrders = await Order.findByRegionAndType(regionId, typeId, 'sell', page, limit, datasource);
+        sellOrders = await Order.findByRegionAndType(regionId, typeId, 'sell', page, limit, datasource, locationId);
         sellTotal = await Order.countByRegionAndType(regionId, typeId, 'sell', datasource);
         
         // 同步后仍无数据且是欧服，标记不可达避免后续超时
