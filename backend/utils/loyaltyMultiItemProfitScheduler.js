@@ -29,8 +29,8 @@ function startLoyaltyMultiItemProfitScheduler() {
   // 立即执行一次
   syncAllFactionMultiItemProfits();
 
-  // 每1分钟执行一次
-  const interval = 1 * 60 * 1000; // 1分钟
+  // 每10分钟执行一次
+  const interval = 10 * 60 * 1000; // 10分钟
   setInterval(syncAllFactionMultiItemProfits, interval);
 
   console.log(`LP multi-item profit scheduler started. Will sync every ${interval / 1000 / 60} minutes, updating ${BATCH_SIZE} oldest records per faction.`);

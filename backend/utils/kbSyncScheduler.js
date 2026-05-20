@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const SYNC_INTERVAL = 3 * 60 * 1000; // 3分钟
+const SYNC_INTERVAL = 10 * 60 * 1000; // 10分钟
 const BATCH_SIZE = 5;
 
 let schedulerTimer = null;

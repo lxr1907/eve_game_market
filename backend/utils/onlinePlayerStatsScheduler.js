@@ -32,15 +32,15 @@ const recordAllStats = async () => {
   await recordStats('tranquility');
 };
 
-// 设置定时任务，每分钟执行一次
+// 设置定时任务，每5分钟执行一次
 const startScheduler = () => {
   console.log('Starting online player stats scheduler...');
   
   // 立即执行一次
   recordAllStats();
   
-  // 然后每分钟执行一次
-  setInterval(recordAllStats, 60 * 1000);
+  // 然后每5分钟执行一次
+  setInterval(recordAllStats, 5 * 60 * 1000);
 };
 
 // 如果直接运行这个文件，启动调度器
