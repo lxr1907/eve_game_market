@@ -105,8 +105,6 @@
               </template>
             </el-table-column>
 
-            <el-table-column prop="max_buy_order_volume_remaining" label="最高买单剩余" min-width="120" />
-            <el-table-column prop="max_buy_order_total_profit" label="按买单总利润" min-width="120" :formatter="formatNumber" />
             <el-table-column prop="lp_cost" label="LP成本" min-width="80" :formatter="formatNumber" />
             <el-table-column prop="isk_cost" label="ISK成本" min-width="100" :formatter="formatNumber" />
             <el-table-column prop="sell_price" label="售价" min-width="100" :formatter="formatNumber" />
