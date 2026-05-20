@@ -1,5 +1,6 @@
+const path = require('path');
 const app = require('./app');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const onlinePlayerStatsScheduler = require('./utils/onlinePlayerStatsScheduler');
 const systemKillScheduler = require('./utils/systemKillScheduler');
 const systemDetailsScheduler = require('./utils/systemDetailsScheduler');
