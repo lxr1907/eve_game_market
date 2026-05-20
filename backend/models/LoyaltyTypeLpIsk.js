@@ -271,6 +271,69 @@ class LoyaltyTypeLpIsk {
       };
     }
   }
+  /**
+   * 启动时自动检查并修复表完整性：
+   * 1. 检查 UNIQUE KEY 是否存在
+   * 2. 如缺失：删除重复数据 → 添加索引
+   * 确保不同环境（开发/生产/新部署）表结构一致
+   */
+  static async ensureTableIntegrity() {
+    const tableName = 'loyalty_type_lp_isk';
+    const indexName = 'unique_type_corp_region_datasource';
+    const indexColumns = 'type_id, corporation_id, region_id, datasource';
+
+    try {
+      // 检查 UNIQUE KEY 是否存在
+      const [indexes] = await pool.execute(
+        `SHOW INDEXES FROM \`${tableName}\` WHERE Key_name = ?`,
+        [indexName]
+      );
+
+      if (indexes.length > 0) {
+        console.log(`[Integrity] ${tableName}: UNIQUE KEY already exists, skipped`);
+        return;
+      }
+
+      console.log(`[Integrity] ${tableName}: UNIQUE KEY missing, repairing...`);
+
+      // 1. 删除重复数据（保留 id 最大的行）
+      const [dupCheck] = await pool.execute(`
+        SELECT COUNT(*) as cnt FROM (
+          SELECT ${indexColumns}, COUNT(*) as c
+          FROM \`${tableName}\`
+          GROUP BY ${indexColumns}
+          HAVING c > 1
+        ) t
+      `);
+      const dupCount = dupCheck[0].cnt;
+
+      if (dupCount > 0) {
+        const [delResult] = await pool.execute(`
+          DELETE t1 FROM \`${tableName}\` t1
+          INNER JOIN \`${tableName}\` t2
+          WHERE t1.type_id = t2.type_id
+            AND t1.corporation_id = t2.corporation_id
+            AND t1.region_id = t2.region_id
+            AND t1.datasource = t2.datasource
+            AND t1.id < t2.id
+        `);
+        console.log(`[Integrity] ${tableName}: removed ${delResult.affectedRows} duplicate rows from ${dupCount} groups`);
+      }
+
+      // 2. 添加 UNIQUE KEY
+      await pool.execute(
+        `ALTER TABLE \`${tableName}\` ADD UNIQUE KEY \`${indexName}\` (${indexColumns})`
+      );
+      console.log(`[Integrity] ${tableName}: UNIQUE KEY added successfully`);
+    } catch (error) {
+      // 索引已存在的情况（并发场景）
+      if (error.code === 'ER_DUP_KEYNAME') {
+        console.log(`[Integrity] ${tableName}: UNIQUE KEY already added by another process`);
+      } else {
+        console.error(`[Integrity] ${tableName}: repair failed -`, error.message);
+      }
+    }
+  }
 }
 
 module.exports = LoyaltyTypeLpIsk;

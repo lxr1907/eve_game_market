@@ -244,6 +244,65 @@ class LoyaltyMultiItemProfit {
       return false;
     }
   }
+
+  /**
+   * 启动时自动检查并修复表完整性：
+   * 1. 检查 UNIQUE KEY 是否存在
+   * 2. 如缺失：删除重复数据 → 添加索引
+   */
+  static async ensureTableIntegrity() {
+    const tableName = 'loyalty_multi_item_profit';
+    const indexName = 'unique_type_corp_region_datasource';
+    const indexColumns = 'type_id, corporation_id, region_id, datasource';
+
+    try {
+      const [indexes] = await pool.execute(
+        `SHOW INDEXES FROM \`${tableName}\` WHERE Key_name = ?`,
+        [indexName]
+      );
+
+      if (indexes.length > 0) {
+        console.log(`[Integrity] ${tableName}: UNIQUE KEY already exists, skipped`);
+        return;
+      }
+
+      console.log(`[Integrity] ${tableName}: UNIQUE KEY missing, repairing...`);
+
+      // 删除重复数据
+      const [dupCheck] = await pool.execute(`
+        SELECT COUNT(*) as cnt FROM (
+          SELECT ${indexColumns}, COUNT(*) as c
+          FROM \`${tableName}\`
+          GROUP BY ${indexColumns}
+          HAVING c > 1
+        ) t
+      `);
+
+      if (dupCheck[0].cnt > 0) {
+        const [delResult] = await pool.execute(`
+          DELETE t1 FROM \`${tableName}\` t1
+          INNER JOIN \`${tableName}\` t2
+          WHERE t1.type_id = t2.type_id
+            AND t1.corporation_id = t2.corporation_id
+            AND t1.region_id = t2.region_id
+            AND t1.datasource = t2.datasource
+            AND t1.id < t2.id
+        `);
+        console.log(`[Integrity] ${tableName}: removed ${delResult.affectedRows} duplicate rows`);
+      }
+
+      await pool.execute(
+        `ALTER TABLE \`${tableName}\` ADD UNIQUE KEY \`${indexName}\` (${indexColumns})`
+      );
+      console.log(`[Integrity] ${tableName}: UNIQUE KEY added successfully`);
+    } catch (error) {
+      if (error.code === 'ER_DUP_KEYNAME') {
+        console.log(`[Integrity] ${tableName}: UNIQUE KEY already added by another process`);
+      } else {
+        console.error(`[Integrity] ${tableName}: repair failed -`, error.message);
+      }
+    }
+  }
 }
 
 module.exports = LoyaltyMultiItemProfit;

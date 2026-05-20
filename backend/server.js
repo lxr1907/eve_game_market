@@ -10,6 +10,7 @@ const loyaltyProfitScheduler = require('./utils/loyaltyProfitScheduler');
 const lpBlueprintScheduler = require('./utils/lpBlueprintScheduler');
 const loyaltyMultiItemProfitScheduler = require('./utils/loyaltyMultiItemProfitScheduler');
 const kbSyncScheduler = require('./utils/kbSyncScheduler');
+const { ensureTableIntegrity } = require('./utils/ensureTableIntegrity');
 const Type = require('./models/Type');
 
 
@@ -26,6 +27,9 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
 
   // 启动时清理旧数据
   await Type.cleanupOldRegionTypes();
+
+  // 启动时检查并修复 LP 表完整性（UNIQUE KEY 自动修复）
+  await ensureTableIntegrity();
 
   // Start the online player stats scheduler
   onlinePlayerStatsScheduler.startScheduler();
