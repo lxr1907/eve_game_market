@@ -118,11 +118,12 @@
               <el-table-column label="位置" width="180">
                 <template #default="{ row }">
                   <div class="location-cell">
-                    <span v-if="stationNames[row.location_id]" class="location-name" :title="stationNames[row.location_id]">{{ stationNames[row.location_id] }}</span>
-                    <span v-else-if="row.location_name" class="location-name" :title="row.location_name">{{ row.location_name }}</span>
+                    <span v-if="stationNames[row.location_id]" class="location-name" :title="stationNames[row.location_id]?.en || ''">{{ stationNames[row.location_id]?.cn || stationNames[row.location_id]?.en }}</span>
+                    <span v-else-if="row.location_name" class="location-name" :title="row.location_name_en || row.location_name || ''">{{ row.location_name }}</span>
+                    <span v-else-if="row.location_name_en" class="location-name" :title="row.location_name_en">{{ row.location_name_en }}</span>
                     <el-link v-else-if="!stationAttempted[row.location_id]" type="primary" size="small" @click="fetchStationName(row.location_id, row.datasource)">{{ row.location_id }}</el-link>
                     <span v-else>{{ row.location_id }}</span>
-                    <span v-if="stationNames[row.location_id] || row.location_name" class="location-id">({{ row.location_id }})</span>
+                    <span v-if="stationNames[row.location_id] || row.location_name || row.location_name_en" class="location-id">({{ row.location_id }})</span>
                   </div>
                 </template>
               </el-table-column>
@@ -161,11 +162,12 @@
               <el-table-column label="位置" width="180">
                 <template #default="{ row }">
                   <div class="location-cell">
-                    <span v-if="stationNames[row.location_id]" class="location-name" :title="stationNames[row.location_id]">{{ stationNames[row.location_id] }}</span>
-                    <span v-else-if="row.location_name" class="location-name" :title="row.location_name">{{ row.location_name }}</span>
+                    <span v-if="stationNames[row.location_id]" class="location-name" :title="stationNames[row.location_id]?.en || ''">{{ stationNames[row.location_id]?.cn || stationNames[row.location_id]?.en }}</span>
+                    <span v-else-if="row.location_name" class="location-name" :title="row.location_name_en || row.location_name || ''">{{ row.location_name }}</span>
+                    <span v-else-if="row.location_name_en" class="location-name" :title="row.location_name_en">{{ row.location_name_en }}</span>
                     <el-link v-else-if="!stationAttempted[row.location_id]" type="primary" size="small" @click="fetchStationName(row.location_id, row.datasource)">{{ row.location_id }}</el-link>
                     <span v-else>{{ row.location_id }}</span>
-                    <span v-if="stationNames[row.location_id] || row.location_name" class="location-id">({{ row.location_id }})</span>
+                    <span v-if="stationNames[row.location_id] || row.location_name || row.location_name_en" class="location-id">({{ row.location_id }})</span>
                   </div>
                 </template>
               </el-table-column>
@@ -371,7 +373,10 @@ export default {
       try {
         const res = await stationApi.getStation(stationId, ds || datasource.value)
         if (res.data?.data?.name) {
-          stationNames.value = { ...stationNames.value, [stationId]: res.data.data.name }
+          stationNames.value = {
+            ...stationNames.value,
+            [stationId]: { cn: res.data.data.name, en: res.data.data.name_en || null }
+          }
         } else {
           // ESI 无数据，标记为已尝试但无名称
           stationNames.value = { ...stationNames.value, [stationId]: null }

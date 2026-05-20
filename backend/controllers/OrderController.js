@@ -304,10 +304,14 @@ async function enrichWithStationNames(orders, datasource) {
     stationNames = { ...stationNames, ...fallbackNames };
   }
   
-  return orders.map(order => ({
-    ...order,
-    location_name: stationNames[order.location_id] || null
-  }));
+  return orders.map(order => {
+    const station = stationNames[order.location_id] || null;
+    return {
+      ...order,
+      location_name: station ? station.cn : null,
+      location_name_en: station ? station.en : null
+    };
+  });
 }
 
 module.exports = OrderController;

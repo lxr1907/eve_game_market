@@ -955,7 +955,32 @@ class EveApiService {
           timeout: 10000
         });
       }
-      return response.data;
+      const stationData = response.data;
+
+      // 额外获取中文名称（主名称存中文）
+      if (datasource.toLowerCase() !== 'tranquility') {
+        try {
+          const currentTime = Date.now();
+          const timeSinceLast = currentTime - this.lastRequestTime;
+          if (timeSinceLast < this.throttleInterval) {
+            await new Promise(resolve => setTimeout(resolve, this.throttleInterval - timeSinceLast));
+          }
+          this.lastRequestTime = Date.now();
+          const cnResponse = await this.client.get(`/universe/stations/${stationId}/`, {
+            params: { datasource: datasource },
+            headers: { 'Accept-Language': 'zh' },
+            timeout: 10000
+          });
+          if (cnResponse.data?.name) {
+            stationData.name_en = stationData.name; // 原英文名存入 name_en
+            stationData.name = cnResponse.data.name; // 中文名存入 name
+          }
+        } catch (cnError) {
+          // 中文名获取失败，name_en 保持英文名
+          stationData.name_en = stationData.name;
+        }
+      }
+      return stationData;
     } catch (error) {
       if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
         console.log(`Timeout fetching station ${stationId}, retrying (${retries} left)...`);

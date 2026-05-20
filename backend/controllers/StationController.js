@@ -1,5 +1,23 @@
 const Station = require('../models/Station');
+const Type = require('../models/Type');
 const eveApiService = require('../services/eveApiService');
+
+// ESI 同步后，通过 type_id 查询 types 表更新中文名
+async function updateStationChineseName(stationId, typeId, datasource) {
+  if (!typeId) return;
+  try {
+    const typeInfo = await Type.findById(typeId);
+    if (typeInfo && typeInfo.name) {
+      const pool = require('../config/database');
+      await pool.execute(
+        'UPDATE stations SET name = ? WHERE station_id = ? AND datasource = ?',
+        [typeInfo.name, stationId, datasource]
+      );
+    }
+  } catch (err) {
+    console.error(`Error updating station Chinese name for ${stationId}:`, err.message);
+  }
+}
 
 class StationController {
   // 获取空间站信息（从ESI同步）
@@ -15,6 +33,12 @@ class StationController {
       // 先查本地数据库
       const localStation = await Station.findByStationId(stationId, datasource);
       if (localStation) {
+        // 如果中文名等于英文名，尝试从 types 表更新中文名
+        if (localStation.name === localStation.name_en && localStation.type_id) {
+          await updateStationChineseName(stationId, localStation.type_id, datasource);
+          const updated = await Station.findByStationId(stationId, datasource);
+          return res.status(200).json({ data: updated, source: 'local' });
+        }
         return res.status(200).json({ data: localStation, source: 'local' });
       }
 
@@ -23,6 +47,7 @@ class StationController {
         const stationData = await eveApiService.getStation(stationId, datasource);
         if (stationData) {
           await Station.insertOrUpdate(stationData, datasource);
+          await updateStationChineseName(stationId, stationData.type_id, datasource);
           const saved = await Station.findByStationId(stationId, datasource);
           return res.status(200).json({ data: saved, source: 'esi' });
         }
@@ -48,6 +73,7 @@ class StationController {
           const stationData = await eveApiService.getStation(stationId, 'serenity');
           if (stationData) {
             await Station.insertOrUpdate(stationData, datasource);
+            await updateStationChineseName(stationId, stationData.type_id, datasource);
             const saved = await Station.findByStationId(stationId, datasource);
             if (saved) {
               return res.status(200).json({ data: saved, source: 'esi' });
@@ -60,7 +86,7 @@ class StationController {
 
       // 无任何数据，返回只含 ID 的默认数据（前端仍能展示 ID）
       return res.status(200).json({
-        data: { station_id: stationId, name: null, datasource },
+        data: { station_id: stationId, name: null, name_en: null, datasource },
         source: 'none'
       });
     } catch (error) {

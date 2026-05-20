@@ -5,7 +5,8 @@ class Station {
     const query = `
       CREATE TABLE IF NOT EXISTS stations (
         station_id BIGINT NOT NULL,
-        name VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL COMMENT '中文名称',
+        name_en VARCHAR(255) COMMENT '英文名称',
         system_id INT,
         type_id INT,
         owner INT,
@@ -28,13 +29,14 @@ class Station {
   static async insertOrUpdate(data, datasource = 'serenity') {
     const query = `
       INSERT INTO stations (
-        station_id, name, system_id, type_id, owner,
+        station_id, name, name_en, system_id, type_id, owner,
         max_dockable_ship_volume, office_rental_cost, race_id,
         reprocessing_efficiency, reprocessing_stations_take,
         services, position, datasource
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         name = VALUES(name),
+        name_en = VALUES(name_en),
         system_id = VALUES(system_id),
         type_id = VALUES(type_id),
         owner = VALUES(owner),
@@ -52,6 +54,7 @@ class Station {
       await pool.execute(query, [
         data.station_id,
         data.name,
+        data.name_en || data.name,
         data.system_id || null,
         data.type_id || null,
         data.owner || null,
@@ -80,11 +83,13 @@ class Station {
   static async findByIds(stationIds, datasource = 'serenity') {
     if (!stationIds || stationIds.length === 0) return {};
     const placeholders = stationIds.map(() => '?').join(',');
-    const query = `SELECT station_id, name FROM stations WHERE station_id IN (${placeholders}) AND datasource = ?`;
+    const query = `SELECT station_id, name, name_en FROM stations WHERE station_id IN (${placeholders}) AND datasource = ?`;
     const params = [...stationIds, datasource];
     const [rows] = await pool.execute(query, params);
     const map = {};
-    rows.forEach(row => { map[row.station_id] = row.name; });
+    rows.forEach(row => {
+      map[row.station_id] = { cn: row.name, en: row.name_en || null };
+    });
     return map;
   }
 }
