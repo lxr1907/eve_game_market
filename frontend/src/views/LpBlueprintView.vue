@@ -463,6 +463,10 @@ export default {
         ElMessage.error('加载蓝图列表失败')
       } finally {
         loadingList.value = false
+        // 列表加载完成后默认选中第一个
+        if (blueprints.value && blueprints.value.length > 0 && !selectedBlueprint.value) {
+          handleBlueprintClick(blueprints.value[0])
+        }
       }
     }
 
