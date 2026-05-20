@@ -13,6 +13,7 @@ const onlinePlayerStatsRoutes = require('./routes/onlinePlayerStatsRoutes');
 const systemRoutes = require('./routes/systemRoutes');
 const systemKillRoutes = require('./routes/systemKillRoutes');
 const eveSsoRoutes = require('./routes/eveSsoRoutes');
+const stationRoutes = require('./routes/stationRoutes');
 const kbRoutes = require('./routes/kbRoutes');
 const bilibiliRoutes = require('./routes/bilibiliRoutes');
 const Type = require('./models/Type');
@@ -28,6 +29,7 @@ const OnlinePlayerStats = require('./models/OnlinePlayerStats');
 const System = require('./models/System');
 const EveSsoCode = require('./models/EveSsoCode');
 const Killmail = require('./models/Killmail');
+const Station = require('./models/Station');
 const { syncDatabaseStructure } = require('./utils/syncDatabaseStructure');
 const { unifyDatabaseCharset } = require('./utils/unifyCharset');
 const { initTable: initBilibiliTable } = require('./services/BilibiliService');
@@ -55,6 +57,8 @@ app.use(express.urlencoded({ extended: true }));
     await LpBlueprintProfit.addNewColumns();
     // 初始化 bilibili_videos 表
     await initBilibiliTable();
+    // 初始化 stations 表
+    await Station.createTable();
     console.log('Database tables initialized successfully');
   } catch (err) {
     console.error('Error initializing database tables:', err);
@@ -72,6 +76,7 @@ app.use('/api', onlinePlayerStatsRoutes);
 app.use('/api', systemRoutes);
 app.use('/api', systemKillRoutes);
 app.use('/api', eveSsoRoutes);
+app.use('/api', stationRoutes);
 app.use('/api/kb', kbRoutes);
 app.use('/api/bilibili', bilibiliRoutes);
 

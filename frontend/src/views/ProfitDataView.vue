@@ -166,7 +166,17 @@
                       {{ formatNumber(row.volume_total) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="location_id" label="位置 ID" width="100" />
+                  <el-table-column label="位置" width="180">
+                    <template #default="{ row }">
+                      <div class="location-cell">
+                        <span v-if="stationNames[row.location_id]" class="location-name" :title="stationNames[row.location_id]">{{ stationNames[row.location_id] }}</span>
+                        <span v-else-if="row.location_name" class="location-name" :title="row.location_name">{{ row.location_name }}</span>
+                        <el-link v-else-if="!stationAttempted[row.location_id]" type="primary" size="small" @click="fetchStationName(row.location_id, row.datasource)">{{ row.location_id }}</el-link>
+                        <span v-else>{{ row.location_id }}</span>
+                        <span v-if="stationNames[row.location_id] || row.location_name" class="location-id">({{ row.location_id }})</span>
+                      </div>
+                    </template>
+                  </el-table-column>
                   <el-table-column prop="created_at" label="创建时间" sortable min-width="140">
                     <template #default="{ row }">
                       {{ formatDate(row.created_at) }}
@@ -198,7 +208,17 @@
                       {{ formatNumber(row.volume_total) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="location_id" label="位置 ID" width="100" />
+                  <el-table-column label="位置" width="180">
+                    <template #default="{ row }">
+                      <div class="location-cell">
+                        <span v-if="stationNames[row.location_id]" class="location-name" :title="stationNames[row.location_id]">{{ stationNames[row.location_id] }}</span>
+                        <span v-else-if="row.location_name" class="location-name" :title="row.location_name">{{ row.location_name }}</span>
+                        <el-link v-else-if="!stationAttempted[row.location_id]" type="primary" size="small" @click="fetchStationName(row.location_id, row.datasource)">{{ row.location_id }}</el-link>
+                        <span v-else>{{ row.location_id }}</span>
+                        <span v-if="stationNames[row.location_id] || row.location_name" class="location-id">({{ row.location_id }})</span>
+                      </div>
+                    </template>
+                  </el-table-column>
                   <el-table-column prop="created_at" label="创建时间" sortable min-width="140">
                     <template #default="{ row }">
                       {{ formatDate(row.created_at) }}
@@ -255,7 +275,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Star, CirclePlus, Top, Bottom, Warning } from '@element-plus/icons-vue'
-import { loyaltyApi, orderApi, typeApi } from '../services/api'
+import { loyaltyApi, orderApi, typeApi, stationApi } from '../services/api'
 
 const router = useRouter()
 
@@ -272,6 +292,11 @@ const selectedOrderData = ref(null)
 const queryingOrders = ref(false)
 const buyOrders = ref([])
 const sellOrders = ref([])
+
+// 空间站名称缓存
+const stationNames = ref({})
+const loadingStation = ref(null)
+const stationAttempted = ref({})
 
 // 物品详情弹窗数据
 const typeDialogVisible = ref(false)
@@ -529,6 +554,26 @@ async function showOrderDetails(row) {
 onMounted(() => {
   fetchProfitData()
 })
+
+// 获取空间站名称
+async function fetchStationName(stationId, ds) {
+  if (loadingStation.value === stationId) return
+  loadingStation.value = stationId
+  stationAttempted.value = { ...stationAttempted.value, [stationId]: true }
+  try {
+    const res = await stationApi.getStation(stationId, ds || selectedOrderData.value?.datasource || filters.value.datasource)
+    if (res.data?.data?.name) {
+      stationNames.value = { ...stationNames.value, [stationId]: res.data.data.name }
+    } else {
+      stationNames.value = { ...stationNames.value, [stationId]: null }
+    }
+  } catch (error) {
+    console.error('获取空间站名称失败:', error)
+    stationNames.value = { ...stationNames.value, [stationId]: null }
+  } finally {
+    loadingStation.value = null
+  }
+}
 </script>
 
 <style scoped>
@@ -869,5 +914,27 @@ onMounted(() => {
 
 :deep(.el-table th.el-table__cell) {
   background-color: #242736 !important;
+}
+
+/* 位置列样式 */
+.location-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.location-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.location-id {
+  color: #94a3b8;
+  font-size: 11px;
+  flex-shrink: 0;
 }
 </style>

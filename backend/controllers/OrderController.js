@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const Type = require('../models/Type');
 const Region = require('../models/Region');
+const Station = require('../models/Station');
 const eveApiService = require('../services/eveApiService');
 
 class OrderController {
@@ -194,6 +195,10 @@ class OrderController {
         sellTotal = await Order.countByRegionAndType(regionId, typeId, 'sell', datasource);
       }
 
+      // 为订单数据补充空间站名称
+      buyOrders = await enrichWithStationNames(buyOrders, datasource);
+      sellOrders = await enrichWithStationNames(sellOrders, datasource);
+
       res.status(200).json({
         buyOrders: {
           data: buyOrders,
@@ -280,6 +285,29 @@ class OrderController {
       res.status(500).json({ error: 'Internal server error' });
     }
   }
+}
+
+// 为订单数据补充空间站名称
+async function enrichWithStationNames(orders, datasource) {
+  if (!orders || orders.length === 0) return orders;
+  
+  const locationIds = [...new Set(orders.map(o => o.location_id).filter(Boolean))];
+  if (locationIds.length === 0) return orders;
+  
+  // 先查当前数据源
+  let stationNames = await Station.findByIds(locationIds, datasource);
+  
+  // 如果有缺失且当前不是 serenity，回退到 serenity 缓存（站ID跨服一致）
+  const missingIds = locationIds.filter(id => !stationNames[id]);
+  if (missingIds.length > 0 && datasource !== 'serenity') {
+    const fallbackNames = await Station.findByIds(missingIds, 'serenity');
+    stationNames = { ...stationNames, ...fallbackNames };
+  }
+  
+  return orders.map(order => ({
+    ...order,
+    location_name: stationNames[order.location_id] || null
+  }));
 }
 
 module.exports = OrderController;

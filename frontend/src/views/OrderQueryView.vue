@@ -115,7 +115,17 @@
               </el-table-column>
               <el-table-column prop="volume_total" label="数量" sortable width="100" />
               <el-table-column prop="min_volume" label="最小数量" width="90" />
-              <el-table-column prop="location_id" label="位置 ID" width="120" />
+              <el-table-column label="位置" width="180">
+                <template #default="{ row }">
+                  <div class="location-cell">
+                    <span v-if="stationNames[row.location_id]" class="location-name" :title="stationNames[row.location_id]">{{ stationNames[row.location_id] }}</span>
+                    <span v-else-if="row.location_name" class="location-name" :title="row.location_name">{{ row.location_name }}</span>
+                    <el-link v-else-if="!stationAttempted[row.location_id]" type="primary" size="small" @click="fetchStationName(row.location_id, row.datasource)">{{ row.location_id }}</el-link>
+                    <span v-else>{{ row.location_id }}</span>
+                    <span v-if="stationNames[row.location_id] || row.location_name" class="location-id">({{ row.location_id }})</span>
+                  </div>
+                </template>
+              </el-table-column>
               <el-table-column prop="duration" label="有效期" width="80" />
               <el-table-column prop="created_at" label="创建时间" sortable width="160">
                 <template #default="{ row }">
@@ -148,7 +158,17 @@
               </el-table-column>
               <el-table-column prop="volume_total" label="数量" sortable width="100" />
               <el-table-column prop="min_volume" label="最小数量" width="90" />
-              <el-table-column prop="location_id" label="位置 ID" width="120" />
+              <el-table-column label="位置" width="180">
+                <template #default="{ row }">
+                  <div class="location-cell">
+                    <span v-if="stationNames[row.location_id]" class="location-name" :title="stationNames[row.location_id]">{{ stationNames[row.location_id] }}</span>
+                    <span v-else-if="row.location_name" class="location-name" :title="row.location_name">{{ row.location_name }}</span>
+                    <el-link v-else-if="!stationAttempted[row.location_id]" type="primary" size="small" @click="fetchStationName(row.location_id, row.datasource)">{{ row.location_id }}</el-link>
+                    <span v-else>{{ row.location_id }}</span>
+                    <span v-if="stationNames[row.location_id] || row.location_name" class="location-id">({{ row.location_id }})</span>
+                  </div>
+                </template>
+              </el-table-column>
               <el-table-column prop="duration" label="有效期" width="80" />
               <el-table-column prop="created_at" label="创建时间" sortable width="160">
                 <template #default="{ row }">
@@ -166,7 +186,7 @@
 <script>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { regionApi, orderApi, typeApi } from '../services/api'
+import { regionApi, orderApi, typeApi, stationApi } from '../services/api'
 import { ElMessage } from 'element-plus'
 
 export default {
@@ -187,6 +207,11 @@ export default {
     const syncing = ref(false)
     const querying = ref(false)
     const loadingTree = ref(false)
+    
+    // 空间站名称缓存
+    const stationNames = ref({})
+    const loadingStation = ref(null)
+    const stationAttempted = ref({}) // 已尝试过获取名称的站
     
     // 格式化工具
     const formatDate = (dateString) => {
@@ -338,6 +363,27 @@ export default {
       }
     }
     
+    // 获取空间站名称
+    const fetchStationName = async (stationId, ds) => {
+      if (loadingStation.value === stationId) return
+      loadingStation.value = stationId
+      stationAttempted.value = { ...stationAttempted.value, [stationId]: true }
+      try {
+        const res = await stationApi.getStation(stationId, ds || datasource.value)
+        if (res.data?.data?.name) {
+          stationNames.value = { ...stationNames.value, [stationId]: res.data.data.name }
+        } else {
+          // ESI 无数据，标记为已尝试但无名称
+          stationNames.value = { ...stationNames.value, [stationId]: null }
+        }
+      } catch (error) {
+        console.error('获取空间站名称失败:', error)
+        stationNames.value = { ...stationNames.value, [stationId]: null }
+      } finally {
+        loadingStation.value = null
+      }
+    }
+    
     onMounted(() => {
       loadRegions()
       loadHierarchy()
@@ -356,8 +402,9 @@ export default {
     return {
       regions, selectedRegionId, datasource, filterText, treeData, treeRef,
       selectedTypeId, buyOrders, sellOrders, syncing, querying, loadingTree,
+      stationNames, loadingStation, stationAttempted,
       formatDate, formatISK, handleRegionChange, handleDatasourceChange,
-      handleNodeClick, filterNode, syncOrders, queryOrders
+      handleNodeClick, filterNode, syncOrders, queryOrders, fetchStationName
     }
   }
 }
@@ -570,5 +617,27 @@ export default {
 
 :deep(.el-table__body tr:hover > td) {
   background-color: #2a2d3d !important;
+}
+
+/* 位置列样式 */
+.location-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.location-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.location-id {
+  color: #94a3b8;
+  font-size: 11px;
+  flex-shrink: 0;
 }
 </style>

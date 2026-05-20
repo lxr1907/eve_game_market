@@ -40,10 +40,11 @@ const tablesToSync = [
   'blueprint_materials',
   'types',
   'online_player_stats',
-  'system_kills'
+  'system_kills',
+  'stations'
 ];
 
-const ignoreTables = ['region_types', 'item_categories', 'item_groups', 'types', 'systems', 'constellations', 'regions', 'stargates', 'blueprints', 'blueprint_products', 'blueprint_materials', 'blueprint_skills', 'blueprint_activities', 'item_groups', 'corporations', 'killmails', 'orders', 'loyalty_offers', 'loyalty_offer_required_items', 'lp_blueprint_profits', 'loyalty_type_lp_isk', 'loyalty_skip_items', 'kb_corporation_stats', 'kb_character_stats', 'eve_sso_codes', 'online_player_stats', 'system_kills'];
+const ignoreTables = ['region_types', 'item_categories', 'item_groups', 'types', 'systems', 'constellations', 'regions', 'stargates', 'blueprints', 'blueprint_products', 'blueprint_materials', 'blueprint_skills', 'blueprint_activities', 'item_groups', 'corporations', 'killmails', 'orders', 'loyalty_offers', 'loyalty_offer_required_items', 'lp_blueprint_profits', 'loyalty_type_lp_isk', 'loyalty_skip_items', 'kb_corporation_stats', 'kb_character_stats', 'eve_sso_codes', 'online_player_stats', 'system_kills', 'stations'];
 
 async function syncTable(tableName) {
   console.log(`\n=== 开始同步表: ${tableName} ===`);

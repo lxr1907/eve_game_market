@@ -926,6 +926,46 @@ class EveApiService {
       }
     }
   }
+
+  // 获取空间站信息
+  async getStation(stationId, datasource = 'serenity', retries = 3) {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.throttleInterval) {
+      const waitTime = this.throttleInterval - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastRequestTime = Date.now();
+
+    try {
+      let response;
+      if (datasource.toLowerCase() === 'tranquility') {
+        const fullUrl = `https://esi.evetech.net/latest/universe/stations/${stationId}/`;
+        response = await axios.get(fullUrl, {
+          params: { datasource: 'tranquility' },
+          headers: {
+            'Accept': 'application/json',
+            'X-Compatibility-Date': process.env.EVE_API_COMPATIBILITY_DATE || '2025-11-06'
+          },
+          timeout: 10000
+        });
+      } else {
+        response = await this.client.get(`/universe/stations/${stationId}/`, {
+          params: { datasource: datasource },
+          timeout: 10000
+        });
+      }
+      return response.data;
+    } catch (error) {
+      if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
+        console.log(`Timeout fetching station ${stationId}, retrying (${retries} left)...`);
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+        return this.getStation(stationId, datasource, retries - 1);
+      }
+      console.error(`Error fetching station ${stationId} for datasource ${datasource}: ${error.message}`);
+      return null;
+    }
+  }
 }
 
 module.exports = new EveApiService();

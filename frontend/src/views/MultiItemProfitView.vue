@@ -185,7 +185,17 @@
                   {{ formatNumber(row.volume_remaining) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="location_id" label="位置 ID" width="100" />
+              <el-table-column label="位置" width="180">
+                <template #default="{ row }">
+                  <div class="location-cell">
+                    <span v-if="stationNames[row.location_id]" class="location-name" :title="stationNames[row.location_id]">{{ stationNames[row.location_id] }}</span>
+                    <span v-else-if="row.location_name" class="location-name" :title="row.location_name">{{ row.location_name }}</span>
+                    <el-link v-else-if="!stationAttempted[row.location_id]" type="primary" size="small" @click="fetchStationName(row.location_id, row.datasource)">{{ row.location_id }}</el-link>
+                    <span v-else>{{ row.location_id }}</span>
+                    <span v-if="stationNames[row.location_id] || row.location_name" class="location-id">({{ row.location_id }})</span>
+                  </div>
+                </template>
+              </el-table-column>
             </el-table>
           </el-col>
 
@@ -212,7 +222,17 @@
                   {{ formatNumber(row.volume_remaining) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="location_id" label="位置 ID" width="100" />
+              <el-table-column label="位置" width="180">
+                <template #default="{ row }">
+                  <div class="location-cell">
+                    <span v-if="stationNames[row.location_id]" class="location-name" :title="stationNames[row.location_id]">{{ stationNames[row.location_id] }}</span>
+                    <span v-else-if="row.location_name" class="location-name" :title="row.location_name">{{ row.location_name }}</span>
+                    <el-link v-else-if="!stationAttempted[row.location_id]" type="primary" size="small" @click="fetchStationName(row.location_id, row.datasource)">{{ row.location_id }}</el-link>
+                    <span v-else>{{ row.location_id }}</span>
+                    <span v-if="stationNames[row.location_id] || row.location_name" class="location-id">({{ row.location_id }})</span>
+                  </div>
+                </template>
+              </el-table-column>
             </el-table>
           </el-col>
         </el-row>
@@ -233,6 +253,11 @@ const selectedItem = ref(null)
 const queryingOrders = ref(false)
 const buyOrders = ref([])
 const sellOrders = ref([])
+
+// 空间站名称缓存
+const stationNames = ref({})
+const loadingStation = ref(null)
+const stationAttempted = ref({})
 
 const filters = reactive({
   corporationId: 1000180,
@@ -396,6 +421,27 @@ const formatUpdatedAt = (dateStr) => {
   if (!dateStr) return '-'
   const date = new Date(dateStr)
   return date.toLocaleString('zh-CN')
+}
+
+// 获取空间站名称
+const fetchStationName = async (stationId, ds) => {
+  if (loadingStation.value === stationId) return
+  loadingStation.value = stationId
+  stationAttempted.value = { ...stationAttempted.value, [stationId]: true }
+  try {
+    const res = await fetch(`/api/stations/${stationId}?datasource=${ds || filters.datasource}`)
+    const data = await res.json()
+    if (data?.data?.name) {
+      stationNames.value = { ...stationNames.value, [stationId]: data.data.name }
+    } else {
+      stationNames.value = { ...stationNames.value, [stationId]: null }
+    }
+  } catch (error) {
+    console.error('获取空间站名称失败:', error)
+    stationNames.value = { ...stationNames.value, [stationId]: null }
+  } finally {
+    loadingStation.value = null
+  }
 }
 
 const handleSizeChange = (val) => {
@@ -589,5 +635,27 @@ onMounted(() => {
 
 :deep(.dark-dialog) .el-table__row:hover > td {
   background-color: #2a2d3d !important;
+}
+
+/* 位置列样式 */
+.location-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.location-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.location-id {
+  color: #94a3b8;
+  font-size: 11px;
+  flex-shrink: 0;
 }
 </style>

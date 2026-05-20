@@ -491,4 +491,16 @@ export const bilibiliApi = {
   },
 };
 
+// 空间站 API
+export const stationApi = {
+  async getStation(stationId, datasource = 'serenity') {
+    const response = await apiClient.get(`/stations/${stationId}`, { params: { datasource } });
+    return response;
+  },
+  async getStationNames(stationIds, datasource = 'serenity') {
+    const response = await apiClient.get(`/stations/names/list`, { params: { stationIds: stationIds.join(','), datasource } });
+    return response;
+  },
+};
+
 export default apiClient
