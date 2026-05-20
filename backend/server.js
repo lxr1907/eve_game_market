@@ -8,6 +8,7 @@ const systemDistanceScheduler = require('./utils/systemDistanceScheduler');
 const loyaltyProfitScheduler = require('./utils/loyaltyProfitScheduler');
 const lpBlueprintScheduler = require('./utils/lpBlueprintScheduler');
 const loyaltyMultiItemProfitScheduler = require('./utils/loyaltyMultiItemProfitScheduler');
+const kbSyncScheduler = require('./utils/kbSyncScheduler');
 const Type = require('./models/Type');
 
 
@@ -48,6 +49,9 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
 
   // Start the LP multi-item profit scheduler (incremental, every minute)
   loyaltyMultiItemProfitScheduler.startLoyaltyMultiItemProfitScheduler();
+
+  // Start the KB sync scheduler (every 3 minutes)
+  kbSyncScheduler.startKbSyncScheduler();
 });
 
 server.on('error', (err) => {

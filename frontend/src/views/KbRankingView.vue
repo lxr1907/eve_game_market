@@ -6,9 +6,10 @@
           <span>KB榜单</span>
           <div class="header-actions">
             <el-radio-group v-model="rankingType" @change="fetchRanking" size="small">
-              <el-radio-button label="single">击毁榜</el-radio-button>
+              <el-radio-button label="single">击毁价值榜</el-radio-button>
               <el-radio-button label="kills">角色击毁榜</el-radio-button>
               <el-radio-button label="losses">角色损失榜</el-radio-button>
+              <el-radio-button label="latest">最新KB</el-radio-button>
             </el-radio-group>
             <el-button type="primary" size="small" @click="fetchRanking" :loading="loading">
               <el-icon><Refresh /></el-icon>
@@ -120,6 +121,54 @@
           <el-table-column label="总估值" width="140" align="right">
             <template #default="{ row }">
               <span class="loss-value">{{ formatISK(row.total_value) }}</span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- 最新KB -->
+      <div v-else-if="rankingType === 'latest'" v-loading="loading">
+        <el-table :data="rankingData" style="width: 100%" size="small">
+          <el-table-column label="击毁估值" width="140" align="right">
+            <template #default="{ row }">
+              <span class="kill-value">{{ formatISK(row.total_value) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="舰船" min-width="200">
+            <template #default="{ row }">
+              <div class="ship-info" @click="viewDetail(row.killmail_id)">
+                <img v-if="row.victim_ship_type_id" 
+                     :src="`https://images.evetech.net/types/${row.victim_ship_type_id}/render?size=32`" 
+                     class="ship-icon"
+                     @error="handleShipImgError" />
+                <span class="ship-link">{{ row.victim_ship_name || '未知舰船' }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="受害者" min-width="180">
+            <template #default="{ row }">
+              <div class="character-info">
+                <span class="character-name">{{ row.victim_character_name ? `${row.victim_character_name} (${row.victim_character_id})` : `ID: ${row.victim_character_id}` }}</span>
+                <span class="corp-name">{{ row.victim_corporation_name || '' }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="最后一击" min-width="180">
+            <template #default="{ row }">
+              <div class="character-info">
+                <span class="character-name">{{ row.final_blow_character_name ? `${row.final_blow_character_name} (${row.final_blow_character_id})` : `ID: ${row.final_blow_character_id}` }}</span>
+                <span class="corp-name">{{ row.final_blow_corporation_name || '' }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="星系" width="120">
+            <template #default="{ row }">
+              {{ row.solar_system_name || '未知星系' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="时间" width="160" sortable>
+            <template #default="{ row }">
+              {{ formatDate(row.killmail_time) }}
             </template>
           </el-table-column>
         </el-table>

@@ -893,6 +893,39 @@ const getKBRanking = async (req, res) => {
         [oneMonthAgoStr, datasource]
       );
       result = rows;
+    } else if (type === 'latest') {
+      // 最新KB（按时间倒序）
+      const [rows] = await pool.execute(
+        `SELECT 
+          k.killmail_id,
+          k.killmail_time,
+          k.final_blow_character_id,
+          COALESCE(k.final_blow_character_name, sso.character_name) as final_blow_character_name,
+          k.final_blow_corporation_id,
+          COALESCE(k.final_blow_corporation_name, fc.name) as final_blow_corporation_name,
+          k.victim_character_id,
+          COALESCE(k.victim_character_name, sso_victim.character_name) as victim_character_name,
+          k.victim_corporation_id,
+          COALESCE(k.victim_corporation_name, vc.name) as victim_corporation_name,
+          k.victim_ship_type_id,
+          vt.name as victim_ship_name,
+          k.solar_system_id,
+          s.name as solar_system_name,
+          k.total_value
+        FROM killmails k
+        LEFT JOIN types vt ON k.victim_ship_type_id = vt.id
+        LEFT JOIN systems s ON k.solar_system_id = s.system_id AND k.datasource COLLATE utf8mb4_unicode_ci = s.datasource COLLATE utf8mb4_unicode_ci
+        LEFT JOIN eve_sso_codes sso ON k.final_blow_character_id = sso.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso.datasource COLLATE utf8mb4_unicode_ci
+        LEFT JOIN eve_sso_codes sso_victim ON k.victim_character_id = sso_victim.character_id AND k.datasource COLLATE utf8mb4_unicode_ci = sso_victim.datasource COLLATE utf8mb4_unicode_ci
+        LEFT JOIN corporations fc ON k.final_blow_corporation_id = fc.id AND k.datasource COLLATE utf8mb4_unicode_ci = fc.datasource COLLATE utf8mb4_unicode_ci
+        LEFT JOIN corporations vc ON k.victim_corporation_id = vc.id AND k.datasource COLLATE utf8mb4_unicode_ci = vc.datasource COLLATE utf8mb4_unicode_ci
+        WHERE k.datasource = ?
+          AND k.final_blow_character_id IS NOT NULL
+        ORDER BY k.killmail_time DESC
+        LIMIT ${safeLimit}`,
+        [datasource]
+      );
+      result = rows;
     }
 
     res.json({

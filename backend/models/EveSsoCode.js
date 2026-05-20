@@ -224,6 +224,25 @@ class EveSsoCode {
     }
     return result;
   }
+
+  static async findOldestToSync(limit = 5) {
+    const query = `
+      SELECT * FROM eve_sso_codes
+      WHERE character_id IS NOT NULL
+      ORDER BY updated_at ASC
+      LIMIT ?
+    `;
+    const [rows] = await pool.query(query, [Number(limit)]);
+    return rows;
+  }
+
+  static async touchUpdatedAt(characterId, datasource = 'serenity') {
+    const query = `
+      UPDATE eve_sso_codes SET updated_at = CURRENT_TIMESTAMP
+      WHERE character_id = ? AND datasource = ?
+    `;
+    await pool.execute(query, [characterId, datasource]);
+  }
 }
 
 module.exports = EveSsoCode;
