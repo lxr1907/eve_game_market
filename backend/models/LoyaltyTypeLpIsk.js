@@ -236,27 +236,11 @@ class LoyaltyTypeLpIsk {
       queryParams.push(Number(limit)); // LIMIT ?
       queryParams.push(Number(offset)); // OFFSET ?
       
-      // 添加详细调试日志
-      const placeholderCount = (query.match(/\?/g) || []).length;
-      const paramCount = queryParams.length;
-      
-      console.log('Debug - Main query:', query);
-      console.log('Debug - Placeholder count:', placeholderCount);
-      console.log('Debug - Parameter count:', paramCount);
-      console.log('Debug - Parameters:', queryParams);
-      console.log('Debug - Filters:', { corporationId, regionId, datasource });
-      console.log('Debug - CorporationId type:', typeof corporationId, 'RegionId type:', typeof regionId);
-      
-      // 执行主查询 - MySQL 8 下 pool.execute() 对 LIMIT/OFFSET 有严格类型要求
-      // 如果 Number() 修复无效，可尝试 pool.query() 替代 pool.execute()
       const [rows] = await pool.query(query, queryParams);
       
       // 获取总行数
       const [countResult] = await pool.execute('SELECT FOUND_ROWS() as total');
       const total = countResult[0].total;
-  
-      console.log('Debug - Main query result length:', rows.length);
-      console.log('Debug - Total from FOUND_ROWS():', total);
       
       // 如果没有数据，直接返回空结果
       if (total === 0) {
@@ -267,16 +251,6 @@ class LoyaltyTypeLpIsk {
           limit,
           totalPages: 0
         };
-      }
-  
-        // 检查第一个结果的订单数据
-      if (rows.length > 0) {
-        console.log('Debug - First row order data:', {
-          type_id: rows[0].type_id,
-          region_id: rows[0].region_id,
-          max_buy_order_volume_remaining: rows[0].max_buy_order_volume_remaining,
-          max_buy_order_total_profit: rows[0].max_buy_order_total_profit
-        });
       }
 
       return {
