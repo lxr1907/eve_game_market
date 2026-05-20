@@ -174,7 +174,7 @@
 </template>
 
 <script>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { regionApi, typeApi, orderApi } from '../services/api'
 import { ElMessage } from 'element-plus'
@@ -192,7 +192,7 @@ export default {
     const lpToIskRatio = ref(1300)
     const treeData = ref([])
     const treeRef = ref(null)
-    const filterText = ref('')
+    const filterText = ref('毒蜥级')
     const selectedTypeId = ref(null)
     const blueprintInfo = ref([])
     const blueprintCost = ref([])
@@ -280,6 +280,7 @@ export default {
           treeData.value = cachedData
           console.log('从缓存加载层级结构')
           loadingTree.value = false
+          autoSelectDefaultType()
           return
         }
 
@@ -292,6 +293,21 @@ export default {
         console.error('加载层级结构失败:', error)
       } finally {
         loadingTree.value = false
+        autoSelectDefaultType()
+      }
+    }
+
+    // 自动选中毒蜥级蓝图（17716）
+    function autoSelectDefaultType() {
+      if (!selectedTypeId.value) {
+        nextTick(() => {
+          if (treeRef.value) {
+            treeRef.value.filter(filterText.value)
+            treeRef.value.setCurrentKey(17716)
+          }
+          selectedTypeId.value = 17716
+          queryManufacturingCost()
+        })
       }
     }
 

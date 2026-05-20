@@ -186,7 +186,7 @@
 </template>
 
 <script>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { regionApi, orderApi, typeApi, stationApi } from '../services/api'
 import { ElMessage } from 'element-plus'
@@ -202,7 +202,7 @@ export default {
     const datasource = ref('serenity')
     const treeData = ref([])
     const treeRef = ref(null)
-    const filterText = ref('')
+    const filterText = ref('毒蜥级')
     const selectedTypeId = ref('')
     const buyOrders = ref([])
     const sellOrders = ref([])
@@ -290,6 +290,7 @@ export default {
           treeData.value = cachedData
           console.log('从缓存加载物品树')
           loadingTree.value = false
+          autoSelectDefaultType()
           return
         }
 
@@ -304,6 +305,21 @@ export default {
         ElMessage.error('加载物品树失败: ' + (error.message || error))
       } finally {
         loadingTree.value = false
+        autoSelectDefaultType()
+      }
+    }
+
+    // 自动选中毒蜥级
+    function autoSelectDefaultType() {
+      if (!selectedTypeId.value && !router.query.typeId) {
+        nextTick(() => {
+          if (treeRef.value) {
+            treeRef.value.filter(filterText.value)
+            treeRef.value.setCurrentKey(17715)
+          }
+          selectedTypeId.value = 17715
+          queryOrders()
+        })
       }
     }
 
@@ -398,12 +414,14 @@ export default {
       const route = router
       if (route.query.typeId) {
         selectedTypeId.value = parseInt(route.query.typeId)
-        // 延迟查询订单，等待树结构加载完成
         setTimeout(() => {
           queryOrders()
         }, 2000)
       }
     })
+    
+    // 树加载完成后自动选中毒蜥级（17715）
+    // (通过 loadHierarchy 的 finally 和缓存路径直接调用 autoSelectDefaultType)
     
     return {
       regions, selectedRegionId, datasource, filterText, treeData, treeRef,
