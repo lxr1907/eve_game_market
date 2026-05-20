@@ -4,6 +4,11 @@ const Region = require('../models/Region');
 const Station = require('../models/Station');
 const eveApiService = require('../services/eveApiService');
 
+// 欧服 ESI 可达性缓存，避免重复超时等待
+let tranquilityUnreachable = false;
+let tranquilityCheckTime = 0;
+const TRANQUILITY_CHECK_INTERVAL = 5 * 60 * 1000; // 每5分钟重试一次
+
 class OrderController {
   // 同步特定区域和类型的订单数据
   static async syncOrders(req, res) {
@@ -133,11 +138,16 @@ class OrderController {
       let sellOrders = await Order.findByRegionAndType(regionId, typeId, 'sell', page, limit, datasource);
       let sellTotal = await Order.countByRegionAndType(regionId, typeId, 'sell', datasource);
 
-      // 如果本地没有数据，从官方API同步
+      // 如果本地没有数据，从官方API同步（欧服不可达时跳过）
       const needSyncBuy = buyTotal === 0;
       const needSyncSell = sellTotal === 0;
+      const isTranquility = datasource.toLowerCase() === 'tranquility';
       
-      if (needSyncBuy || needSyncSell) {
+      // 欧服 ESI 不可达时直接跳过同步
+      if (isTranquility && tranquilityUnreachable && (Date.now() - tranquilityCheckTime < TRANQUILITY_CHECK_INTERVAL)) {
+        console.log(`Tranquility ESI is unreachable, skipping sync for region ${regionId}, type ${typeId}`);
+      } else if (needSyncBuy || needSyncSell) {
+        try {
         console.log(`No ${needSyncBuy ? 'buy ' : ''}${needSyncSell ? 'sell ' : ''}orders found in local database for region ${regionId}, type ${typeId}, datasource ${datasource}. Synchronizing from official API...`);
         
         // 只删除该区域和类型的1小时之前的订单数据
@@ -193,6 +203,23 @@ class OrderController {
         
         sellOrders = await Order.findByRegionAndType(regionId, typeId, 'sell', page, limit, datasource);
         sellTotal = await Order.countByRegionAndType(regionId, typeId, 'sell', datasource);
+        
+        // 同步后仍无数据且是欧服，标记不可达避免后续超时
+        if (isTranquility && buyTotal === 0 && sellTotal === 0) {
+          tranquilityUnreachable = true;
+          tranquilityCheckTime = Date.now();
+          console.log(`Tranquility ESI sync completed but returned no data, marked as unreachable`);
+        }
+        } catch (syncError) {
+          // 同步失败时标记欧服不可达，避免重复超时等待
+          if (isTranquility) {
+            tranquilityUnreachable = true;
+            tranquilityCheckTime = Date.now();
+            console.log(`Tranquility ESI sync failed, marked as unreachable: ${syncError.message}`);
+          } else {
+            console.error(`Order sync error for ${datasource}: ${syncError.message}`);
+          }
+        }
       }
 
       // 为订单数据补充空间站名称
