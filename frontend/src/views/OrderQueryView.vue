@@ -54,12 +54,24 @@
       <!-- 左侧物品树 -->
       <aside class="sidebar">
         <div class="search-box">
-          <el-input
+          <el-autocomplete
             v-model="filterText"
+            :fetch-suggestions="querySearch"
+            :trigger-on-focus="true"
+            value-key="label"
             placeholder="搜索物品名称或ID..."
             clearable
             prefix-icon="Search"
-          />
+            @select="handleAutoSelect"
+            @focus="onSearchFocus"
+          >
+            <template #default="{ item }">
+              <div class="suggestion-item" @click="handleRecentSelect(item)">
+                <span class="suggestion-label">{{ item.label }}</span>
+                <span class="suggestion-info">{{ item.id }}</span>
+              </div>
+            </template>
+          </el-autocomplete>
         </div>
 
         <div class="tree-wrapper" v-loading="loadingTree">
@@ -210,6 +222,57 @@ export default {
     const querying = ref(false)
     const loadingTree = ref(false)
     
+    // 最近搜索历史（localStorage，最多20条）
+    const STORAGE_KEY = 'eve_recent_searches'
+    const MAX_RECENT = 20
+    
+    function getRecentSearches() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+      } catch { return [] }
+    }
+    
+    function addRecentSearch(id, label) {
+      let list = getRecentSearches()
+      // 去重
+      list = list.filter(item => item.id !== id)
+      // 添加到最前面
+      list.unshift({ id, label, timestamp: Date.now() })
+      // 截断
+      if (list.length > MAX_RECENT) list = list.slice(0, MAX_RECENT)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+    }
+    
+    function querySearch(queryString, cb) {
+      const list = getRecentSearches()
+      if (!queryString) {
+        cb(list)
+      } else {
+        // 按输入内容过滤历史（输入时显示匹配的历史）
+        const filtered = list.filter(item =>
+          item.label.toLowerCase().includes(queryString.toLowerCase()) ||
+          String(item.id).includes(queryString)
+        )
+        cb(filtered)
+      }
+    }
+    
+    function onSearchFocus() {
+      // 聚焦时不额外操作，autocomplete 的 trigger-on-focus 自动展开
+    }
+    
+    function handleAutoSelect(item) {
+      selectedTypeId.value = item.id
+      filterText.value = item.label
+      queryOrders()
+    }
+    
+    function handleRecentSelect(item) {
+      selectedTypeId.value = item.id
+      filterText.value = item.label
+      queryOrders()
+    }
+    
     // 空间站名称缓存
     const stationNames = ref({})
     const loadingStation = ref(null)
@@ -346,6 +409,7 @@ export default {
     const handleNodeClick = (data) => {
       if (data.type === 'type') {
         selectedTypeId.value = data.id
+        addRecentSearch(data.id, data.label)
         queryOrders()
       }
     }
@@ -428,7 +492,8 @@ export default {
       selectedTypeId, buyOrders, sellOrders, syncing, querying, loadingTree,
       stationNames, loadingStation, stationAttempted,
       formatDate, formatISK, handleRegionChange, handleDatasourceChange,
-      handleNodeClick, filterNode, syncOrders, queryOrders, fetchStationName
+      handleNodeClick, filterNode, syncOrders, queryOrders, fetchStationName,
+      querySearch, onSearchFocus, handleAutoSelect, handleRecentSelect
     }
   }
 }
@@ -527,6 +592,37 @@ export default {
 
 .search-box :deep(.el-input__inner) {
   color: #fff;
+}
+
+/* 搜索建议下拉样式 */
+.suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+.suggestion-label {
+  color: #e5eaf3;
+  font-size: 13px;
+}
+.suggestion-info {
+  color: #8b8fa3;
+  font-size: 11px;
+  margin-left: 12px;
+}
+.search-box :deep(.el-autocomplete-suggestion__list) {
+  background-color: #2d303e;
+  border-color: #3d4050;
+}
+.search-box :deep(.el-autocomplete-suggestion li) {
+  color: #e5eaf3;
+}
+.search-box :deep(.el-autocomplete-suggestion li:hover) {
+  background-color: #242736;
+}
+.search-box :deep(.el-popper) {
+  background-color: #2d303e !important;
+  border-color: #3d4050 !important;
 }
 
 .tree-wrapper {
@@ -663,5 +759,28 @@ export default {
   color: #94a3b8;
   font-size: 11px;
   flex-shrink: 0;
+}
+</style>
+
+<!-- 全局样式：el-autocomplete 的下拉面板通过 teleport 渲染，scoped 样式无效 -->
+<style>
+.el-autocomplete-suggestion__wrap {
+  background-color: #2d303e !important;
+  border: 1px solid #3d4050 !important;
+}
+.el-autocomplete-suggestion li {
+  color: #e5eaf3 !important;
+  background-color: #2d303e !important;
+}
+.el-autocomplete-suggestion li:hover,
+.el-autocomplete-suggestion li.highlighted {
+  background-color: #242736 !important;
+}
+.el-autocomplete-suggestion {
+  border: none !important;
+}
+.el-popper.is-light .el-popper__arrow::before {
+  background: #2d303e !important;
+  border-color: #3d4050 !important;
 }
 </style>
