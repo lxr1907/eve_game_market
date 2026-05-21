@@ -48,12 +48,24 @@
       <!-- 左侧物品树 -->
       <aside class="sidebar">
         <div class="search-box">
-          <el-input
+          <el-autocomplete
             v-model="filterText"
+            :fetch-suggestions="querySearch"
+            :trigger-on-focus="true"
+            value-key="label"
             placeholder="搜索蓝图名称或ID..."
             clearable
             prefix-icon="Search"
-          />
+            @select="handleAutoSelect"
+            @focus="onSearchFocus"
+          >
+            <template #default="{ item }">
+              <div class="suggestion-item" @click="handleRecentSelect(item)">
+                <span class="suggestion-label">{{ item.label }}</span>
+                <span class="suggestion-info">{{ item.id }}</span>
+              </div>
+            </template>
+          </el-autocomplete>
         </div>
         
         <div class="tree-wrapper" v-loading="loadingTree">
@@ -202,6 +214,50 @@ export default {
     const querying = ref(false)
     const loadingTree = ref(false)
     
+    // 最近搜索历史（localStorage，最多20条）
+    const STORAGE_KEY = 'eve_recent_searches_blueprint'
+    const MAX_RECENT = 20
+    
+    function getRecentSearches() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+      } catch { return [] }
+    }
+    
+    function addRecentSearch(id, label) {
+      let list = getRecentSearches()
+      list = list.filter(item => item.id !== id)
+      list.unshift({ id, label, timestamp: Date.now() })
+      if (list.length > MAX_RECENT) list = list.slice(0, MAX_RECENT)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+    }
+    
+    function querySearch(queryString, cb) {
+      const list = getRecentSearches()
+      if (!queryString) {
+        cb(list)
+      } else {
+        cb(list.filter(item =>
+          item.label.toLowerCase().includes(queryString.toLowerCase()) ||
+          String(item.id).includes(queryString)
+        ))
+      }
+    }
+    
+    function onSearchFocus() {}
+    
+    function handleAutoSelect(item) {
+      selectedTypeId.value = item.id
+      filterText.value = item.label
+      queryManufacturingCost()
+    }
+    
+    function handleRecentSelect(item) {
+      selectedTypeId.value = item.id
+      filterText.value = item.label
+      queryManufacturingCost()
+    }
+    
     // 格式化工具
     const formatDate = (dateString) => {
       if (!dateString) return '-'
@@ -337,6 +393,7 @@ export default {
     const handleNodeClick = (data) => {
       if (data.type === 'type') {
         selectedTypeId.value = data.id
+        addRecentSearch(data.id, data.label)
         queryManufacturingCost()
       }
     }
@@ -502,7 +559,8 @@ export default {
       regions, selectedRegionId, datasource, lpToIskRatio, filterText, treeData, treeRef,
       selectedTypeId, blueprintInfo, blueprintCost, materials, totalCost, profitDisplay, querying, loadingTree,
       formatDate, formatISK, handleRegionChange, handleDatasourceChange, handleLpRatioChange,
-      handleNodeClick, filterNode, queryManufacturingCost
+      handleNodeClick, filterNode, queryManufacturingCost,
+      querySearch, onSearchFocus, handleAutoSelect, handleRecentSelect
     }
   }
 }
@@ -616,6 +674,23 @@ export default {
 
 .search-box :deep(.el-input__inner) {
   color: #fff;
+}
+
+/* 搜索建议下拉样式 */
+.suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+.suggestion-label {
+  color: #e5eaf3;
+  font-size: 13px;
+}
+.suggestion-info {
+  color: #8b8fa3;
+  font-size: 11px;
+  margin-left: 12px;
 }
 
 .tree-wrapper {
@@ -781,5 +856,28 @@ export default {
   font-weight: 700;
   font-size: 16px;
   text-shadow: 0 0 10px rgba(245, 108, 108, 0.3);
+}
+</style>
+
+<!-- 全局样式：el-autocomplete 下拉面板 -->
+<style>
+.el-autocomplete-suggestion__wrap {
+  background-color: #2d303e !important;
+  border: 1px solid #3d4050 !important;
+}
+.el-autocomplete-suggestion li {
+  color: #e5eaf3 !important;
+  background-color: #2d303e !important;
+}
+.el-autocomplete-suggestion li:hover,
+.el-autocomplete-suggestion li.highlighted {
+  background-color: #242736 !important;
+}
+.el-autocomplete-suggestion {
+  border: none !important;
+}
+.el-popper.is-light .el-popper__arrow::before {
+  background: #2d303e !important;
+  border-color: #3d4050 !important;
 }
 </style>
