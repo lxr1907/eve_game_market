@@ -624,28 +624,51 @@ class TypeController {
         [id]
       );
       
-      console.log(`Query result for blueprint ${id}:`, materials);
-      
       if (materials.length > 0) {
-        console.log(`Found ${materials.length} materials from local blueprint_materials table for blueprint ${id}`);
-        // 获取每个原材料的名称
-        const materialsWithNames = await Promise.all(materials.map(async (material) => {
-          const type = await Type.findById(material.material_type_id);
-          return {
-            type_id: material.material_type_id,
-            name: type ? type.name : `Unknown Type (${material.material_type_id})`,
-            quantity: material.quantity
-          };
+        // 批量获取所有原材料的名称
+        const materialTypeIds = materials.map(m => m.material_type_id);
+        const typeRows = await Type.findByIds(materialTypeIds);
+        const typeMap = {};
+        typeRows.forEach(t => { typeMap[t.id] = t.name; });
+        const materialsWithNames = materials.map(material => ({
+          type_id: material.material_type_id,
+          name: typeMap[material.material_type_id] || `Unknown Type (${material.material_type_id})`,
+          quantity: material.quantity
         }));
-        res.status(200).json(materialsWithNames);
-        return;
+        return res.status(200).json(materialsWithNames);
       }
       
-      // 如果本地数据库没有，返回空数组
-      console.log(`No materials found in local database for blueprint ${id}`);
+      // 如果本地数据库没有，尝试从 ESI 获取后保存
+      try {
+        const esiMaterials = await eveApiService.getBlueprintMaterials(parseInt(id), datasource);
+        if (esiMaterials && esiMaterials.length > 0) {
+          // 保存到本地数据库
+          for (const mat of esiMaterials) {
+            await pool.execute(
+              'INSERT IGNORE INTO blueprint_materials (blueprint_type_id, material_type_id, quantity, activity_type) VALUES (?, ?, ?, "manufacturing")',
+              [id, mat.type_id, mat.quantity]
+            );
+          }
+          // 批量获取名称并返回
+          const materialTypeIds = esiMaterials.map(m => m.type_id);
+          const typeRows = await Type.findByIds(materialTypeIds);
+          const typeMap = {};
+          typeRows.forEach(t => { typeMap[t.id] = t.name; });
+          const materialsWithNames = esiMaterials.map(mat => ({
+            type_id: mat.type_id,
+            name: typeMap[mat.type_id] || `Unknown Type (${mat.type_id})`,
+            quantity: mat.quantity
+          }));
+          return res.status(200).json(materialsWithNames);
+        }
+      } catch (esiError) {
+        console.error(`ESI fetch failed for blueprint materials ${id}: ${esiError.message}`);
+      }
+      
+      // 无任何数据
       res.status(200).json([]);
     } catch (error) {
-      console.error(`Error getting blueprint materials for type ID ${req.params.id}:`, error);
+      console.error(`Error getting blueprint materials for type ID ${req.params.id}:`, error.message);
       res.status(500).json({ message: 'Failed to get blueprint materials', error: error.message });
     }
   }
