@@ -139,7 +139,10 @@
             >
               <el-table-column prop="name" label="原材料名称" min-width="200">
                 <template #default="{ row }">
-                  <span class="material-name">{{ row.name }}</span>
+                  <span class="material-name clickable" @click="showMaterialOrders(row)">
+                    {{ row.name }}
+                    <el-icon size="14" class="link-icon"><Link /></el-icon>
+                  </span>
                 </template>
               </el-table-column>
               <el-table-column prop="quantity" label="所需数量" sortable width="100" />
@@ -182,6 +185,72 @@
         </template>
       </main>
     </div>
+
+    <!-- 原材料订单弹窗 -->
+    <el-dialog
+      v-model="materialOrderDialogVisible"
+      :title="`${selectedMaterialName || '材料'} - 订单详情`"
+      width="70%"
+      destroy-on-close
+    >
+      <div v-loading="queryingMaterialOrders">
+        <el-row :gutter="20">
+          <!-- 卖单表格 -->
+          <el-col :span="12">
+            <div class="dialog-section-header">
+              <h3 class="dialog-title sell">
+                <el-icon><Top /></el-icon> 卖出订单 (Sell)
+              </h3>
+            </div>
+            <el-table 
+              :data="materialSellOrders" 
+              style="width: 100%" 
+              height="350px"
+              size="small"
+            >
+              <el-table-column prop="price" label="价格 (ISK)" sortable min-width="120">
+                <template #default="{ row }">
+                  <span style="color: #f56c6c; font-weight: bold;">{{ formatISKShort(row.price) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="volume_remaining" label="剩余数量" sortable width="100">
+                <template #default="{ row }">
+                  {{ formatNumber(row.volume_remaining) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="location_id" label="位置 ID" width="100" />
+            </el-table>
+          </el-col>
+
+          <!-- 买单表格 -->
+          <el-col :span="12">
+            <div class="dialog-section-header">
+              <h3 class="dialog-title buy">
+                <el-icon><Bottom /></el-icon> 买入订单 (Buy)
+              </h3>
+            </div>
+            <el-table 
+              :data="materialBuyOrders" 
+              style="width: 100%" 
+              height="350px"
+              size="small"
+            >
+              <el-table-column prop="price" label="价格 (ISK)" sortable min-width="120">
+                <template #default="{ row }">
+                  <span style="color: #67c23a; font-weight: bold;">{{ formatISKShort(row.price) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="volume_remaining" label="剩余数量" sortable width="100">
+                <template #default="{ row }">
+                  {{ formatNumber(row.volume_remaining) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="location_id" label="位置 ID" width="100" />
+            </el-table>
+          </el-col>
+        </el-row>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -190,7 +259,7 @@ import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { regionApi, typeApi, orderApi } from '../services/api'
 import { ElMessage } from 'element-plus'
-import { Folder, Collection, Document, List, DataAnalysis, Search, Money } from '@element-plus/icons-vue'
+import { Folder, Collection, Document, List, DataAnalysis, Search, Money, Link, Top, Bottom } from '@element-plus/icons-vue'
 
 export default {
   name: 'ManufacturingCostView',
@@ -213,6 +282,40 @@ export default {
     const profitDisplay = ref([])
     const querying = ref(false)
     const loadingTree = ref(false)
+    
+    // 材料订单弹窗
+    const materialOrderDialogVisible = ref(false)
+    const queryingMaterialOrders = ref(false)
+    const materialBuyOrders = ref([])
+    const materialSellOrders = ref([])
+    const selectedMaterialName = ref('')
+    
+    const showMaterialOrders = async (material) => {
+      if (!material || !material.type_id || !selectedRegionId.value) {
+        ElMessage.warning('无法获取材料订单信息')
+        return
+      }
+      selectedMaterialName.value = material.name
+      materialOrderDialogVisible.value = true
+      queryingMaterialOrders.value = true
+      materialBuyOrders.value = []
+      materialSellOrders.value = []
+
+      try {
+        const response = await orderApi.getOrders({
+          regionId: selectedRegionId.value,
+          typeId: material.type_id,
+          datasource: datasource.value
+        })
+        materialBuyOrders.value = response.buyOrders.data || []
+        materialSellOrders.value = response.sellOrders.data || []
+      } catch (error) {
+        console.error('获取材料订单失败:', error)
+        ElMessage.error(error.response?.data?.message || error.message || '获取材料订单失败')
+      } finally {
+        queryingMaterialOrders.value = false
+      }
+    }
     
     // 最近搜索历史（localStorage，最多20条）
     const STORAGE_KEY = 'eve_recent_searches_blueprint'
@@ -277,6 +380,19 @@ export default {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
       })
+    }
+
+    const formatISKShort = (val) => {
+      if (!val) return '0'
+      const num = parseFloat(val)
+      if (num >= 100000000) return (num / 100000000).toFixed(2) + '亿'
+      if (num >= 10000) return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      return num.toFixed(2)
+    }
+
+    const formatNumber = (val) => {
+      if (!val) return '0'
+      return parseFloat(val).toLocaleString('zh-CN')
     }
     
     // 调试方法
@@ -558,9 +674,11 @@ export default {
     return {
       regions, selectedRegionId, datasource, lpToIskRatio, filterText, treeData, treeRef,
       selectedTypeId, blueprintInfo, blueprintCost, materials, totalCost, profitDisplay, querying, loadingTree,
-      formatDate, formatISK, handleRegionChange, handleDatasourceChange, handleLpRatioChange,
+      formatDate, formatISK, formatISKShort, formatNumber, handleRegionChange, handleDatasourceChange, handleLpRatioChange,
       handleNodeClick, filterNode, queryManufacturingCost,
-      querySearch, onSearchFocus, handleAutoSelect, handleRecentSelect
+      querySearch, onSearchFocus, handleAutoSelect, handleRecentSelect,
+      materialOrderDialogVisible, queryingMaterialOrders, materialBuyOrders, materialSellOrders,
+      selectedMaterialName, showMaterialOrders
     }
   }
 }
@@ -791,6 +909,19 @@ export default {
   font-weight: 500;
   color: #e2e8f0;
 }
+.material-name.clickable {
+  cursor: pointer;
+  color: #60a5fa;
+  transition: color 0.2s;
+}
+.material-name.clickable:hover {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+.link-icon {
+  margin-left: 4px;
+  vertical-align: middle;
+}
 
 .price-text {
   font-family: 'Roboto Mono', monospace;
@@ -856,6 +987,42 @@ export default {
   font-weight: 700;
   font-size: 16px;
   text-shadow: 0 0 10px rgba(245, 108, 108, 0.3);
+}
+
+/* 订单弹窗样式 */
+.location-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.location-name {
+  color: #e2e8f0;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.location-id {
+  color: #64748b;
+  font-size: 11px;
+}
+/* 弹窗样式（与 LP 蓝图一致） */
+.dialog-section-header {
+  margin-bottom: 12px;
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dialog-title.sell {
+  color: #f56c6c;
+}
+
+.dialog-title.buy {
+  color: #67c23a;
 }
 </style>
 
